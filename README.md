@@ -6,22 +6,34 @@ Este repositório contém o **backend do Trabalho P1** de Programação Web. A i
 
 ## Situação atual
 
-- Repositório e projeto NestJS criados.
-- Aplicação inicial testada em `http://localhost:3000`.
-- Modelagem, módulos e divisão das tarefas: a definir com o grupo.
-- A rota inicial `Hello World!` é apenas um teste da estrutura.
+- Banco PostgreSQL modelado em 15 tabelas com TypeORM e migration versionada.
+- Seed repetível: duas trilhas, 34 obras, quatro temporadas, 21 permissões e dois perfis (`LEITOR`, `ADMIN`). Personagens e acontecimentos foram preparados apenas para quatro obras, o suficiente para demonstrar o fluxo de spoilers.
+- A API ainda contém somente a rota de teste do Nest. Autenticação, endpoints do domínio, Swagger e as regras de negócio da P1 **ainda não foram implementados**.
 
 ## Como executar
 
-Requisitos: Node.js 24.15+ e npm.
+Requisitos: Node.js 24.15+, npm e PostgreSQL 13+ (ou Docker Desktop).
 
 ```bash
 cd backend
 npm ci
+```
+
+No Windows (Prompt de Comando), prepare o banco local:
+
+```bat
+copy .env.example .env
+docker compose up -d
+npm run db:migrate
+npm run db:seed
 npm run start:dev
 ```
 
-A API inicial ficará disponível em `http://localhost:3000`.
+Se não usar Docker, crie no seu PostgreSQL um usuário e um banco de dados, depois ajuste `backend/.env` com seus dados e execute os mesmos comandos `db:migrate` e `db:seed`. A rota inicial responde em `http://localhost:3000` somente após a conexão com o banco. `synchronize` permanece desligado: mudanças de estrutura devem entrar em novas migrations.
+
+Para incluir **contas fictícias** de ADMIN e LEITOR, altere `SEED_DEMO_USERS=true` no `.env` e defina `DEMO_ADMIN_PASSWORD` e `DEMO_READER_PASSWORD` (mínimo 8 caracteres); execute `npm run db:seed` novamente. O arquivo `.env` não deve ir para o Git. O seed não cria identidades Google, não altera a senha de contas existentes e é bloqueado em produção.
+
+**Onde está cada coisa:** `backend/src/database/entities/` descreve as 15 tabelas para o TypeORM; `migrations/` cria suas restrições e relações no PostgreSQL; `seeds/` prepara os dados; `data-source.ts` fornece a mesma conexão ao Nest e aos comandos de banco. O próximo módulo pode usar uma entidade com `TypeOrmModule.forFeature([Obra])` e implementá-la em controller, service e repository. Cada listagem precisará de paginação e dois filtros documentados no Swagger.
 
 ## Requisitos da P1
 
