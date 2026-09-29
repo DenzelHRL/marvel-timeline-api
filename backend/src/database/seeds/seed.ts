@@ -299,7 +299,13 @@ async function seedDemo(
     await runner.query(
       `INSERT INTO comentarios (id, obra_id, usuario_id, texto, contem_spoiler)
        VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING`,
-      [id, workIds.get('vingadores-guerra-infinita'), readerId, texto, contemSpoiler],
+      [
+        id,
+        workIds.get('vingadores-guerra-infinita'),
+        readerId,
+        texto,
+        contemSpoiler,
+      ],
     );
   }
   for (const [slug, status, completedAt] of [
