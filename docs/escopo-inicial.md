@@ -17,6 +17,25 @@ Entrega P1: backend NestJS + PostgreSQL/TypeORM até 16/10/2026. A **trilha curt
 
 Esses quatro exemplos são o **primeiro fluxo de leitura**, ainda a implementar. O método + rota só conta para a P1 depois de funcionar, constar na matriz de endpoints, ter Swagger e poder ser demonstrado.
 
+## Adaptação da referência One Piece
+
+O projeto de referência oferece operações de cadastro/gestão e consultas que reúnem dados de várias tabelas para a experiência do mapa. Na Marvel, a unidade que o leitor visita é a **obra**; o percurso fica em `trilhas` + `etapas_trilha`. Cada chamada a uma rota parametrizada atende qualquer obra cadastrada. As 34 obras não se tornam 34 endpoints.
+
+| Ideia da referência | Estrutura equivalente neste projeto |
+| --- | --- |
+| Arco, ilha e vínculo para definir percurso | `trilhas`, `etapas_trilha` e `obras`; a mesma obra pode estar nas duas trilhas |
+| Personagem em contexto narrativo | `personagens` e `participacoes` por obra; sem versões separadas neste recorte |
+| Eventos e participantes | `acontecimentos` e `acontecimento_personagens` |
+| Contas, perfis e permissões | `usuarios`, `usuario_perfis`, `perfis`, `permissoes` e `perfil_permissoes` |
+| Consultas de Wiki voltadas ao mapa | Respostas agregadas de exploração, montadas pela camada de serviço a partir das tabelas existentes |
+
+Duas consultas de exploração a especificar na matriz, além das rotas de catálogo:
+
+- `GET /explorar/trilhas/:slug/mapa`: páginas de etapas já acompanhadas do título, imagem e resumo da obra. Filtrar pelos campos `prioridade` e `obraId` da etapa, com paginação e metadados. Difere de `GET /trilhas/:slug/etapas`, que consulta os dados próprios das etapas para gestão e navegação simples.
+- `GET /explorar/trilhas/:slug/obras/:obraSlug`: conferir que a obra pertence à trilha e reunir resumo, posição, obra anterior/próxima e links para as listagens de participações e acontecimentos daquela obra. Essas listagens terão paginação e dois filtros cada uma. Por padrão, omitir conteúdo marcado como spoiler; liberar apenas com opção explícita. A rota atende todas as obras e as duas trilhas.
+
+Essas consultas **ainda não estão implementadas** e não pedem tabelas novas. O catálogo inicial vem dos seeds; a API o consulta ou permite manutenção autorizada. Os listeners de CDC/Kafka da referência são processos de mensageria, não endpoints HTTP, e não integram o recorte inicial.
+
 ## Funcionalidades seguintes
 
 | Bloco | Entrega observável | Acesso |
@@ -24,10 +43,11 @@ Esses quatro exemplos são o **primeiro fluxo de leitura**, ainda a implementar.
 | Contas e acesso | cadastro local, login JWT, `/usuarios/me`, perfil `LEITOR`/`ADMIN`, guards e permissões por ação; depois entrada Google | público ou dono da conta |
 | Catálogo | administrar obras, séries e temporadas; consultar personagens, participações e acontecimentos com opção de spoiler | leitura pública; edição `ADMIN` |
 | Trilhas | criar, editar, publicar e ordenar etapas; consultar trilha curta/longa | leitura pública; edição `ADMIN` |
+| Exploração | montar o mapa de obras da trilha e os detalhes narrativos de uma obra a partir de relações existentes | leitura pública, com proteção de spoiler |
 | Comentários por obra | listar, publicar, editar/remover comentário próprio e moderar; texto marcado como spoiler fica oculto por padrão | leitura pública; escrita autenticada; moderação `ADMIN` |
 | Progresso | marcar obra como quero ver/assistindo/concluída e consultar o próprio histórico | próprio usuário autenticado |
 | Administração | gerenciar contas, perfis, permissões e moderação | `ADMIN` com permissão correspondente |
-| Consultas úteis | indicadores de conclusão e participação por obra/trilha, com filtros e paginação onde houver listagem | conforme dados expostos |
+| Consultas úteis | indicadores de conclusão e participação por obra/trilha, se houver tempo depois das rotas principais | conforme dados expostos |
 
 Comentários são registros persistidos por obra (`comentarios.obra_id`) e autor (`usuario_id`), ordenados por criação. A primeira versão consulta a lista via HTTP; atualização em tempo real é uma melhoria futura. A API deve impedir comentar obras não publicadas, conferir dono/permissão nas alterações, preservar o estado de moderação e nunca devolver texto marcado como spoiler na leitura padrão. Essas regras só estarão prontas quando serviço e testes forem implementados.
 
