@@ -14,6 +14,7 @@ import {
   PerfilPermissao,
 } from './access.entities';
 import { Progresso } from './progress.entity';
+import { Comentario } from './comment.entity';
 
 export const ENTITIES = [
   Serie,
@@ -31,6 +32,7 @@ export const ENTITIES = [
   UsuarioPerfil,
   PerfilPermissao,
   Progresso,
+  Comentario,
 ];
 
 export {
@@ -49,4 +51,5 @@ export {
   UsuarioPerfil,
   PerfilPermissao,
   Progresso,
+  Comentario,
 };

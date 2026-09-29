@@ -6,8 +6,8 @@ Este repositório contém o **backend do Trabalho P1** de Programação Web. A i
 
 ## Situação atual
 
-- Banco PostgreSQL modelado em 15 tabelas com TypeORM e migration versionada.
-- Seed repetível: duas trilhas, 34 obras, quatro temporadas, 21 permissões e dois perfis (`LEITOR`, `ADMIN`). Personagens e acontecimentos foram preparados apenas para quatro obras, o suficiente para demonstrar o fluxo de spoilers.
+- Banco PostgreSQL modelado em 16 tabelas com TypeORM e duas migrations versionadas, incluindo comentários por obra.
+- Seed repetível: duas trilhas (curta como principal), 34 obras, quatro temporadas, 25 permissões e dois perfis (`LEITOR`, `ADMIN`). Personagens e acontecimentos foram preparados apenas para quatro obras, o suficiente para demonstrar o fluxo de spoilers. Com contas fictícias habilitadas, há dois comentários de exemplo.
 - A API ainda contém somente a rota de teste do Nest. Autenticação, endpoints do domínio, Swagger e as regras de negócio da P1 **ainda não foram implementados**.
 
 ## Como executar
@@ -33,7 +33,11 @@ Se não usar Docker, crie no seu PostgreSQL um usuário e um banco de dados, dep
 
 Para incluir **contas fictícias** de ADMIN e LEITOR, altere `SEED_DEMO_USERS=true` no `.env` e defina `DEMO_ADMIN_PASSWORD` e `DEMO_READER_PASSWORD` (mínimo 8 caracteres); execute `npm run db:seed` novamente. O arquivo `.env` não deve ir para o Git. O seed não cria identidades Google, não altera a senha de contas existentes e é bloqueado em produção.
 
-**Onde está cada coisa:** `backend/src/database/entities/` descreve as 15 tabelas para o TypeORM; `migrations/` cria suas restrições e relações no PostgreSQL; `seeds/` prepara os dados; `data-source.ts` fornece a mesma conexão ao Nest e aos comandos de banco. O próximo módulo pode usar uma entidade com `TypeOrmModule.forFeature([Obra])` e implementá-la em controller, service e repository. Cada listagem precisará de paginação e dois filtros documentados no Swagger.
+**Onde está cada coisa:** `backend/src/database/entities/` descreve as 16 tabelas para o TypeORM; `migrations/` cria suas restrições e relações no PostgreSQL; `seeds/` prepara os dados; `data-source.ts` fornece a mesma conexão ao Nest e aos comandos de banco. O próximo módulo pode usar uma entidade com `TypeOrmModule.forFeature([Obra])` e implementá-la em controller, service e repository. Cada listagem precisará de paginação e dois filtros documentados no Swagger.
+
+Comentários ficam ligados à obra e ao autor: a mesma obra pode aparecer nas duas trilhas sem duplicar a conversa. O banco já registra se o comentário contém spoiler e seu estado de moderação. As rotas e a regra que impede spoilers de aparecerem por padrão ainda precisam ser implementadas.
+
+O recorte para começar a API está em [Escopo inicial](docs/escopo-inicial.md).
 
 ## Requisitos da P1
 

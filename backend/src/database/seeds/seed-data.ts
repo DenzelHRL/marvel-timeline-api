@@ -585,6 +585,22 @@ export const ETAPAS_CURTA = [
 
 export const PERMISSOES = [
   {
+    codigo: 'comentarios:criar',
+    descricao: 'Publicar um comentário em uma obra',
+  },
+  {
+    codigo: 'comentarios:editar_proprio',
+    descricao: 'Editar o próprio comentário',
+  },
+  {
+    codigo: 'comentarios:remover_proprio',
+    descricao: 'Remover o próprio comentário',
+  },
+  {
+    codigo: 'comentarios:moderar',
+    descricao: 'Ocultar ou republicar comentários na moderação',
+  },
+  {
     codigo: 'conta:consultar_propria',
     descricao: 'Consultar os próprios dados',
   },

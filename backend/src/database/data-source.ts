@@ -3,6 +3,7 @@ import { config as loadEnv } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { ENTITIES } from './entities';
 import { InitialSchema20260929000000 } from './migrations/20260929000000-InitialSchema';
+import { AddComments20260929180000 } from './migrations/20260929180000-AddComments';
 
 loadEnv();
 
@@ -10,7 +11,7 @@ export function databaseOptions(): DataSourceOptions {
   const shared = {
     type: 'postgres' as const,
     entities: ENTITIES,
-    migrations: [InitialSchema20260929000000],
+    migrations: [InitialSchema20260929000000, AddComments20260929180000],
     synchronize: false,
     migrationsRun: false,
   };

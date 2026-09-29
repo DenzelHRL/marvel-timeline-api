@@ -33,8 +33,8 @@ async function idFor(
 
 async function seedAccess(runner: QueryRunner): Promise<void> {
   const profiles = [
-    ['LEITOR', 'Consulta as obras e acompanha o próprio progresso.'],
-    ['ADMIN', 'Edita o catálogo, trilhas, contas, perfis e permissões.'],
+    ['LEITOR', 'Consulta as obras, comenta e acompanha o próprio progresso.'],
+    ['ADMIN', 'Edita catálogo, trilhas, contas, acessos e modera comentários.'],
   ];
   for (const [code, description] of profiles) {
     await runner.query(
@@ -58,7 +58,9 @@ async function seedAccess(runner: QueryRunner): Promise<void> {
     );
     const profilesWithPermission =
       permission.codigo.startsWith('conta:') ||
-      permission.codigo.startsWith('progresso:')
+      permission.codigo.startsWith('progresso:') ||
+      (permission.codigo.startsWith('comentarios:') &&
+        permission.codigo !== 'comentarios:moderar')
         ? [readerId, adminId]
         : [adminId];
     for (const profileId of profilesWithPermission) {
@@ -282,6 +284,24 @@ async function seedDemo(
     readerPassword,
     'LEITOR',
   );
+  for (const [id, texto, contemSpoiler] of [
+    [
+      'f8410444-3a6b-4d7e-a58a-dab982f6d3b0',
+      'Gostei de rever os personagens se encontrando nesta obra.',
+      false,
+    ],
+    [
+      '33746259-5b44-4cc8-853c-9a23e229b19b',
+      'A conclusão do confronto me surpreendeu.',
+      true,
+    ],
+  ] as const) {
+    await runner.query(
+      `INSERT INTO comentarios (id, obra_id, usuario_id, texto, contem_spoiler)
+       VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING`,
+      [id, workIds.get('vingadores-guerra-infinita'), readerId, texto, contemSpoiler],
+    );
+  }
   for (const [slug, status, completedAt] of [
     ['vingadores-guerra-infinita', 'CONCLUIDO', '2026-09-01T18:00:00Z'],
     ['wandavision-temporada-1', 'ASSISTINDO', null],
@@ -311,7 +331,7 @@ async function main(): Promise<void> {
         await seedDemo(runner, workIds);
         await runner.commitTransaction();
         console.log(
-          'Seed concluído: 2 perfis, 21 permissões, 34 obras, 2 trilhas e 55 etapas.',
+          `Seed concluído: 2 perfis, ${PERMISSOES.length} permissões, 34 obras, 2 trilhas e 55 etapas.`,
         );
       } catch (error) {
         await runner.rollbackTransaction();
