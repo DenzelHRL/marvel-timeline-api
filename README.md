@@ -8,6 +8,7 @@ Este repositório contém o **backend do Trabalho P1** de Programação Web. A i
 
 - Banco PostgreSQL modelado em 16 tabelas com TypeORM e duas migrations versionadas, incluindo comentários por obra.
 - Seed repetível: duas trilhas (curta como principal), 34 obras, quatro temporadas, 25 permissões e dois perfis (`LEITOR`, `ADMIN`). Personagens e acontecimentos foram preparados apenas para quatro obras, o suficiente para demonstrar o fluxo de spoilers. Com contas fictícias habilitadas, há dois comentários de exemplo.
+- A Action **Banco PostgreSQL** valida build, lint, teste inicial, migrations, seed repetido e verificação do esquema em PostgreSQL 16 temporário. Isso não substitui a criação de uma instância remota para o grupo.
 - A API ainda contém somente a rota de teste do Nest. Autenticação, endpoints do domínio, Swagger e as regras de negócio da P1 **ainda não foram implementados**.
 
 ## Como executar
