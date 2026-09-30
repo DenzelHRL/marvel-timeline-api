@@ -11,6 +11,7 @@
     "db:revert": "node -r ts-node/register src/database/run-migrations.ts revert",
     "db:show": "node -r ts-node/register src/database/run-migrations.ts show",
     "db:seed": "node -r ts-node/register src/database/seeds/seed.ts",
+    "db:verify": "node -r ts-node/register src/database/verify.ts",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",

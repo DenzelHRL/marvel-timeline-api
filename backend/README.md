@@ -15,6 +15,7 @@ Rode estes comandos **nesta pasta** depois de configurar o PostgreSQL e copiar `
 npm ci
 npm run db:migrate
 npm run db:seed
+npm run db:verify
 npm run start:dev
 ```
 
@@ -23,3 +24,5 @@ O seed de contas fictícias é optativo: defina `SEED_DEMO_USERS=true`, `DEMO_AD
 A rota inicial do Nest ainda serve apenas para verificar que a aplicação inicia. Endpoints do domínio, autenticação, documentação Swagger e testes de API serão implementados nas próximas etapas.
 
 Os comentários estão preparados no banco, com autor, obra, indicador de spoiler e estado de moderação. A trilha curta será o caminho principal; a trilha longa permanece disponível no mesmo catálogo.
+
+Quem for implementar um módulo deve ler o [guia das entidades](../docs/modelo-banco.md), a [matriz de rotas](../docs/matriz-endpoints.md) e o [guia de publicação](../docs/publicar-banco.md).
