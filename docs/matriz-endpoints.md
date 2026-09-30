@@ -1,6 +1,6 @@
 # Matriz inicial de endpoints — proposta para discussão do grupo
 
-**Situação em 30/09/2026:** são **74 combinações de método + rota planejadas**, com 72 de produto/gestão e 2 analíticas opcionais; **0 implementadas nesta matriz**. Nada aqui conta para a P1 antes de código, Swagger e teste. O objetivo é implementar **pelo menos 60 válidas e demonstráveis**, com margem, e ajustar a seleção junto aos responsáveis. O enunciado define o mínimo, não um teto. Consideramos método + rota como endpoint conforme a confirmação relatada pelo grupo.
+**Situação em 30/09/2026:** são **78 combinações de método + rota planejadas**, com 76 de produto/gestão e 2 analíticas opcionais; **0 implementadas nesta matriz**. Nada aqui conta para a P1 antes de código, Swagger e teste. O objetivo é implementar **pelo menos 60 válidas e demonstráveis**, com margem, e ajustar a seleção junto aos responsáveis. O enunciado define o mínimo, não um teto. Consideramos método + rota como endpoint conforme a confirmação relatada pelo grupo.
 
 `E` = essencial; `C` = complementar; `A` = administrativo; `N` = analítico; `O` = opcional. `P[filtro1, filtro2]` = listagem **com paginação**, `pagina=1`, `limite=20`, máximo 50, metadados, validação de filtros e os dois filtros mínimos indicados por **colunas do banco**. `—` = não se aplica. `Público` = sem token; `JWT` = autenticado, com o perfil e a permissão indicados. `AD` = responsável a definir pelo grupo, nunca crédito de autoria presumido. `P/P/P` = implementação/Swagger/teste **pendentes**. Alterar estas três letras e o responsável conforme entregas reais. Os caminhos `:id`, `:slug`, `:obraId` etc. são parâmetros, não endpoints separados por registro.
 
@@ -136,6 +136,17 @@ Permissões estão no [seed](../backend/src/database/seeds/seed-data.ts). Para l
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 73 | O/N | `GET /indicadores/obras/:slug/comentarios` | Totais de comentários publicados por obra, sem texto | — | Público | R01 | AD | P/P/P |
 | 74 | O/N | `GET /indicadores/trilhas/:slug/conclusoes` | Totais agregados de progresso por trilha, sem expor usuários | — | JWT `ADMIN`, `usuarios:consultar_todos` | R01 | AD | P/P/P |
+
+## Ampliação administrativa para edição por ID — 4
+
+| # | Classe | Método e rota | Finalidade; body/parâmetros | Filtros/paginação | Acesso | Regra | Resp. | Código/Swagger/Teste |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 75 | A | `PATCH /admin/usuarios/:id` | Editar nome/e-mail de outra conta; DTO parcial, sem senha/perfil/status | — | JWT `ADMIN`, `usuarios:editar` | R11 | AD | P/P/P |
+| 76 | A | `GET /admin/obras` | Encontrar obras para editar, incluindo rascunhos | P[`tipo`, `status`] | JWT `ADMIN`, `obras:editar` | — | AD | P/P/P |
+| 77 | A | `GET /admin/obras/:id` | Abrir obra por ID para edição, mesmo em rascunho | — | JWT `ADMIN`, `obras:editar` | — | AD | P/P/P |
+| 78 | A | `GET /admin/personagens/:id` | Abrir personagem por ID para edição | — | JWT `ADMIN`, `personagens:editar` | — | AD | P/P/P |
+
+Essas operações administrativas têm um propósito distinto de `GET /obras/:slug` e `GET /personagens/:slug`: as públicas usam um identificador legível para o leitor; a administração abre registros internos pelo ID, inclusive uma obra ainda não publicada. As edições de obra e personagem já estão nas linhas 29 e 44. Uma rota parametrizada atende todos os registros.
 
 ## Regras candidatas referenciadas acima
 

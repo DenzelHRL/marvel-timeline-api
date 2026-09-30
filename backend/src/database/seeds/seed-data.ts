@@ -674,6 +674,10 @@ export const PERMISSOES = [
     descricao: 'Ativar ou desativar outra conta',
   },
   {
+    codigo: 'usuarios:editar',
+    descricao: 'Editar dados permitidos de outra conta',
+  },
+  {
     codigo: 'acessos:atribuir_perfil',
     descricao: 'Dar um perfil a outra conta',
   },
