@@ -1,0 +1,50 @@
+name: Banco PostgreSQL
+
+on:
+  pull_request:
+  push:
+    branches: [main, feat/postgres-typeorm-foundation]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: marvel
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: marvel_timeline
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U marvel -d marvel_timeline"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: marvel
+      DB_PASSWORD: ci_only_password
+      DB_NAME: marvel_timeline
+      NODE_ENV: test
+      SEED_DEMO_USERS: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run lint
+      - run: npm test -- --runInBand
+      - run: npm run db:migrate
+      - run: npm run db:seed
+      - run: npm run db:seed
+      - run: npm run db:verify

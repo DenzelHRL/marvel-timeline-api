@@ -39,6 +39,8 @@ Comentários ficam ligados à obra e ao autor: a mesma obra pode aparecer nas du
 
 O recorte para começar a API está em [Escopo inicial](docs/escopo-inicial.md).
 
+Para trabalhar em grupo: [guia das 16 tabelas e exemplo de rota](docs/modelo-banco.md), [matriz proposta de 74 endpoints](docs/matriz-endpoints.md) e [passo a passo para banco local/remoto e futuro deploy da API](docs/publicar-banco.md). A matriz é planejamento: **os 60 endpoints ainda não estão implementados**.
+
 ## Requisitos da P1
 
 Entrega até **16/10/2026**. O backend deverá incluir pelo menos 60 endpoints funcionais, Swagger/OpenAPI, autenticação, perfis e permissões, paginação e dois filtros por campo em cada listagem, migrations, seeds e pelo menos 10 regras de negócio do domínio. As regras serão entregues em PDF junto com o link do repositório.
