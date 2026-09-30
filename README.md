@@ -32,3 +32,4 @@ Cada integrante deverá ter commits que comprovem sua participação e gravar um
 ## Equipe
 
 Denzel, Daniel, Matheus, Pedro e Guilherme.
+teste
