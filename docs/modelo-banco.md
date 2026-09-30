@@ -2,6 +2,10 @@
 
 **Estado:** modelo e dados iniciais preparados no PR de banco; as rotas, os guards e o Swagger ainda serão escritos. Este guia descreve o esquema existente, não funcionalidades já entregues.
 
+![Modelo lógico com as 16 tabelas e 17 chaves estrangeiras](modelo-logico.png)
+
+Imagem em [PNG](modelo-logico.png) e [SVG ampliável](modelo-logico.svg), gerada a partir das duas migrations por [`scripts/gerar_modelo_logico.py`](../scripts/gerar_modelo_logico.py). O diagrama mostra campos, tipos, PK e FK; índices, unicidade e verificações mais detalhadas permanecem nas migrations. Atualize a imagem quando o esquema mudar.
+
 ## Uma obra não é um endpoint
 
 Um **registro** é uma linha em uma tabela: `obras` contém 34 registros iniciais. Um **endpoint** é uma combinação de método HTTP e rota no Nest, por exemplo `GET /obras`. Esse endpoint consulta várias linhas; o parâmetro `:slug` de `GET /obras/:slug` escolhe uma delas. `GET /obras/vingadores-guerra-infinita` e `GET /obras/wandavision-temporada-1` são chamadas do **mesmo** endpoint.
@@ -51,7 +55,7 @@ As colunas exatas, tipos e restrições estão em [`backend/src/database/entitie
 ## Como os dados chegam lá
 
 1. `db:migrate` cria tabelas, chaves estrangeiras, índices e verificações de integridade no PostgreSQL.
-2. `db:seed` insere, de forma repetível, dois perfis, 25 permissões, 3 séries, 34 obras (4 temporadas), duas trilhas com 55 etapas, e uma amostra de personagens e acontecimentos para **quatro** obras. As outras obras têm título/resumo para o fluxo inicial, mas ainda não têm a mesma riqueza narrativa.
+2. `db:seed` insere, de forma repetível, dois perfis, 26 permissões, 3 séries, 34 obras (4 temporadas), duas trilhas com 55 etapas, e uma amostra de personagens e acontecimentos para **quatro** obras. As outras obras têm título/resumo para o fluxo inicial, mas ainda não têm a mesma riqueza narrativa.
 3. Opcionalmente, em ambiente de desenvolvimento, `SEED_DEMO_USERS=true` com duas senhas de demonstração cria ADMIN/LEITOR, comentários e progresso de exemplo. Sem essa opção, o banco não contém contas de teste. A opção é bloqueada em produção.
 4. Os controllers Nest ainda precisarão usar essas entidades; o seed não torna uma rota acessível automaticamente. Cada módulo liga controller → serviço (regras) → repositório TypeORM → banco.
 

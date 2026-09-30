@@ -7,7 +7,7 @@ Este repositório contém o **backend do Trabalho P1** de Programação Web. A i
 ## Situação atual
 
 - Banco PostgreSQL modelado em 16 tabelas com TypeORM e duas migrations versionadas, incluindo comentários por obra.
-- Seed repetível: duas trilhas (curta como principal), 34 obras, quatro temporadas, 25 permissões e dois perfis (`LEITOR`, `ADMIN`). Personagens e acontecimentos foram preparados apenas para quatro obras, o suficiente para demonstrar o fluxo de spoilers. Com contas fictícias habilitadas, há dois comentários de exemplo.
+- Seed repetível: duas trilhas (curta como principal), 34 obras, quatro temporadas, 26 permissões e dois perfis (`LEITOR`, `ADMIN`). Personagens e acontecimentos foram preparados apenas para quatro obras, o suficiente para demonstrar o fluxo de spoilers. Com contas fictícias habilitadas, há dois comentários de exemplo.
 - A Action **Banco PostgreSQL** valida build, lint, teste inicial, migrations, seed repetido e verificação do esquema em PostgreSQL 16 temporário. Isso não substitui a criação de uma instância remota para o grupo.
 - A API ainda contém somente a rota de teste do Nest. Autenticação, endpoints do domínio, Swagger e as regras de negócio da P1 **ainda não foram implementados**.
 
@@ -40,7 +40,9 @@ Comentários ficam ligados à obra e ao autor: a mesma obra pode aparecer nas du
 
 O recorte para começar a API está em [Escopo inicial](docs/escopo-inicial.md).
 
-Para trabalhar em grupo: [guia das 16 tabelas e exemplo de rota](docs/modelo-banco.md), [matriz proposta de 74 endpoints](docs/matriz-endpoints.md) e [passo a passo para banco local/remoto e futuro deploy da API](docs/publicar-banco.md). A matriz é planejamento: **os 60 endpoints ainda não estão implementados**.
+Para trabalhar em grupo: [guia das 16 tabelas e exemplo de rota](docs/modelo-banco.md), [matriz proposta de 78 endpoints](docs/matriz-endpoints.md) e [passo a passo para banco local/remoto e futuro deploy da API](docs/publicar-banco.md). A matriz é planejamento: **os 60 endpoints ainda não estão implementados**.
+
+O [modelo lógico em imagem](docs/modelo-logico.png) mostra os campos, chaves e relações do esquema preparado; o [SVG](docs/modelo-logico.svg) permite ampliar sem perder nitidez.
 
 ## Requisitos da P1
 

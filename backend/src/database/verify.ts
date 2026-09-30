@@ -115,7 +115,7 @@ async function main(): Promise<void> {
     requireAtLeast(
       'Permissões',
       await count('SELECT count(*)::int AS total FROM permissoes'),
-      25,
+      26,
     );
     requireAtLeast(
       'Moderação apenas para ADMIN',
@@ -135,6 +135,25 @@ async function main(): Promise<void> {
     );
     if (readerModeration !== 0) {
       throw new Error('LEITOR recebeu permissão de moderação por engano.');
+    }
+    requireAtLeast(
+      'Edição administrativa de usuários',
+      await count(
+        `SELECT count(*)::int AS total FROM perfil_permissoes pp
+         JOIN perfis p ON p.id = pp.perfil_id
+         JOIN permissoes a ON a.id = pp.permissao_id
+         WHERE p.codigo = 'ADMIN' AND a.codigo = 'usuarios:editar'`,
+      ),
+      1,
+    );
+    const readerEditUsers = await count(
+      `SELECT count(*)::int AS total FROM perfil_permissoes pp
+       JOIN perfis p ON p.id = pp.perfil_id
+       JOIN permissoes a ON a.id = pp.permissao_id
+       WHERE p.codigo = 'LEITOR' AND a.codigo = 'usuarios:editar'`,
+    );
+    if (readerEditUsers !== 0) {
+      throw new Error('LEITOR recebeu permissão de editar outros usuários.');
     }
 
     console.log(
