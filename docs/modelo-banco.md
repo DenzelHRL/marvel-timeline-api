@@ -1,6 +1,6 @@
 # Guia do banco para implementar a API
 
-**Estado:** modelo e dados iniciais preparados no PR de banco; as rotas, os guards e o Swagger ainda serão escritos. Este guia descreve o esquema existente, não funcionalidades já entregues.
+**Estado:** modelo e dados iniciais integrados à main; as rotas, os guards e o Swagger ainda serão escritos. Este guia descreve o esquema existente, não funcionalidades já entregues.
 
 ![Modelo lógico com as 16 tabelas e 17 chaves estrangeiras](modelo-logico.png)
 
@@ -44,7 +44,7 @@ O JSON ilustra o contrato **proposto**: nenhum controller o entrega ainda. Uma l
 | `usuarios` (`Usuario`) | `id`, `nome`, `email`, `senha_hash`, `ativo` | Conta local; `senha_hash` pode ser nulo para conta Google. Nunca retornar o hash. |
 | `identidades_externas` (`IdentidadeExterna`) | `id`, `usuario_id`, `provedor`, `id_no_provedor` | Reserva o vínculo estável do login Google à conta; a integração OAuth ainda falta. |
 | `perfis` (`Perfil`) | `id`, `codigo`, `descricao` | Perfis iniciais `LEITOR` e `ADMIN`. |
-| `permissoes` (`Permissao`) | `id`, `codigo`, `descricao` | 25 ações iniciais; códigos no seed. |
+| `permissoes` (`Permissao`) | `id`, `codigo`, `descricao` | 26 ações iniciais; códigos no seed. |
 | `usuario_perfis` (`UsuarioPerfil`) | `usuario_id`, `perfil_id` | Perfis atribuídos a cada usuário. |
 | `perfil_permissoes` (`PerfilPermissao`) | `perfil_id`, `permissao_id` | Ações permitidas para cada perfil. |
 | `progresso` (`Progresso`) | `usuario_id`, `obra_id`, `status`, `concluido_em`, `atualizado_em` | Um estado por usuário e obra: `QUERO_VER`, `ASSISTINDO` ou `CONCLUIDO`. |

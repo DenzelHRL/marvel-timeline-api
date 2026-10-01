@@ -8,31 +8,26 @@ Este repositório contém o **backend do Trabalho P1** de Programação Web. A i
 
 - Banco PostgreSQL modelado em 16 tabelas com TypeORM e duas migrations versionadas, incluindo comentários por obra.
 - Seed repetível: duas trilhas (curta como principal), 34 obras, quatro temporadas, 26 permissões e dois perfis (`LEITOR`, `ADMIN`). Personagens e acontecimentos foram preparados apenas para quatro obras, o suficiente para demonstrar o fluxo de spoilers. Com contas fictícias habilitadas, há dois comentários de exemplo.
-- A Action **Banco PostgreSQL** valida build, lint, teste inicial, migrations, seed repetido e verificação do esquema em PostgreSQL 16 temporário. Isso não substitui a criação de uma instância remota para o grupo.
+- A Action **Banco PostgreSQL** valida build, lint, teste inicial, migrations, seed repetido e verificação do esquema em PostgreSQL 16 temporário. Cada integrante usa um banco local próprio; não é necessário criar uma instância remota para começar.
 - A API ainda contém somente a rota de teste do Nest. Autenticação, endpoints do domínio, Swagger e as regras de negócio da P1 **ainda não foram implementados**.
 
-## Como executar
+## Comece aqui
 
-Requisitos: Node.js 24.15+, npm e PostgreSQL 13+ (ou Docker Desktop).
+**Todo integrante deve seguir o [guia de preparação do ambiente](docs/ambiente-equipe.md).** Ele inclui clonagem, configuração individual, PostgreSQL com Docker ou instalado no Windows, migrations, seeds, validação e solução de erros.
 
-```bash
-cd backend
+Padrão do grupo: **Node.js 24 (24.15+) + PostgreSQL 16**. Cada pessoa terá seu próprio banco local e usará os mesmos arquivos versionados para criar tabelas e dados iniciais. Mudanças em um banco local não aparecem automaticamente nos outros. A hospedagem fica para a etapa final.
+
+Depois de preparar o banco e o `backend/.env`, execute dentro de `backend`, uma linha por vez:
+
+```sh
 npm ci
-```
-
-No Windows (Prompt de Comando), prepare o banco local:
-
-```bat
-copy .env.example .env
-docker compose up -d
 npm run db:migrate
 npm run db:seed
+npm run db:verify
 npm run start:dev
 ```
 
-Se não usar Docker, crie no seu PostgreSQL um usuário e um banco de dados, depois ajuste `backend/.env` com seus dados e execute os mesmos comandos `db:migrate` e `db:seed`. A rota inicial responde em `http://localhost:3000` somente após a conexão com o banco. `synchronize` permanece desligado: mudanças de estrutura devem entrar em novas migrations.
-
-Para incluir **contas fictícias** de ADMIN e LEITOR, altere `SEED_DEMO_USERS=true` no `.env` e defina `DEMO_ADMIN_PASSWORD` e `DEMO_READER_PASSWORD` (mínimo 8 caracteres); execute `npm run db:seed` novamente. O arquivo `.env` não deve ir para o Git. O seed não cria identidades Google, não altera a senha de contas existentes e é bloqueado em produção.
+Ambiente pronto = verificação com **16/16 tabelas**, Nest iniciado sem erro e [GET /](http://localhost:3000) respondendo **Hello World!**. Cada colega precisa confirmar esses resultados no próprio computador. As contas de demonstração são opcionais e estão explicadas no guia.
 
 **Onde está cada coisa:** `backend/src/database/entities/` descreve as 16 tabelas para o TypeORM; `migrations/` cria suas restrições e relações no PostgreSQL; `seeds/` prepara os dados; `data-source.ts` fornece a mesma conexão ao Nest e aos comandos de banco. O próximo módulo pode usar uma entidade com `TypeOrmModule.forFeature([Obra])` e implementá-la em controller, service e repository. Cada listagem precisará de paginação e dois filtros documentados no Swagger.
 
@@ -40,13 +35,13 @@ Comentários ficam ligados à obra e ao autor: a mesma obra pode aparecer nas du
 
 O recorte para começar a API está em [Escopo inicial](docs/escopo-inicial.md).
 
-Para trabalhar em grupo: [guia das 16 tabelas e exemplo de rota](docs/modelo-banco.md), [matriz proposta de 78 endpoints](docs/matriz-endpoints.md) e [passo a passo para banco local/remoto e futuro deploy da API](docs/publicar-banco.md). A matriz é planejamento: **os 60 endpoints ainda não estão implementados**.
+Para trabalhar em grupo: [guia das 16 tabelas e exemplo de rota](docs/modelo-banco.md), [matriz proposta de 78 endpoints](docs/matriz-endpoints.md) e [guia de publicação futura da API e do banco](docs/publicar-banco.md). A matriz é planejamento: **os 60 endpoints ainda não estão implementados**.
 
 O [modelo lógico em imagem](docs/modelo-logico.png) mostra os campos, chaves e relações do esquema preparado; o [SVG](docs/modelo-logico.svg) permite ampliar sem perder nitidez.
 
 ## Requisitos da P1
 
-Entrega até **16/10/2026**. O backend deverá incluir pelo menos 60 endpoints funcionais, Swagger/OpenAPI, autenticação, perfis e permissões, paginação e dois filtros por campo em cada listagem, migrations, seeds e pelo menos 10 regras de negócio do domínio. As regras serão entregues em PDF junto com o link do repositório.
+Entrega até **16/10/2026**. O backend deverá incluir pelo menos 60 endpoints funcionais, Swagger/OpenAPI, autenticação, perfis e permissões, paginação e pelo menos dois filtros por campos da tabela em cada listagem, migrations, seeds e pelo menos 10 regras de negócio do domínio. As regras serão entregues em PDF junto com o link do repositório.
 
 Cada integrante deverá ter commits que comprovem sua participação e gravar um vídeo individual de pelo menos 10 minutos explicando e demonstrando sua parte.
 
