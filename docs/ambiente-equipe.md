@@ -4,7 +4,7 @@
 
 ## Como vamos trabalhar
 
-Cada pessoa terá **um banco local independente**. Compartilhamos pelo GitHub o código, as migrations (estrutura) e os seeds (dados iniciais). Não é necessário acessar o computador do Denzel nem criar uma conta no Render para começar.
+Cada pessoa terá **um banco local independente**. Compartilhamos pelo GitHub o código, as migrations (estrutura) e os seeds (dados iniciais). Não é necessário criar uma conta no Render para começar.
 
 | Item | Como funciona |
 | --- | --- |
