@@ -1,6 +1,6 @@
 # Backend — Marvel Timeline API
 
-O guia de instalação e o estado do trabalho estão no [README principal](../README.md).
+**Primeira execução? Siga o [guia de preparação da equipe](../docs/ambiente-equipe.md)** para configurar seu banco com Docker ou PostgreSQL instalado no Windows. O estado do trabalho está no [README principal](../README.md).
 
 ## Banco de dados
 
