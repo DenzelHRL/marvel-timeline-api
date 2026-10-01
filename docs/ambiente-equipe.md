@@ -187,9 +187,9 @@ Não precisa reinstalar pacotes nem executar seeds a cada abertura do projeto. P
 
 ## 7. Começar os endpoints
 
-A divisão entre integrantes será combinada pelo grupo. Antes de iniciar um módulo:
+Antes de iniciar um módulo:
 
-1. Consulte a [matriz proposta de endpoints](matriz-endpoints.md) e combine quais rotas serão suas.
+1. Consulte a [matriz proposta de endpoints](matriz-endpoints.md)
 2. Consulte o [modelo do banco e entidades](modelo-banco.md) e o [escopo inicial](escopo-inicial.md).
 3. Na raiz do clone, com a `main` atualizada e sem alterações pendentes, crie sua branch:
 
@@ -203,7 +203,7 @@ Use as entidades existentes em `backend/src/database/entities/`, mantendo módul
 
 Em cada entrega, inclua a validação de entrada, regras de negócio, paginação e ao menos dois filtros por campos da tabela nas listagens, além da documentação Swagger quando integrada. Combine os contratos de autenticação e permissões com o responsável por essa parte.
 
-Mudanças de estrutura entram em **novas migrations** e nas entidades correspondentes. O projeto usa uma lista explícita de migrations em `backend/src/database/data-source.ts`: importe e acrescente a nova classe nessa lista. Não edite uma migration já aplicada pelos colegas nem ative `synchronize`. Ao adicionar entidades, atualize também o índice `entities/index.ts`. Ajuste seeds, verificação e modelo do banco quando o esquema ou os dados mínimos mudarem.
+Mudanças de estrutura entram em **novas migrations** e nas entidades correspondentes. O projeto usa uma lista explícita de migrations em `backend/src/database/data-source.ts`: importe e acrescente a nova classe nessa lista. Não edite uma migration já aplicada por alguém nem ative `synchronize`. Ao adicionar entidades, atualize também o índice `entities/index.ts`. Ajuste seeds, verificação e modelo do banco quando o esquema ou os dados mínimos mudarem.
 
 Faça commits na sua conta, envie a branch e abra um PR para `main`. Informe as rotas entregues e como testá-las. Confirme os checks do PR antes da integração. A divisão de tarefas e os contratos de resposta ainda precisam ser acordados pelo grupo.
 
