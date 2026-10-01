@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${DB_USER:-marvel}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-marvel_dev_only}
+      POSTGRES_DB: ${DB_NAME:-marvel_timeline}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - marvel_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-marvel} -d ${DB_NAME:-marvel_timeline}"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  marvel_postgres_data:
