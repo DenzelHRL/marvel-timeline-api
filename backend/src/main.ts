@@ -1,10 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger' 
-
+import {ValidationPipe} from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  app.useGlobalPipes(new ValidationPipe({transform: true, whitelist: true}));
   const config = new DocumentBuilder()
     .setTitle('Marvel Timeline API')
     .setDescription('API para explorar a linha do tempo do Universo Cinematográfico Marvel, com controle de spoilers, trilhas, personagens e acontecimentos.')
