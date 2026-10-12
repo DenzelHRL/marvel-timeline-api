@@ -1,117 +1,107 @@
-# Plano de implementação dos bônus
+# Plano dos bônus
 
-**Estado: planejamento; nenhuma das quatro implementações está concluída por este documento.**
+Implementar quatro melhorias: **cache, CQRS, filas e logs com auditoria**. A meta é 1,00 ponto, com cada implementação funcionando e demonstrada.
 
-O grupo escolheu quatro implementações adicionais: cache, CQRS, filas e logs estruturados com auditoria. O enunciado concede 0,25 por implementação adicional de performance ou resiliência; a meta é 1,00 ponto com as quatro implementadas e demonstradas. Logs e auditoria foram definidos como o quarto bônus conforme a orientação confirmada por Denzel.
+Primeiro, concluir as funcionalidades que cada melhoria vai utilizar. Não é necessário esperar todos os endpoints ficarem prontos.
 
-Os requisitos obrigatórios da P1 têm prioridade. O plano pode começar quando os endpoints envolvidos estiverem funcionando, sem esperar todas as rotas do projeto. Os responsáveis pelos bônus ainda serão definidos pelo grupo, sem atribuição automática ao responsável pelo bloco 3.
+## Onde cada bônus entra
 
-## Visão geral
+Os números são os da [matriz de endpoints](matriz-endpoints.md).
 
-Os números correspondem à [matriz de endpoints](matriz-endpoints.md).
+| Bônus | Endpoints envolvidos | O que fazer | Quem precisa alinhar |
+| --- | --- | --- | --- |
+| Cache | Trilhas (31), etapas (33) e mapa (58) | Reutilizar respostas de consultas repetidas e atualizar o cache quando os dados mudarem | Blocos 2 e 3 |
+| CQRS | Mapa (58) e criação/alteração de trilhas e etapas (34–40) | Separar o processamento de consultas e alterações; preparar os dados do mapa para leitura | Blocos 2 e 3; bloco 5 para manter o cálculo de progresso coerente |
+| Filas | Alterações de obras, trilhas e etapas que afetam o mapa | Atualizar os dados preparados do mapa em segundo plano | Blocos 2 e 3 |
+| Logs e auditoria | Requisições, erros, publicação (25, 30, 36), reordenação (40), moderação (66–67) e mudanças de acesso | Registrar falhas e ações administrativas para identificar o que aconteceu | Bloco 1 para identificar o usuário; demais blocos para registrar as ações |
 
-| Bônus | Onde entra | Implementação proposta | Benefício a demonstrar | Estado |
-| --- | --- | --- | --- | --- |
-| Cache | GET /trilhas (31), etapas (33) e mapa (58) | Respostas públicas armazenadas no Redis, com chave por consulta, expiração e invalidação após mudanças | Reduzir consultas repetidas ao banco e tempo de resposta | Planejado |
-| CQRS | Consultas do mapa (58) e comandos de trilhas/etapas (34–40) | Separar handlers de leitura/escrita e preparar um modelo de leitura do mapa | Consultas especializadas que evitem reconstruir relacionamentos em cada requisição | Planejado |
-| Filas | Atualização do modelo de leitura após alterações de obras, trilhas e etapas | Fila persistente no Redis com produtor, worker, tentativas limitadas e tratamento de falhas | Processamento desacoplado, recuperação após interrupções e tratamento de picos | Planejado |
-| Logs estruturados e auditoria | Infraestrutura comum; publicação (25, 30, 36), reordenação (40), moderação (66–67) e alterações de acesso | Logs de requisição/erro e auditoria das ações administrativas | Rastreabilidade de alterações e diagnóstico de falhas | Planejado |
+Os responsáveis por implementar os bônus podem ser diferentes dos responsáveis pelos endpoints. Definir a divisão antes de começar.
 
 ## 1. Cache
 
-**Integração:** módulo de trilhas/exploração e infraestrutura comum de cache.
+**Objetivo:** evitar que a mesma consulta busque e monte os mesmos dados no PostgreSQL repetidamente.
 
-- Adicionar uma camada de cache às consultas públicas já concluídas, usando o fluxo de interceptor apresentado na disciplina.
-- A chave precisa distinguir rota, slug, filtros, paginação e opção de spoilers, quando aplicável. Não usar uma chave única para todas as trilhas.
-- Definir tempo de expiração e uma versão do catálogo/trilha para evitar reutilizar respostas inválidas.
-- Invalidar os dados afetados depois que uma alteração no PostgreSQL for confirmada: metadados/publicação de obras e trilhas, inclusão/edição/remoção/reordenação de etapas.
-- Se o cache estiver indisponível, consultar o PostgreSQL e manter a resposta correta.
-- Não armazenar tokens, senhas ou respostas pessoais nessa primeira implementação.
-- Respostas públicas devem continuar respeitando publicação e spoilers.
+**Como fazer:**
 
-**Alinhamento:** blocos 2 e 3, pois alterações de obras também afetam o mapa.
+1. Configurar Redis e o serviço de cache.
+2. Antes de consultar trilhas, etapas ou mapa, verificar se existe uma resposta válida no cache.
+3. Se existir, retornar essa resposta. Se não existir, consultar o banco, guardar o resultado por um período definido e responder.
+4. Usar uma chave que identifique a rota, a trilha, os filtros, a página e a opção de spoilers.
+5. Após uma alteração confirmada em obras, trilhas ou etapas, invalidar as respostas afetadas. Usar uma versão dos dados para impedir que uma consulta antiga recoloque uma resposta desatualizada no cache.
+6. Se o Redis estiver indisponível, consultar o PostgreSQL normalmente.
 
-**Critério de conclusão:** demonstrar cache miss e hit, redução das consultas repetidas ao banco, atualização após uma edição e funcionamento sem o cache. Medir com a mesma consulta e ambiente; não inventar ganhos numéricos.
+**Teste:** repetir uma consulta e mostrar que a segunda usa o cache. Alterar os dados e confirmar que a próxima resposta está atualizada. Verificar também o funcionamento sem Redis.
 
 ## 2. CQRS
 
-**Integração:** leitura e escrita de trilhas/etapas, com foco em GET /explorar/trilhas/:slug/mapa.
+**Objetivo:** separar as consultas das operações que alteram dados e facilitar a leitura do mapa.
 
-Os slides separam leitura e escrita no nível da aplicação e apresentam o pacote `@nestjs/cqrs`. A proposta é implementar essa separação com comandos e consultas, usando handlers, e acrescentar um modelo de leitura otimizado para o mapa.
+**Como fazer:**
 
-- Manter as tabelas normalizadas como fonte de verdade para as alterações.
-- Criar comandos para as operações escolhidas de escrita e consultas próprias para leitura.
-- Preparar uma projeção de leitura com as etapas ordenadas e os dados das obras necessários ao mapa.
-- Uma projeção é um conjunto de dados preparado para leitura; não deve substituir as regras de negócio das tabelas originais.
-- Registrar a versão da projeção para saber se ela corresponde ao catálogo/trilha atuais.
-- A primeira proposta usa o mesmo PostgreSQL, com estruturas de leitura e escrita separadas. CQRS não exige obrigatoriamente dois servidores de banco.
-- Separar nomes ou classes, sozinho, não comprova melhoria de performance. Comparar a consulta original com a consulta da projeção.
-- Uma obra arquivada ou conteúdo com spoiler não pode continuar exposto por uma projeção antiga.
+1. Criar handlers de consultas para leitura e handlers de comandos para criação, edição, publicação, remoção e reordenação.
+2. Usar a integração CQRS do Nest para encaminhar cada operação ao handler correspondente.
+3. Manter as tabelas atuais como a fonte dos dados oficiais.
+4. Criar uma estrutura de leitura com os dados necessários ao mapa: trilha, etapas ordenadas e informações públicas das obras. Essa estrutura é chamada de projeção.
+5. Fazer o endpoint do mapa consultar essa projeção, evitando montar todos os relacionamentos novamente a cada requisição.
+6. Atualizar a projeção quando os dados originais mudarem e registrar sua versão.
 
-**Alinhamento:** blocos 2 e 3; compartilhar com o bloco 5 a definição de etapas válidas para que o resumo de progresso continue coerente.
+Essa separação começa no código da aplicação. A projeção pode ficar no mesmo PostgreSQL; não é necessário criar outro servidor de banco. Os controllers e caminhos dos endpoints podem permanecer iguais.
 
-**Critério de conclusão:** demonstrar comando alterando a fonte de verdade, atualização do modelo de leitura, consulta pela projeção e tratamento explícito de dados desatualizados.
+**Teste:** alterar uma trilha, atualizar a projeção e consultar o mapa. Comparar a consulta original com a nova para demonstrar o benefício.
 
 ## 3. Filas
 
-**Integração:** serviço produtor das alterações de catálogo/trilhas e worker de reconstrução das projeções.
+**Objetivo:** reconstruir os dados de leitura do mapa em segundo plano e recuperar tarefas após falhas temporárias.
 
-- Usar a fila baseada em Redis: Bull com a integração Nest correspondente. Fixar versões compatíveis com o projeto na implementação.
-- Depois de uma alteração confirmada, registrar uma tarefa para reconstruir a projeção das trilhas afetadas.
-- Para evitar perda de uma atualização entre o commit no PostgreSQL e o envio ao Redis, prever um registro pendente durável, como outbox gravada na mesma transação, e encaminhamento posterior à fila.
-- O worker processa a tarefa fora da requisição HTTP.
-- Identificar a trilha e a versão dos dados na tarefa. O processamento deve tolerar repetição e impedir que uma tarefa antiga substitua uma projeção mais nova.
-- Definir número máximo de tentativas, intervalo entre tentativas e registro das falhas.
-- A indisponibilidade do worker não desfaz uma alteração já confirmada. A API deve tratar o mapa pendente/desatualizado de forma explícita, usando a fonte de verdade como alternativa quando necessário.
-- Configurar Redis e worker no ambiente da equipe e documentar como iniciá-los.
+**Como fazer:**
 
-**Alinhamento:** blocos 2 e 3, além do responsável pela infraestrutura. Combinar quais alterações disparam tarefas e como informar/atender uma consulta enquanto a reconstrução está pendente.
+1. Configurar uma fila persistente com Bull e Redis.
+2. Quando uma obra, trilha ou etapa mudar, registrar uma tarefa de atualização das trilhas afetadas.
+3. Guardar no PostgreSQL um registro pendente junto com a alteração, na mesma transação. Um processo encaminha esse registro à fila, evitando perder a tarefa se o Redis estiver indisponível.
+4. Criar um worker, que é o processo responsável por consumir a tarefa e reconstruir a projeção.
+5. Configurar tentativas limitadas com intervalo entre elas e registrar tarefas que falharem.
+6. Permitir que uma tarefa seja repetida sem duplicar ou corromper os dados. Impedir que uma tarefa antiga substitua uma versão mais recente.
+7. Enquanto a projeção estiver desatualizada, usar os dados atuais do PostgreSQL como alternativa para responder corretamente.
 
-**Critério de conclusão:** demonstrar tarefa persistente, worker interrompido e retomado, falha temporária com nova tentativa e repetição da tarefa sem corromper dados.
+**Teste:** interromper o worker, criar uma tarefa e retomá-lo. Demonstrar que a tarefa foi preservada e processada. Simular uma falha temporária e verificar a nova tentativa.
 
-## 4. Logs estruturados e auditoria
+## 4. Logs e auditoria
 
-**Integração:** infraestrutura comum de logs, interceptor/filtro de erros e serviços administrativos.
+**Objetivo:** localizar erros e identificar quem realizou alterações administrativas.
 
-- Registrar identificador da requisição, método, rota, duração, status e horário.
-- Registrar erros com contexto suficiente para diagnóstico.
-- Nas ações administrativas, registrar autor autenticado, ação, entidade afetada, horário e resultado. Usar o padrão de identidade definido pelo bloco 1.
-- Auditar alterações relevantes: publicação/arquivamento, reordenação, moderação e mudanças de perfis/permissões.
-- Diferenciar ações concluídas, rejeitadas e falhas. Registrar uma alteração como concluída apenas depois da confirmação no banco.
-- Evitar senhas, JWTs, segredos do .env e corpos completos que exponham dados pessoais. Usar lista explícita de campos permitidos.
-- Definir armazenamento, rotação/retenção e controle de acesso aos registros.
-- Logs não são backup nem substituem transações; o benefício demonstrado aqui é rastreabilidade e diagnóstico operacional.
+**Como fazer:**
 
-**Alinhamento:** bloco 1 para identidade autenticada; blocos 2–5 para integrar as ações relevantes.
+1. Configurar Winston para produzir logs estruturados.
+2. Dar um identificador a cada requisição e registrar método, rota, horário, duração e status.
+3. Registrar erros com esse identificador para relacionar a falha à requisição.
+4. Nas ações administrativas, registrar usuário autenticado, ação, registro afetado, horário e resultado.
+5. Distinguir ações concluídas, rejeitadas e falhas. Registrar sucesso somente depois da confirmação no banco.
+6. Definir armazenamento e rotação dos logs, prazo de retenção e quem pode consultá-los.
+7. Registrar apenas os campos necessários; excluir senhas, tokens, segredos e dados pessoais desnecessários.
 
-**Critério de conclusão:** provocar uma falha, rastreá-la pelo identificador da requisição e demonstrar uma ação administrativa auditada, sem expor credenciais.
+**Teste:** executar uma alteração administrativa e localizar seu registro. Provocar um erro e rastrear a requisição que falhou.
 
-## Ordem de trabalho e dependências
+## Ordem de implementação
 
-1. Concluir os endpoints necessários: DTOs, filtros/paginação, regras, Swagger e guards das operações protegidas.
-2. Definir responsáveis e acordos compartilhados: Redis, identidade autenticada, publicação/spoilers e versões de dados.
-3. Implementar cache sobre consultas prontas.
-4. Implementar CQRS e a projeção do mapa.
-5. Implementar a fila persistente para reconstrução da projeção.
-6. Implementar logs e auditoria em paralelo após a definição da identidade e das ações administrativas.
-7. Integrar e testar as quatro implementações juntas.
+1. Concluir e testar os endpoints envolvidos, com validação, Swagger e proteção das rotas administrativas.
+2. Definir responsáveis, configuração do Redis e formato das tarefas e dos registros.
+3. Adicionar cache às consultas prontas.
+4. Separar leitura e escrita com CQRS e criar a projeção do mapa.
+5. Adicionar a fila para atualizar a projeção.
+6. Integrar logs e auditoria. Essa parte pode avançar em paralelo quando a identificação do usuário estiver definida.
+7. Testar tudo integrado e preparar a demonstração.
 
-O cache pode começar sem todas as rotas do projeto. A fila depende da definição do trabalho de reconstrução. Os logs podem avançar sem aguardar cache/CQRS/filas. Cada implementação pode ser feita por um integrante diferente; trabalhar nos endpoints do bloco 3 não atribui todos os bônus à mesma pessoa.
+Cache, CQRS e filas devem manter as regras de publicação e spoilers. Uma resposta antiga não pode expor uma obra arquivada ou revelar conteúdo que deveria estar oculto.
 
-## Entrega de cada bônus
+## O que entregar
 
-- Branch própria, commits individuais e PR com o benefício descrito.
-- Dependências/configuração compartilhadas coordenadas com a equipe.
-- Migrations versionadas para novas estruturas, sem alterar migrations já aplicadas.
-- Documentação de ambiente e Swagger atualizada quando o comportamento HTTP mudar.
-- Evidências reproduzíveis de funcionamento normal e de falha.
-- Demonstração no vídeo de quem implementou, distinguindo planejamento de código entregue.
-- Atualizar o estado da tabela somente após implementação e verificação.
+Para cada bônus: implementação em branch própria, commits individuais, PR, instruções de execução e demonstração do benefício.
 
-## Fontes da disciplina
+Coordenar mudanças nas dependências e no ambiente. Se houver novas tabelas, criar migrations. Documentar Redis e worker para que qualquer integrante consiga executar a API.
 
-- [Slides 8 — Aprimorando nossa API: CQRS, queues e caching](https://github.com/profdiegocbcastro/programacao-web/blob/main/Backend/_Slides/8%20-%20Aprimorando%20nossa%20API.pdf).
-- [Exemplo de Logs e Auditoria](https://github.com/profdiegocbcastro/programacao-web/tree/main/Backend/Logs_e_Auditoria).
-- [README do exemplo de logs](https://github.com/profdiegocbcastro/programacao-web/blob/main/Backend/Logs_e_Auditoria/README.md).
-
-
+| Implementação | Responsável | Estado |
+| --- | --- | --- |
+| Cache | A definir | Planejado |
+| CQRS | A definir | Planejado |
+| Filas | A definir | Planejado |
+| Logs e auditoria | A definir | Planejado |
