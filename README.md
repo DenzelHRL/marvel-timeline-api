@@ -45,6 +45,10 @@ Entrega até **16/10/2026**. O backend deverá incluir pelo menos 60 endpoints f
 
 Cada integrante deverá ter commits que comprovem sua participação e gravar um vídeo individual de pelo menos 10 minutos explicando e demonstrando sua parte.
 
+## Bônus planejados
+
+O [plano de implementação dos bônus](docs/plano-bonus.md) mapeia cache, CQRS, filas e logs estruturados com auditoria: endpoints envolvidos, integração entre blocos, ordem de trabalho e critérios de demonstração. As quatro implementações ainda estão planejadas; os requisitos obrigatórios da P1 têm prioridade.
+
 ## Equipe
 
 Denzel, Daniel, Matheus, Pedro e Guilherme.
