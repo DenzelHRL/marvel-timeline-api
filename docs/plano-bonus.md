@@ -56,7 +56,7 @@ Os slides separam leitura e escrita no nível da aplicação e apresentam o paco
 
 **Integração:** serviço produtor das alterações de catálogo/trilhas e worker de reconstrução das projeções.
 
-- Usar a fila baseada em Redis apresentada na disciplina: Bull com a integração Nest correspondente. Fixar versões compatíveis com o projeto na implementação.
+- Usar a fila baseada em Redis: Bull com a integração Nest correspondente. Fixar versões compatíveis com o projeto na implementação.
 - Depois de uma alteração confirmada, registrar uma tarefa para reconstruir a projeção das trilhas afetadas.
 - Para evitar perda de uma atualização entre o commit no PostgreSQL e o envio ao Redis, prever um registro pendente durável, como outbox gravada na mesma transação, e encaminhamento posterior à fila.
 - O worker processa a tarefa fora da requisição HTTP.
@@ -73,7 +73,6 @@ Os slides separam leitura e escrita no nível da aplicação e apresentam o paco
 
 **Integração:** infraestrutura comum de logs, interceptor/filtro de erros e serviços administrativos.
 
-- Seguir o exemplo de Winston do professor e adaptar a integração ao Nest.
 - Registrar identificador da requisição, método, rota, duração, status e horário.
 - Registrar erros com contexto suficiente para diagnóstico.
 - Nas ações administrativas, registrar autor autenticado, ação, entidade afetada, horário e resultado. Usar o padrão de identidade definido pelo bloco 1.
@@ -114,10 +113,5 @@ O cache pode começar sem todas as rotas do projeto. A fila depende da definiç�
 - [Slides 8 — Aprimorando nossa API: CQRS, queues e caching](https://github.com/profdiegocbcastro/programacao-web/blob/main/Backend/_Slides/8%20-%20Aprimorando%20nossa%20API.pdf).
 - [Exemplo de Logs e Auditoria](https://github.com/profdiegocbcastro/programacao-web/tree/main/Backend/Logs_e_Auditoria).
 - [README do exemplo de logs](https://github.com/profdiegocbcastro/programacao-web/blob/main/Backend/Logs_e_Auditoria/README.md).
-- Enunciado atual da P1 fornecido pelo grupo: 0,25 por implementação adicional de performance ou resiliência.
 
-## Situação do GET /trilhas
 
-A consulta inicial de trilhas publicadas é uma etapa de desenvolvimento. Para concluir o endpoint 31, ainda são necessários filtros por nome e slug, paginação com metadados, validação por DTO, Swagger e verificação dos cenários. Um commit pode registrar essa etapa inicial sem declarar o endpoint concluído.
-
-Este plano documenta as próximas implementações; não aplica Redis, CQRS, filas, logs ou mudanças de schema por si só.
