@@ -14,7 +14,7 @@ export class CriarPersonagemDto{
     @IsString()
     @IsOptional()
     @MaxLength(160)
-    descricao?: string | null;
+    descricaoPublica?: string | null;
     
     @IsOptional()
     @IsUrl({protocols: ['http', 'https'], require_protocol: true}, { message: 'A URL da imagem deve ser válida e começar com http:// ou https://.' })
