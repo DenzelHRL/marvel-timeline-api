@@ -20,6 +20,8 @@ import {
     ListaComentariosRespostaDTO,
     CriarComentarioDTO,
     AtualizarComentarioDTO,
+    ConsultarMeusComentariosDTO,
+    ModerarComentarioDTO
 } from './dto';
 
 
@@ -129,20 +131,70 @@ export class ComentariosController {
         summary: "Remover o próprio comentário (Remoção Lógica)",
         description: "Marca o comentário como REMOVIDO para que não apareça na leitura pública."
     })
-    @ApiParam({ name: 'id', description: 'UUID do comentário' })
+    @ApiParam({ name: "id", description: "UUID do comentário"})
     @ApiHeader({
-        name: 'x-usuario-id',
+        name: "x-usuario-id",
         required: true,
-        description: 'UUID do autor do comentário',
+        description: "UUID do autor do comentário",
     })
-    @ApiResponse({status: 200, description: 'Comentário removido com sucesso.'})
-    @ApiResponse({status: 401, description: 'Usuário não identificado.'})
-    @ApiResponse({status: 403, description: 'Apenas o autor pode remover.'})
-    @ApiResponse({status: 404, description: 'Comentário não encontrado.'})
+    @ApiResponse({status: 200, description: "Comentário removido com sucesso."})
+    @ApiResponse({status: 401, description: "Usuário não identificado."})
+    @ApiResponse({status: 403, description: "Apenas o autor pode remover."})
+    @ApiResponse({status: 404, description: "Comentário não encontrado."})
     async remover(
         @Param("id", ParseUUIDPipe) id: string,
         @UsuarioId() usuarioId: string
     ){
         return this.comentariosService.remover(id, usuarioId);
+    }
+
+    // Endpoint: 65 -> GET /usuarios/me/comentarios
+    @Get("usuarios/me/comentarios")
+    @ApiOperation({
+        summary: "Consultar histórico de comentários do próprio autor",
+        description: "Retorna todos os comentários postados pelo usuário logado com paginação e filtros.",
+    })
+    @ApiHeader({
+        name: "x-usuario-id",
+        required: true,
+        description: "UUID do usuário autenticado",
+    })
+    @ApiResponse({ status: 200, description: "Histórico retornado com sucesso" })
+    @ApiResponse({ status: 401, description: "Usuário não identificado" })
+    async listarMeusComentarios(
+        @UsuarioId() usuarioId: string,
+        @Query() filtros: ConsultarMeusComentariosDTO,
+    ) {
+        return this.comentariosService.listarMeusComentarios(usuarioId, filtros);
+    }
+
+    // Endpoint: 66 -> GET /admin/comentarios
+    @Get("admin/comentarios")
+    @ApiOperation({
+        summary: "Fila de moderação de comentários (Admin)",
+        description: "Lista comentários de toda a plataforma para fins de moderação, com paginação e filtros.",
+    })
+    @ApiResponse({ status: 200, description: "Fila de moderação retornada com sucesso" })
+    async listarFilaModeracao(
+        @Query() filtros: ConsultarMeusComentariosDTO,
+    ) {
+        return this.comentariosService.listarFilaModeracao(filtros);
+    }
+
+    // Endpoint: 67 -> PATCH /admin/comentarios/:id/moderacao
+    @Patch("admin/comentarios/:id/moderacao")
+    @ApiOperation({
+        summary: "Moderar comentário (Admin)",
+        description: "Altera o status de um comentário para OCULTO ou PUBLICADO (Regra R09).",
+    })
+    @ApiParam({ name: "id", description: "UUID do comentário a ser moderado" })
+    @ApiResponse({ status: 200, description: "Status de moderação atualizado com sucesso" })
+    @ApiResponse({ status: 400, description: "Status inválido" })
+    @ApiResponse({ status: 404, description: "Comentário não encontrado" })
+    async moderar(
+        @Param("id", ParseUUIDPipe) id: string,
+        @Body() dto: ModerarComentarioDTO,
+    ) {
+        return this.comentariosService.moderar(id, dto);
     }
 }

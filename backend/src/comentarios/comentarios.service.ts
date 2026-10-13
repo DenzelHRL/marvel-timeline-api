@@ -9,7 +9,9 @@ import{Comentario, Obra, Usuario} from '../database/entities';
 import{
    ConsultarComentariosDTO,
    CriarComentarioDTO,
-   AtualizarComentarioDTO 
+   AtualizarComentarioDTO, 
+   ConsultarMeusComentariosDTO,
+   ModerarComentarioDTO
 }
 from './dto';
 
@@ -227,5 +229,97 @@ export class ComentariosService{
 
         return{mensagem: "Comentário removido com sucesso."};
     }
+
+    // Endpoint: 65 -> GET /usuarios/me/comentarios (Hitórico do autor)
+    async listarMeusComentarios(usuarioId: string, filtros: ConsultarMeusComentariosDTO){
+        const {status, contemSpoiler, pagina = 1, limite = 20} = filtros;
+
+        //Propriedade Filtro: status
+        const query = this.comentarioRepo
+            .createQueryBuilder("c")
+            .where("c.usuario_id = :usuarioId", {usuarioId});
+
+        //Propriedade Filtro: contemSpoiler
+        if(status){
+            query.andWhere("c.status = :status", {status});
+        }
+
+        query.orderBy("c.criado_em", 'DESC');
+
+        const total = await query.getCount();
+        const dados = await query
+            .skip((pagina - 1) * limite)
+            .take(limite)
+            .getMany();
+
+        return{
+            dados, 
+            meta: {
+                pagina,
+                limite,
+                total,
+                totalPaginas: Math.ceil(total/limite)
+            }
+        };
+    }
+
+    // Endpoint: 66 -> GET /admin/comentarios (Fila de moderação)
+    async listarFilaModeracao(filtros: ConsultarMeusComentariosDTO){
+        const {status, contemSpoiler, pagina = 1, limite = 20} = filtros;
+        
+        const query = this.comentarioRepo.createQueryBuilder("c");
+
+        //Propriedade Filtro: status
+        if(status){
+            query.andWhere("c.status = :status", {status});
+        }
+
+        //Propriedade Filtro: contemSpoiler
+        if(typeof contemSpoiler === 'boolean'){
+            query.andWhere("c.contem_spoiler = :contemSpoiler", {contemSpoiler});
+        }
+
+        query.orderBy("c.criado_em", "DESC");
+
+        const total = await query.getCount();
+        const dados = await query
+            .skip((pagina - 1) * limite)
+            .take(limite)
+            .getMany();
+        
+        return {
+            dados,
+            meta:{
+                pagina,
+                limite,
+                total,
+                totalPaginas: Math.ceil(total/limite)
+            }
+        };
+    }   
+    
+    // Endpoint: 67 -> PATCH /admin/comentarios/:id/moderacao
+    async moderar(id: string, dto: ModerarComentarioDTO){
+        const comentario = await this.comentarioRepo.findOne({where: {id}});
+
+        if(!comentario){
+            throw new NotFoundException("Comentário não encontrado.");
+        }
+
+        comentario.status = dto.status;
+        const atualizado = await this.comentarioRepo.save(comentario);
+
+        return {
+            id: atualizado.id,
+            obraId: atualizado.obraId,
+            usuarioId: atualizado.usuarioId,
+            texto: atualizado.texto,
+            contemSpoiler: atualizado.contemSpoiler,
+            status: atualizado.status,
+            atualizadoEm: atualizado.atualizadoEm
+        };
+    }
+
+
 
 }
