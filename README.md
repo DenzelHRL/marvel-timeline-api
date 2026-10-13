@@ -9,7 +9,7 @@ Este repositório contém o **backend do Trabalho P1** de Programação Web. A i
 - Banco PostgreSQL modelado em 16 tabelas com TypeORM e duas migrations versionadas, incluindo comentários por obra.
 - Seed repetível: duas trilhas (curta como principal), 34 obras, quatro temporadas, 26 permissões e dois perfis (`LEITOR`, `ADMIN`). Personagens e acontecimentos foram preparados apenas para quatro obras, o suficiente para demonstrar o fluxo de spoilers. Com contas fictícias habilitadas, há dois comentários de exemplo.
 - A Action **Banco PostgreSQL** valida build, lint, teste inicial, migrations, seed repetido e verificação do esquema em PostgreSQL 16 temporário. Isso não substitui a criação de uma instância remota para o grupo.
-- A API já inclui cadastro local (`POST /auth/cadastro`) e login (`POST /auth/login`), com emissão de token JWT, além do módulo de comentários integrado e do Swagger em `/api`. Os demais endpoints planejados, a integração OAuth com Google e a implementação completa das regras de negócio da P1 ainda estão em andamento.
+- A API já inclui cadastro local (`POST /auth/cadastro`), login com e-mail e senha (`POST /auth/login`) e autenticação Google (`GET /auth/google` e `GET /auth/google/callback`), que retorna JWT quando as credenciais OAuth estão configuradas. Também inclui o módulo de comentários e Swagger em `/api`; os demais endpoints planejados e as regras de negócio restantes da P1 ainda estão em andamento.
 
 ## Comece aqui
 

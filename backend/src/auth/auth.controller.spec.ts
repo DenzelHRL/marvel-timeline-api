@@ -1,8 +1,14 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  ExecutionContext,
+  INestApplication,
+  ValidationPipe,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { GoogleAuthGuard } from './google-auth.guard';
+import type { GoogleAuthProfile } from './google.strategy';
 
 const respostaCadastro = {
   id: '01a12345-6789-4abc-8def-0123456789ab',
@@ -18,20 +24,35 @@ const respostaLogin = {
   expiresIn: 3600,
 };
 
+const perfilGoogle: GoogleAuthProfile = {
+  id: 'google-user-123',
+  nome: 'Maria Silva',
+  email: 'maria@exemplo.test',
+};
+
 describe('Controlador de autenticação', () => {
   let app: INestApplication;
-  let authService: Pick<AuthService, 'cadastrar' | 'login'>;
+  let authService: Pick<AuthService, 'cadastrar' | 'login' | 'loginGoogle'>;
 
   beforeEach(async () => {
     authService = {
       cadastrar: jest.fn().mockResolvedValue(respostaCadastro),
       login: jest.fn().mockResolvedValue(respostaLogin),
+      loginGoogle: jest.fn().mockResolvedValue(respostaLogin),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [{ provide: AuthService, useValue: authService }],
-    }).compile();
+    })
+      .overrideGuard(GoogleAuthGuard)
+      .useValue({
+        canActivate: (context: ExecutionContext) => {
+          context.switchToHttp().getRequest().user = perfilGoogle;
+          return true;
+        },
+      })
+      .compile();
 
     app = module.createNestApplication();
     app.useGlobalPipes(
@@ -104,5 +125,14 @@ describe('Controlador de autenticação', () => {
       .expect(400);
 
     expect(authService.login).not.toHaveBeenCalled();
+  });
+
+  it('conclui o callback Google e retorna o mesmo formato JWT do login local', async () => {
+    await request(app.getHttpServer())
+      .get('/auth/google/callback')
+      .expect(200)
+      .expect(respostaLogin);
+
+    expect(authService.loginGoogle).toHaveBeenCalledWith(perfilGoogle);
   });
 });

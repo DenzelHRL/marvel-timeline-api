@@ -1,16 +1,21 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Usuario, Perfil, UsuarioPerfil } from '../database/entities';
 import { AuthController } from './auth.controller';
-import {
-  JWT_EXPIRATION_SECONDS,
-  JWT_SECRET_MIN_BYTES,
-} from './auth.constants';
+import { JWT_EXPIRATION_SECONDS, JWT_SECRET_MIN_BYTES } from './auth.constants';
 import { AuthService } from './auth.service';
+import { getGoogleOAuthConfiguration } from './google-oauth.config';
+import { GoogleStrategy } from './google.strategy';
+
+const googleOAuthProviders = getGoogleOAuthConfiguration()
+  ? [GoogleStrategy]
+  : [];
 
 @Module({
   imports: [
+    PassportModule.register({ session: false }),
     TypeOrmModule.forFeature([Usuario, Perfil, UsuarioPerfil]),
     JwtModule.registerAsync({
       useFactory: () => {
@@ -36,7 +41,7 @@ import { AuthService } from './auth.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, ...googleOAuthProviders],
   exports: [JwtModule],
 })
 export class AuthModule {}
