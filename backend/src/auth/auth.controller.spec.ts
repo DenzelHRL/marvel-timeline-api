@@ -12,13 +12,20 @@ const respostaCadastro = {
   criadoEm: '2026-10-13T12:00:00.000Z',
 };
 
+const respostaLogin = {
+  accessToken: 'jwt-de-teste',
+  tokenType: 'Bearer',
+  expiresIn: 3600,
+};
+
 describe('Controlador de autenticação', () => {
   let app: INestApplication;
-  let authService: Pick<AuthService, 'cadastrar'>;
+  let authService: Pick<AuthService, 'cadastrar' | 'login'>;
 
   beforeEach(async () => {
     authService = {
       cadastrar: jest.fn().mockResolvedValue(respostaCadastro),
+      login: jest.fn().mockResolvedValue(respostaLogin),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -69,5 +76,33 @@ describe('Controlador de autenticação', () => {
       .expect(400);
 
     expect(authService.cadastrar).not.toHaveBeenCalled();
+  });
+
+  it('autentica pelo endpoint de login e retorna HTTP 200 com o token', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: ' maria@exemplo.test ',
+        senha: 'senha-segura-123',
+      })
+      .expect(200)
+      .expect(respostaLogin);
+
+    expect(authService.login).toHaveBeenCalledWith({
+      email: 'maria@exemplo.test',
+      senha: 'senha-segura-123',
+    });
+  });
+
+  it('retorna HTTP 400 quando o e-mail de login é inválido', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: 'email-invalido',
+        senha: 'senha-segura-123',
+      })
+      .expect(400);
+
+    expect(authService.login).not.toHaveBeenCalled();
   });
 });

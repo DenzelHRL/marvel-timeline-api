@@ -2,20 +2,60 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { hash } from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { compare, hash } from 'bcrypt';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { Perfil, Usuario, UsuarioPerfil } from '../database/entities';
 import { CadastroDto } from './dto/cadastro.dto';
 import { CadastroRespostaDto } from './dto/cadastro-resposta.dto';
+import { JWT_EXPIRATION_SECONDS } from './auth.constants';
+import { LoginDto } from './dto/login.dto';
+import { LoginRespostaDto } from './dto/login-resposta.dto';
+
+const HASH_SENHA_INEXISTENTE =
+  '$2b$12$glfVOolzfnAYNHDmgHkXAOdR0w8v10uLm6dFY6aglr0.jbsRHBndO';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly jwtService: JwtService,
   ) {}
+
+  async login(dados: LoginDto): Promise<LoginRespostaDto> {
+    const email = dados.email.trim().toLowerCase();
+
+    if (Buffer.byteLength(dados.senha, 'utf8') > 72) {
+      throw this.credenciaisInvalidas();
+    }
+
+    const usuario = await this.dataSource
+      .getRepository(Usuario)
+      .findOneBy({ email });
+
+    const senhaCorreta = await compare(
+      dados.senha,
+      usuario?.senhaHash ?? HASH_SENHA_INEXISTENTE,
+    );
+
+    if (!usuario?.ativo || !usuario.senhaHash || !senhaCorreta) {
+      throw this.credenciaisInvalidas();
+    }
+
+    const accessToken = await this.jwtService.signAsync({
+      sub: usuario.id,
+    });
+
+    return {
+      accessToken,
+      tokenType: 'Bearer',
+      expiresIn: JWT_EXPIRATION_SECONDS,
+    };
+  }
 
   async cadastrar(dados: CadastroDto): Promise<CadastroRespostaDto> {
     const email = dados.email.trim().toLowerCase();
@@ -79,6 +119,10 @@ export class AuthService {
 
   private emailJaCadastrado(): ConflictException {
     return new ConflictException('Já existe uma conta com esse e-mail.');
+  }
+
+  private credenciaisInvalidas(): UnauthorizedException {
+    return new UnauthorizedException('E-mail ou senha inválidos.');
   }
 
   private isEmailUniqueViolation(error: unknown): boolean {
