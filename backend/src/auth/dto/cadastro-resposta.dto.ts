@@ -8,7 +8,7 @@ export class CadastroRespostaDto {
   nome: string;
 
   @ApiProperty({
-    example: 'maria@example.com',
+    example: 'maria@exemplo.test',
     format: 'email',
     maxLength: 254,
   })
@@ -18,5 +18,5 @@ export class CadastroRespostaDto {
   ativo: boolean;
 
   @ApiProperty({ type: String, format: 'date-time' })
-  criadoEm: Date;
+  criadoEm: string;
 }
