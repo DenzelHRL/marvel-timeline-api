@@ -1,10 +1,29 @@
-import {Controller, Get, Param, ParseUUIDPipe, Query} from '@nestjs/common';
-import {ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags} from '@nestjs/swagger';
+import {
+    Body,
+    Controller, 
+    Get,
+    Post,
+    Patch,
+    Delete,
+    HttpCode,
+    HttpStatus, 
+    Param, 
+    ParseUUIDPipe,
+    Query
+} from '@nestjs/common';
+import {ApiHeader, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags} from '@nestjs/swagger';
 import {ComentariosService} from './comentarios.service';
-import {ConsultarComentariosDTO} from './dto/consultar-comentarios.dto';
-import {ComentarioItemDTO, ListaComentariosRespostaDTO} from './dto/comentario-resposta.dto';
+import {UsuarioId} from './usuario-id.decorator';
+import {
+    ConsultarComentariosDTO,
+    ComentarioItemDTO,
+    ListaComentariosRespostaDTO,
+    CriarComentarioDTO,
+    AtualizarComentarioDTO,
+} from './dto';
 
-ApiTags('Comentários')
+
+@ApiTags('Comentários')
 @Controller()
 export class ComentariosController {
     constructor(private readonly comentariosService: ComentariosService){}
@@ -50,5 +69,80 @@ export class ComentariosController {
     ){
         const comSpoiler = revelarSpoilers === 'true';
         return this.comentariosService.buscarPorId(id, comSpoiler);
+    }
+
+    //Endpoint: 62 -> POST /obras/:obraId/comentarios
+    @Post("obras/:obraId/comentarios")
+    @ApiOperation({
+        summary: "Publicar comentário em uma obra",
+        description: "Cria um novo comentário para um obra publicada" + 
+        "Requer conta ativa do usuario."
+    })
+    @ApiParam({name: "obraId", description: "UUID da obra publicada"})
+    @ApiHeader({
+        name: "x-usuario-id",
+        required: true,
+        description: "UUID do usuário autenticado"
+    })
+    @ApiResponse({status: 201, description: "Comentário publicado com sucesso"})
+    @ApiResponse({status: 400, description: "Dados inválidos no corpo da requisição"})
+    @ApiResponse({status: 401, description: "Usuário não identificado"})
+    @ApiResponse({status: 403, description: "Usuário desativado não pode comentar"})
+    @ApiResponse({status: 404, description: "Obra não encontrada ou não publicada"})
+    async criar(
+        @Param("obraId", ParseUUIDPipe) obraId: string,
+        @UsuarioId() usuarioId: string,
+        @Body() dto: CriarComentarioDTO
+    ){
+        return this.comentariosService.criar(obraId, usuarioId, dto);
+    }
+
+    //Endpoint: 63 -> PATCH /comentarios/:id
+    @Patch("comentarios/:id")
+    @ApiOperation({
+        summary: "Editar o próprio comentário",
+        description: "Permite ao autor alterar o texto ou aviso de spoiler do comentário"
+    })
+    @ApiParam({name: "id", description:"UUID do comentário"})
+    @ApiHeader({
+        name: "x-usuario-id",
+        required: true,
+        description: "UUID do usuário autenticado"
+    })
+    @ApiResponse({status: 201, description: "Comentário atualizado com sucesso"})
+    @ApiResponse({status: 400, description: "Dados inválidos"})
+    @ApiResponse({status: 401, description: "Usuário não identificado"})
+    @ApiResponse({status: 403, description: "Apenas o autor pode editar"})
+    @ApiResponse({status: 404, description: "Comentário não encontrado"})
+    async atualizar(
+        @Param("id", ParseUUIDPipe) id: string,
+        @UsuarioId() usuarioId: string,
+        @Body() dto: AtualizarComentarioDTO
+    ){
+        return this.comentariosService.atualizar(id, usuarioId, dto);
+    }
+
+    //Endpoint: 64 -> DELETE /comentarios/:id
+    @Delete("comentarios/:id")
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: "Remover o próprio comentário (Remoção Lógica)",
+        description: "Marca o comentário como REMOVIDO para que não apareça na leitura pública."
+    })
+    @ApiParam({ name: 'id', description: 'UUID do comentário' })
+    @ApiHeader({
+        name: 'x-usuario-id',
+        required: true,
+        description: 'UUID do autor do comentário',
+    })
+    @ApiResponse({status: 200, description: 'Comentário removido com sucesso.'})
+    @ApiResponse({status: 401, description: 'Usuário não identificado.'})
+    @ApiResponse({status: 403, description: 'Apenas o autor pode remover.'})
+    @ApiResponse({status: 404, description: 'Comentário não encontrado.'})
+    async remover(
+        @Param("id", ParseUUIDPipe) id: string,
+        @UsuarioId() usuarioId: string
+    ){
+        return this.comentariosService.remover(id, usuarioId);
     }
 }
