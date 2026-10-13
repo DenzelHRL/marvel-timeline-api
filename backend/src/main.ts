@@ -41,6 +41,7 @@ async function bootstrap() {
       'API para explorar a linha do tempo do Universo Cinematográfico Marvel, com controle de spoilers, trilhas, personagens e acontecimentos.',
     )
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
