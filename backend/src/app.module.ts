@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { databaseOptions } from './database/data-source';
+import { ComentariosModule } from './comentarios/comentarios.module';
 import { TrilhasModule } from './trilhas/trilhas.module';
 
 @Module({
@@ -12,6 +13,7 @@ import { TrilhasModule } from './trilhas/trilhas.module';
     TypeOrmModule.forRoot(databaseOptions()),
     AuthModule,
     AcessoModule,
+    ComentariosModule,
     TrilhasModule,
   ],
   controllers: [AppController],
