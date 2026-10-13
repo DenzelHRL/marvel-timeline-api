@@ -7,8 +7,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { GoogleAuthGuard } from './google-auth.guard';
-import type { GoogleAuthProfile } from './google.strategy';
+import { GoogleAuthGuard } from './google/google-auth.guard';
+import type { GoogleAuthProfile } from './google/google.strategy';
 
 const respostaCadastro = {
   id: '01a12345-6789-4abc-8def-0123456789ab',

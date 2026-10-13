@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from '../auth/auth.module';
 import {
   Usuario,
   Perfil,
@@ -8,13 +9,22 @@ import {
   PerfilPermissao,
 } from '../database/entities';
 import { AcessoController } from './acesso.controller';
+import { AccessControlGuard } from './access-control.guard';
 import { AcessoService } from './acesso.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Usuario, Perfil, Permissao, UsuarioPerfil, PerfilPermissao,]),
+    AuthModule,
+    TypeOrmModule.forFeature([
+      Usuario,
+      Perfil,
+      Permissao,
+      UsuarioPerfil,
+      PerfilPermissao,
+    ]),
   ],
   controllers: [AcessoController],
-  providers: [AcessoService],
+  providers: [AcessoService, AccessControlGuard],
+  exports: [AccessControlGuard],
 })
 export class AcessoModule {}

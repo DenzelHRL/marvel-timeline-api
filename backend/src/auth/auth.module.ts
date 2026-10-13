@@ -6,8 +6,10 @@ import { Usuario, Perfil, UsuarioPerfil } from '../database/entities';
 import { AuthController } from './auth.controller';
 import { JWT_EXPIRATION_SECONDS, JWT_SECRET_MIN_BYTES } from './auth.constants';
 import { AuthService } from './auth.service';
-import { getGoogleOAuthConfiguration } from './google-oauth.config';
-import { GoogleStrategy } from './google.strategy';
+import { JwtAuthGuard } from './jwt/jwt-auth.guard';
+import { JwtStrategy } from './jwt/jwt.strategy';
+import { getGoogleOAuthConfiguration } from './google/google-oauth.config';
+import { GoogleStrategy } from './google/google.strategy';
 
 const googleOAuthProviders = getGoogleOAuthConfiguration()
   ? [GoogleStrategy]
@@ -41,7 +43,7 @@ const googleOAuthProviders = getGoogleOAuthConfiguration()
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, ...googleOAuthProviders],
-  exports: [JwtModule],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, ...googleOAuthProviders],
+  exports: [JwtModule, PassportModule, JwtAuthGuard],
 })
 export class AuthModule {}

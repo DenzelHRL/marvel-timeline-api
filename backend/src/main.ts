@@ -7,7 +7,7 @@ import passport from 'passport';
 import {
   getGoogleOAuthConfiguration,
   GOOGLE_OAUTH_STATE_COOKIE_MAX_AGE,
-} from './auth/google-oauth.config';
+} from './auth/google/google-oauth.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

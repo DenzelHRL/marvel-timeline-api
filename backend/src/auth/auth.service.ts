@@ -20,7 +20,7 @@ import { CadastroRespostaDto } from './dto/cadastro-resposta.dto';
 import { JWT_EXPIRATION_SECONDS } from './auth.constants';
 import { LoginDto } from './dto/login.dto';
 import { LoginRespostaDto } from './dto/login-resposta.dto';
-import type { GoogleAuthProfile } from './google.strategy';
+import type { GoogleAuthProfile } from './google/google.strategy';
 
 const HASH_SENHA_INEXISTENTE =
   '$2b$12$glfVOolzfnAYNHDmgHkXAOdR0w8v10uLm6dFY6aglr0.jbsRHBndO';

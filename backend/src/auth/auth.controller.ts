@@ -26,8 +26,8 @@ import { CadastroRespostaDto } from './dto/cadastro-resposta.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { LoginRespostaDto } from './dto/login-resposta.dto';
-import { GoogleAuthGuard } from './google-auth.guard';
-import type { GoogleAuthProfile } from './google.strategy';
+import { GoogleAuthGuard } from './google/google-auth.guard';
+import type { GoogleAuthProfile } from './google/google.strategy';
 
 @ApiTags('Autenticação')
 @Controller('auth')

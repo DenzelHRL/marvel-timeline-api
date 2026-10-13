@@ -12,7 +12,7 @@ import {
   UsuarioPerfil,
 } from '../database/entities';
 import { AuthService } from './auth.service';
-import { GoogleAuthProfile } from './google.strategy';
+import { GoogleAuthProfile } from './google/google.strategy';
 
 describe('Autenticação com Google', () => {
   const usuarioId = '01a12345-6789-4abc-8def-0123456789ab';

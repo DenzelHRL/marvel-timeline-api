@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { config as loadEnv } from 'dotenv';
-import { JWT_SECRET_MIN_BYTES } from './auth.constants';
+import { JWT_SECRET_MIN_BYTES } from '../auth.constants';
 
 loadEnv({ quiet: true });
 

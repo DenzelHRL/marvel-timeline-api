@@ -3,7 +3,7 @@ import {
   GOOGLE_OAUTH_STATE_SECRET_CONTEXT,
 } from './google-oauth.config';
 import { createHmac } from 'node:crypto';
-import { JWT_SECRET_MIN_BYTES } from './auth.constants';
+import { JWT_SECRET_MIN_BYTES } from '../auth.constants';
 
 describe('Configuração OAuth Google', () => {
   const variableNames = [
