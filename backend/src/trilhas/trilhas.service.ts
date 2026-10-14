@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, ILike } from 'typeorm';
-import { Trilha } from '../database/entities/catalog.entities';
+import { Trilha, EtapaTrilha, Obra } from '../database/entities/catalog.entities';
 import { ListarTrilhasDto } from './dto/listar-trilhas.dto';
+import { ListarEtapasDto } from './dto/listar-etapas.dto';
 
 
 
@@ -12,6 +13,9 @@ export class TrilhasService {
     constructor(
   @InjectRepository(Trilha)
   private readonly trilhasRepository: Repository<Trilha>,
+
+  @InjectRepository(EtapaTrilha)
+  private readonly etapasRepository: Repository<EtapaTrilha>,
 ) {}
 
 async listarPublicadas(filtros: ListarTrilhasDto){
@@ -56,6 +60,51 @@ async buscarPublicadaPorSlug(slug: string) {
   }
 
   return trilha;
+}
+
+async listarEtapas(slug: string, filtros: ListarEtapasDto) {
+  const trilha = await this.buscarPublicadaPorSlug(slug);
+
+  const consulta = this.etapasRepository
+    .createQueryBuilder('etapa')
+    .innerJoin(
+      Obra,
+      'obra',
+      'obra.id = etapa.obraId',
+    )
+    .where('etapa.trilhaId = :trilhaId', {
+      trilhaId: trilha.id,
+    })
+    .andWhere('obra.status = :status', {
+      status: 'PUBLICADA',
+    });
+
+  if (filtros.prioridade) {
+    consulta.andWhere('etapa.prioridade = :prioridade', {
+      prioridade: filtros.prioridade,
+    });
+  }
+
+  if (filtros.obraId) {
+    consulta.andWhere('etapa.obraId = :obraId', {
+      obraId: filtros.obraId,
+    });
+  }
+
+  const [dados, total] = await consulta
+    .orderBy('etapa.posicao', 'ASC')
+    .addOrderBy('etapa.id', 'ASC')
+    .skip((filtros.pagina - 1) * filtros.limite)
+    .take(filtros.limite)
+    .getManyAndCount();
+
+  return {
+    dados,
+    total,
+    pagina: filtros.pagina,
+    limite: filtros.limite,
+    totalPaginas: Math.ceil(total / filtros.limite),
+  };
 }
 
 
