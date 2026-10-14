@@ -1,6 +1,6 @@
-import { hash } from "bcrypt";
-import { QueryRunner } from "typeorm";
-import { AppDataSource } from "../data-source";
+import { hash } from 'bcrypt';
+import { QueryRunner } from 'typeorm';
+import { AppDataSource } from '../data-source';
 import {
   ACONTECIMENTOS,
   ACONTECIMENTO_PERSONAGENS,
@@ -11,7 +11,7 @@ import {
   PERMISSOES,
   PERSONAGENS,
   SERIES,
-} from "./seed-data";
+} from './seed-data';
 
 type IdRow = { id: string };
 
@@ -33,39 +33,39 @@ async function idFor(
 
 async function seedAccess(runner: QueryRunner): Promise<void> {
   const profiles = [
-    ["LEITOR", "Consulta as obras, comenta e acompanha o próprio progresso."],
-    ["ADMIN", "Edita catálogo, trilhas, contas, acessos e modera comentários."],
+    ['LEITOR', 'Consulta as obras, comenta e acompanha o próprio progresso.'],
+    ['ADMIN', 'Edita catálogo, trilhas, contas, acessos e modera comentários.'],
   ];
   for (const [code, description] of profiles) {
     await runner.query(
-      "INSERT INTO perfis (codigo, descricao) VALUES ($1, $2) ON CONFLICT (codigo) DO NOTHING",
+      'INSERT INTO perfis (codigo, descricao) VALUES ($1, $2) ON CONFLICT (codigo) DO NOTHING',
       [code, description],
     );
   }
-  const readerId = await idFor(runner, "perfis", "codigo", "LEITOR");
-  const adminId = await idFor(runner, "perfis", "codigo", "ADMIN");
+  const readerId = await idFor(runner, 'perfis', 'codigo', 'LEITOR');
+  const adminId = await idFor(runner, 'perfis', 'codigo', 'ADMIN');
 
   for (const permission of PERMISSOES) {
     await runner.query(
-      "INSERT INTO permissoes (codigo, descricao) VALUES ($1, $2) ON CONFLICT (codigo) DO NOTHING",
+      'INSERT INTO permissoes (codigo, descricao) VALUES ($1, $2) ON CONFLICT (codigo) DO NOTHING',
       [permission.codigo, permission.descricao],
     );
     const permissionId = await idFor(
       runner,
-      "permissoes",
-      "codigo",
+      'permissoes',
+      'codigo',
       permission.codigo,
     );
     const profilesWithPermission =
-      permission.codigo.startsWith("conta:") ||
-      permission.codigo.startsWith("progresso:") ||
-      (permission.codigo.startsWith("comentarios:") &&
-        permission.codigo !== "comentarios:moderar")
+      permission.codigo.startsWith('conta:') ||
+      permission.codigo.startsWith('progresso:') ||
+      (permission.codigo.startsWith('comentarios:') &&
+        permission.codigo !== 'comentarios:moderar')
         ? [readerId, adminId]
         : [adminId];
     for (const profileId of profilesWithPermission) {
       await runner.query(
-        "INSERT INTO perfil_permissoes (perfil_id, permissao_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        'INSERT INTO perfil_permissoes (perfil_id, permissao_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
         [profileId, permissionId],
       );
     }
@@ -82,14 +82,14 @@ async function seedCatalog(runner: QueryRunner): Promise<Map<string, string>> {
     );
     seriesIds.set(
       serie.slug,
-      await idFor(runner, "series", "slug", serie.slug),
+      await idFor(runner, 'series', 'slug', serie.slug),
     );
   }
 
   const workIds = new Map<string, string>();
   for (const obra of OBRAS) {
-    const serieId = "serieSlug" in obra ? seriesIds.get(obra.serieSlug) : null;
-    if ("serieSlug" in obra && !serieId)
+    const serieId = 'serieSlug' in obra ? seriesIds.get(obra.serieSlug) : null;
+    if ('serieSlug' in obra && !serieId)
       throw new Error(`Série ausente: ${obra.serieSlug}`);
     await runner.query(
       `INSERT INTO obras
@@ -103,24 +103,24 @@ async function seedCatalog(runner: QueryRunner): Promise<Map<string, string>> {
         obra.tipo,
         obra.ano,
         serieId ?? null,
-        "temporada" in obra ? obra.temporada : null,
+        'temporada' in obra ? obra.temporada : null,
         obra.resumo,
       ],
     );
-    workIds.set(obra.slug, await idFor(runner, "obras", "slug", obra.slug));
+    workIds.set(obra.slug, await idFor(runner, 'obras', 'slug', obra.slug));
   }
 
   for (const [slug, name, description, steps] of [
     [
-      "curta",
-      "Rumo a Doutor Destino — trilha curta",
-      "Seleção reduzida em ordem dos acontecimentos, com Capitã Marvel como contexto inicial e blocos de outras linhas do tempo.",
+      'curta',
+      'Rumo a Doutor Destino — trilha curta',
+      'Seleção reduzida em ordem dos acontecimentos, com Capitã Marvel como contexto inicial e blocos de outras linhas do tempo.',
       ETAPAS_CURTA,
     ],
     [
-      "longa",
-      "Rumo a Doutor Destino — trilha longa",
-      "Seleção ampliada em ordem dos acontecimentos, desde o primeiro Capitão América, com blocos de outras linhas do tempo.",
+      'longa',
+      'Rumo a Doutor Destino — trilha longa',
+      'Seleção ampliada em ordem dos acontecimentos, desde o primeiro Capitão América, com blocos de outras linhas do tempo.',
       ETAPAS_LONGA,
     ],
   ] as const) {
@@ -129,7 +129,7 @@ async function seedCatalog(runner: QueryRunner): Promise<Map<string, string>> {
        VALUES ($1, $2, $3, 'PUBLICADA') ON CONFLICT (slug) DO NOTHING`,
       [slug, name, description],
     );
-    const trailId = await idFor(runner, "trilhas", "slug", slug);
+    const trailId = await idFor(runner, 'trilhas', 'slug', slug);
     for (const step of steps) {
       const obraId = workIds.get(step.slug);
       if (!obraId)
@@ -157,7 +157,7 @@ async function seedStories(
     );
     characterIds.set(
       person.slug,
-      await idFor(runner, "personagens", "slug", person.slug),
+      await idFor(runner, 'personagens', 'slug', person.slug),
     );
   }
 
@@ -196,7 +196,7 @@ async function seedStories(
   for (const link of ACONTECIMENTO_PERSONAGENS) {
     const obraId = workIds.get(link.obraSlug);
     const events = (await runner.query(
-      "SELECT id FROM acontecimentos WHERE obra_id = $1 AND posicao = $2",
+      'SELECT id FROM acontecimentos WHERE obra_id = $1 AND posicao = $2',
       [obraId, link.posicao],
     )) as IdRow[];
     if (events.length !== 1)
@@ -218,16 +218,16 @@ async function seedDemoUser(
   email: string,
   nome: string,
   password: string,
-  profileCode: "ADMIN" | "LEITOR",
+  profileCode: 'ADMIN' | 'LEITOR',
 ): Promise<string> {
   const existing = (await runner.query(
-    "SELECT id FROM usuarios WHERE email = $1",
+    'SELECT id FROM usuarios WHERE email = $1',
     [email],
   )) as IdRow[];
-  const profileId = await idFor(runner, "perfis", "codigo", profileCode);
+  const profileId = await idFor(runner, 'perfis', 'codigo', profileCode);
   if (existing.length) {
     const links = (await runner.query(
-      "SELECT 1 FROM usuario_perfis WHERE usuario_id = $1 AND perfil_id = $2",
+      'SELECT 1 FROM usuario_perfis WHERE usuario_id = $1 AND perfil_id = $2',
       [existing[0].id, profileId],
     )) as unknown[];
     if (!links.length)
@@ -239,11 +239,11 @@ async function seedDemoUser(
 
   const passwordHash = await hash(password, 12);
   const inserted = (await runner.query(
-    "INSERT INTO usuarios (nome, email, senha_hash) VALUES ($1, $2, $3) RETURNING id",
+    'INSERT INTO usuarios (nome, email, senha_hash) VALUES ($1, $2, $3) RETURNING id',
     [nome, email, passwordHash],
   )) as IdRow[];
   await runner.query(
-    "INSERT INTO usuario_perfis (usuario_id, perfil_id) VALUES ($1, $2)",
+    'INSERT INTO usuario_perfis (usuario_id, perfil_id) VALUES ($1, $2)',
     [inserted[0].id, profileId],
   );
   return inserted[0].id;
@@ -253,9 +253,9 @@ async function seedDemo(
   runner: QueryRunner,
   workIds: Map<string, string>,
 ): Promise<void> {
-  if (process.env.SEED_DEMO_USERS !== "true") return;
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("SEED_DEMO_USERS não pode ser usado em produção.");
+  if (process.env.SEED_DEMO_USERS !== 'true') return;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('SEED_DEMO_USERS não pode ser usado em produção.');
   }
   const adminPassword = process.env.DEMO_ADMIN_PASSWORD;
   const readerPassword = process.env.DEMO_READER_PASSWORD;
@@ -266,33 +266,33 @@ async function seedDemo(
     readerPassword.length < 8
   ) {
     throw new Error(
-      "Defina DEMO_ADMIN_PASSWORD e DEMO_READER_PASSWORD (mínimo 8 caracteres) no .env local.",
+      'Defina DEMO_ADMIN_PASSWORD e DEMO_READER_PASSWORD (mínimo 8 caracteres) no .env local.',
     );
   }
 
   await seedDemoUser(
     runner,
-    "admin@marvel-timeline.test",
-    "Administrador de demonstração",
+    'admin@marvel-timeline.test',
+    'Administrador de demonstração',
     adminPassword,
-    "ADMIN",
+    'ADMIN',
   );
   const readerId = await seedDemoUser(
     runner,
-    "leitor@marvel-timeline.test",
-    "Leitor de demonstração",
+    'leitor@marvel-timeline.test',
+    'Leitor de demonstração',
     readerPassword,
-    "LEITOR",
+    'LEITOR',
   );
   for (const [id, texto, contemSpoiler] of [
     [
-      "f8410444-3a6b-4d7e-a58a-dab982f6d3b0",
-      "Gostei de rever os personagens se encontrando nesta obra.",
+      'f8410444-3a6b-4d7e-a58a-dab982f6d3b0',
+      'Gostei de rever os personagens se encontrando nesta obra.',
       false,
     ],
     [
-      "33746259-5b44-4cc8-853c-9a23e229b19b",
-      "A conclusão do confronto me surpreendeu.",
+      '33746259-5b44-4cc8-853c-9a23e229b19b',
+      'A conclusão do confronto me surpreendeu.',
       true,
     ],
   ] as const) {
@@ -301,7 +301,7 @@ async function seedDemo(
        VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING`,
       [
         id,
-        workIds.get("vingadores-guerra-infinita"),
+        workIds.get('vingadores-guerra-infinita'),
         readerId,
         texto,
         contemSpoiler,
@@ -309,9 +309,9 @@ async function seedDemo(
     );
   }
   for (const [slug, status, completedAt] of [
-    ["vingadores-guerra-infinita", "CONCLUIDO", "2026-09-01T18:00:00Z"],
-    ["wandavision-temporada-1", "ASSISTINDO", null],
-    ["quarteto-fantastico-primeiros-passos", "QUERO_VER", null],
+    ['vingadores-guerra-infinita', 'CONCLUIDO', '2026-09-01T18:00:00Z'],
+    ['wandavision-temporada-1', 'ASSISTINDO', null],
+    ['quarteto-fantastico-primeiros-passos', 'QUERO_VER', null],
   ] as const) {
     await runner.query(
       `INSERT INTO progresso (usuario_id, obra_id, status, concluido_em)
@@ -325,7 +325,7 @@ async function main(): Promise<void> {
   await AppDataSource.initialize();
   try {
     const pending = await AppDataSource.showMigrations();
-    if (pending) throw new Error("Execute npm run db:migrate antes dos seeds.");
+    if (pending) throw new Error('Execute npm run db:migrate antes dos seeds.');
     const runner = AppDataSource.createQueryRunner();
     await runner.connect();
     try {
