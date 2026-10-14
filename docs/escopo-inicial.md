@@ -17,7 +17,6 @@ Entrega P1: backend NestJS + PostgreSQL/TypeORM até 16/10/2026. A **trilha curt
 
 Esses quatro exemplos são o **primeiro fluxo de leitura**, ainda a implementar. O método + rota só conta para a P1 depois de funcionar, constar na matriz de endpoints, ter Swagger e poder ser demonstrado.
 
-<<<<<<< HEAD
 ## Adaptação da referência One Piece
 
 O projeto de referência oferece operações de cadastro/gestão e consultas que reúnem dados de várias tabelas para a experiência do mapa. Na Marvel, a unidade que o leitor visita é a **obra**; o percurso fica em `trilhas` + `etapas_trilha`. Cada chamada a uma rota parametrizada atende qualquer obra cadastrada. As 34 obras não se tornam 34 endpoints.
@@ -31,7 +30,6 @@ O projeto de referência oferece operações de cadastro/gestão e consultas que
 | Consultas de Wiki voltadas ao mapa | Respostas agregadas de exploração, montadas pela camada de serviço a partir das tabelas existentes |
 
 Duas consultas de exploração a especificar na matriz, além das rotas de catálogo:
-=======
 ## Estrutura da experiência de exploração
 
 A unidade que o leitor visita é a **obra**; o percurso fica em `trilhas` + `etapas_trilha`. As consultas de exploração reúnem dados das tabelas para apresentar cada etapa do mapa. Cada rota parametrizada atende qualquer obra cadastrada: as 34 obras não se tornam 34 endpoints.
@@ -45,17 +43,11 @@ A unidade que o leitor visita é a **obra**; o percurso fica em `trilhas` + `eta
 | Dados do mapa | Respostas agregadas de exploração, montadas pela camada de serviço a partir das tabelas existentes |
 
 Duas consultas de exploração planejadas na matriz, além das rotas de catálogo:
->>>>>>> main
 
 - `GET /explorar/trilhas/:slug/mapa`: páginas de etapas já acompanhadas do título, imagem e resumo da obra. Filtrar pelos campos `prioridade` e `obraId` da etapa, com paginação e metadados. Difere de `GET /trilhas/:slug/etapas`, que consulta os dados próprios das etapas para gestão e navegação simples.
 - `GET /explorar/trilhas/:slug/obras/:obraSlug`: conferir que a obra pertence à trilha e reunir resumo, posição, obra anterior/próxima e links para as listagens de participações e acontecimentos daquela obra. Essas listagens terão paginação e dois filtros cada uma. Por padrão, omitir conteúdo marcado como spoiler; liberar apenas com opção explícita. A rota atende todas as obras e as duas trilhas.
 
-<<<<<<< HEAD
-Essas consultas **ainda não estão implementadas** e não pedem tabelas novas. O catálogo inicial vem dos seeds; a API o consulta ou permite manutenção autorizada. Os listeners de CDC/Kafka da referência são processos de mensageria, não endpoints HTTP, e não integram o recorte inicial.
-
-=======
 Essas consultas **ainda não estão implementadas** e não pedem tabelas novas. O catálogo inicial vem dos seeds; a API o consulta ou permite manutenção autorizada. O fluxo inicial usa HTTP com Nest e PostgreSQL; mensageria poderá ser avaliada depois, se houver uma tarefa assíncrona real.
->>>>>>> main
 ## Funcionalidades seguintes
 
 | Bloco | Entrega observável | Acesso |

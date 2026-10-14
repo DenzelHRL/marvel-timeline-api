@@ -8,12 +8,8 @@ Este repositório contém o **backend do Trabalho P1** de Programação Web. A i
 
 - Banco PostgreSQL modelado em 16 tabelas com TypeORM e duas migrations versionadas, incluindo comentários por obra.
 - Seed repetível: duas trilhas (curta como principal), 34 obras, quatro temporadas, 26 permissões e dois perfis (`LEITOR`, `ADMIN`). Personagens e acontecimentos foram preparados apenas para quatro obras, o suficiente para demonstrar o fluxo de spoilers. Com contas fictícias habilitadas, há dois comentários de exemplo.
-<<<<<<< HEAD
 - A Action **Banco PostgreSQL** valida build, lint, teste inicial, migrations, seed repetido e verificação do esquema em PostgreSQL 16 temporário. Isso não substitui a criação de uma instância remota para o grupo.
-=======
-- A Action **Banco PostgreSQL** valida build, lint, teste inicial, migrations, seed repetido e verificação do esquema em PostgreSQL 16 temporário. Cada integrante usa um banco local próprio; não é necessário criar uma instância remota para começar.
->>>>>>> main
-- A API ainda contém somente a rota de teste do Nest. Autenticação, endpoints do domínio, Swagger e as regras de negócio da P1 **ainda não foram implementados**.
+- A API já inclui cadastro local (`POST /auth/cadastro`), login com e-mail e senha (`POST /auth/login`) e autenticação Google (`GET /auth/google` e `GET /auth/google/callback`), que retorna JWT quando as credenciais OAuth estão configuradas. Também inclui o módulo de comentários e Swagger em `/api`; os demais endpoints planejados e as regras de negócio restantes da P1 ainda estão em andamento.
 
 ## Comece aqui
 
@@ -35,15 +31,11 @@ Ambiente pronto = verificação com **16/16 tabelas**, Nest iniciado sem erro e 
 
 **Onde está cada coisa:** `backend/src/database/entities/` descreve as 16 tabelas para o TypeORM; `migrations/` cria suas restrições e relações no PostgreSQL; `seeds/` prepara os dados; `data-source.ts` fornece a mesma conexão ao Nest e aos comandos de banco. O próximo módulo pode usar uma entidade com `TypeOrmModule.forFeature([Obra])` e implementá-la em controller, service e repository. Cada listagem precisará de paginação e dois filtros documentados no Swagger.
 
-Comentários ficam ligados à obra e ao autor: a mesma obra pode aparecer nas duas trilhas sem duplicar a conversa. O banco já registra se o comentário contém spoiler e seu estado de moderação. As rotas e a regra que impede spoilers de aparecerem por padrão ainda precisam ser implementadas.
+Comentários ficam ligados à obra e ao autor: a mesma obra pode aparecer nas duas trilhas sem duplicar a conversa. O banco registra se o comentário contém spoiler e seu estado de moderação. O módulo de comentários inclui rotas para consultar, criar, editar, remover e moderar comentários; na listagem, textos com spoilers ficam ocultos por padrão.
 
 O recorte para começar a API está em [Escopo inicial](docs/escopo-inicial.md).
 
-<<<<<<< HEAD
-Para trabalhar em grupo: [guia das 16 tabelas e exemplo de rota](docs/modelo-banco.md), [matriz proposta de 78 endpoints](docs/matriz-endpoints.md) e [passo a passo para banco local/remoto e futuro deploy da API](docs/publicar-banco.md). A matriz é planejamento: **os 60 endpoints ainda não estão implementados**.
-=======
 Para trabalhar em grupo: [guia das 16 tabelas e exemplo de rota](docs/modelo-banco.md), [matriz proposta de 78 endpoints](docs/matriz-endpoints.md) e [guia de publicação futura da API e do banco](docs/publicar-banco.md). A matriz é planejamento: **os 60 endpoints ainda não estão implementados**.
->>>>>>> main
 
 O [modelo lógico em imagem](docs/modelo-logico.png) mostra os campos, chaves e relações do esquema preparado; o [SVG](docs/modelo-logico.svg) permite ampliar sem perder nitidez.
 
@@ -60,7 +52,3 @@ O [plano de implementação dos bônus](docs/plano-bonus.md) mapeia cache, CQRS,
 ## Equipe
 
 Denzel, Daniel, Matheus, Pedro e Guilherme.
-<<<<<<< HEAD
-
-=======
->>>>>>> main
