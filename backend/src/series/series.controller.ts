@@ -10,6 +10,10 @@ import {
 import { SeriesService } from './series.service';
 import { ListarSeriesDto } from './dto/listar-series.dto';
 import { ListarSeriesRespostaDto, SerieRespostaDto } from './dto/serie-resposta.dto';
+import {
+  ListarTemporadasSerieDto,
+  ListarTemporadasSerieRespostaDto,
+} from './dto/listar-temporadas-serie.dto';
 
 @ApiTags('Séries')
 @Controller('series')
@@ -54,5 +58,30 @@ export class SeriesController {
   })
   consultarPorSlug(@Param('slug') slug: string) {
     return this.seriesService.consultarPorSlug(slug);
+  }
+
+  @Get(':slug/temporadas')
+  @ApiOperation({
+    summary: 'Listar temporadas de uma serie',
+    description: 'Retorna as temporadas de uma serie com filtros opcionais por numero e ano de lancamento.',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'Slug da serie (ex: loki)',
+    type: String,
+    example: 'loki',
+  })
+  @ApiOkResponse({
+    description: 'Temporadas encontradas com sucesso.',
+    type: ListarTemporadasSerieRespostaDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Serie nao encontrada ou nao publicada.',
+  })
+  listarTemporadas(
+    @Param('slug') slug: string,
+    @Query() query: ListarTemporadasSerieDto,
+  ) {
+    return this.seriesService.listarTemporadas(slug, query);
   }
 }
