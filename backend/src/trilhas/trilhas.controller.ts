@@ -1,10 +1,12 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ListarTrilhasRespostaDto } from './dto/listar-trilhas-resposta.dto';
+import { Controller, Get, Query, Param } from '@nestjs/common';
+import { ListarTrilhasRespostaDto, TrilhaRespostaDto } from './dto/listar-trilhas-resposta.dto';
 import {
   ApiTags,
   ApiOperation,
   ApiOkResponse,
   ApiBadRequestResponse,
+  ApiParam,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { TrilhasService } from './trilhas.service';
 import { ListarTrilhasDto } from './dto/listar-trilhas.dto';
@@ -31,4 +33,27 @@ export class TrilhasController {
   listarPublicadas(@Query() filtros: ListarTrilhasDto) {
     return this.trilhasService.listarPublicadas(filtros);
   }
+
+  @Get(':slug')
+  @ApiOperation({
+    summary: 'Buscar uma trilha publicada pelo slug',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'Slug exato da trilha.',
+    example: 'curta',
+  })
+  @ApiOkResponse({
+    description: 'Trilha encontrada.',
+    type: TrilhaRespostaDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Não existe uma trilha publicada com esse slug.',
+  })
+  buscarPublicadaPorSlug(@Param('slug') slug: string) {
+    return this.trilhasService.buscarPublicadaPorSlug(slug);
+  }
+
+
+  
 }
