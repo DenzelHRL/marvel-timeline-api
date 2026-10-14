@@ -25,7 +25,7 @@ import {
   ApiUnauthorizedResponse,
   ApiForbiddenResponse,
 } from '@nestjs/swagger';
-import { Autorizar } from './autorizacao.decorators';
+import { Authorize } from './autorizacao.decorators';
 import { AcessoService } from './acesso.service';
 import {
   AlterarStatusUsuarioDto,
@@ -49,7 +49,7 @@ export class AcessoController {
   constructor(private readonly acessoService: AcessoService) {}
 
   @Get('usuarios')
-  @Autorizar({
+  @Authorize({
     roles: ['ADMIN'],
     permissions: ['usuarios:consultar_todos'],
   })
@@ -78,7 +78,7 @@ export class AcessoController {
   }
 
   @Get('usuarios/:id')
-  @Autorizar({
+  @Authorize({
     roles: ['ADMIN'],
     permissions: ['usuarios:consultar_todos'],
   })
@@ -115,7 +115,7 @@ export class AcessoController {
   }
 
   @Patch('usuarios/:id/status')
-  @Autorizar({
+  @Authorize({
     roles: ['ADMIN'],
     permissions: ['usuarios:alterar_status'],
   })
@@ -148,7 +148,7 @@ export class AcessoController {
   }
 
   @Post('usuarios/:id/perfis')
-  @Autorizar({
+  @Authorize({
     roles: ['ADMIN'],
     permissions: ['acessos:atribuir_perfil'],
   })
@@ -176,7 +176,7 @@ export class AcessoController {
   }
 
   @Delete('usuarios/:id/perfis/:perfilId')
-  @Autorizar({
+  @Authorize({
     roles: ['ADMIN'],
     permissions: ['acessos:revogar_perfil'],
   })
@@ -205,7 +205,7 @@ export class AcessoController {
   }
 
   @Get('perfis')
-  @Autorizar({
+  @Authorize({
     roles: ['ADMIN'],
     permissions: ['acessos:alterar_permissoes'],
   })
@@ -232,7 +232,7 @@ export class AcessoController {
   }
 
   @Get('perfis/:id')
-  @Autorizar({
+  @Authorize({
     roles: ['ADMIN'],
     permissions: ['acessos:alterar_permissoes'],
   })
@@ -261,7 +261,7 @@ export class AcessoController {
   }
 
   @Get('permissoes')
-  @Autorizar({
+  @Authorize({
     roles: ['ADMIN'],
     permissions: ['acessos:alterar_permissoes'],
   })
@@ -288,7 +288,7 @@ export class AcessoController {
   }
 
   @Get('permissoes/:id')
-  @Autorizar({
+  @Authorize({
     roles: ['ADMIN'],
     permissions: ['acessos:alterar_permissoes'],
   })

@@ -6,7 +6,7 @@ import {
   PERFIS_REQUERIDOS_METADATA,
 } from './autorizacao.metadata';
 
-export function Autorizar(options: {
+export function Authorize(options: {
   roles?: string[];
   permissions?: string[];
 }): MethodDecorator & ClassDecorator {
@@ -14,7 +14,7 @@ export function Autorizar(options: {
     (!options.roles || options.roles.length === 0) &&
     (!options.permissions || options.permissions.length === 0)
   ) {
-    throw new Error('Autorizar exige ao menos um perfil ou uma permissão.');
+    throw new Error('Authorize exige ao menos um perfil ou uma permissão.');
   }
 
   const decorators: Array<ClassDecorator | MethodDecorator> = [
