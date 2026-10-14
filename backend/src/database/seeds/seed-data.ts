@@ -478,108 +478,103 @@ export const ETAPAS_LONGA = [
 
 export const ETAPAS_CURTA = [
   {
-    slug: 'capita-marvel',
+    slug: 'homem-formiga-e-a-vespa',
     posicao: 1,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'homem-formiga-e-a-vespa',
+    slug: 'vingadores-guerra-infinita',
     posicao: 2,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'vingadores-guerra-infinita',
+    slug: 'vingadores-ultimato',
     posicao: 3,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'vingadores-ultimato',
+    slug: 'loki-temporada-1',
     posicao: 4,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'loki-temporada-1',
+    slug: 'loki-temporada-2',
     posicao: 5,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'loki-temporada-2',
+    slug: 'wandavision-temporada-1',
     posicao: 6,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'wandavision-temporada-1',
+    slug: 'shang-chi-e-a-lenda-dos-dez-aneis',
     posicao: 7,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'shang-chi-e-a-lenda-dos-dez-aneis',
+    slug: 'falcao-e-o-soldado-invernal-temporada-1',
     posicao: 8,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'falcao-e-o-soldado-invernal-temporada-1',
+    slug: 'homem-aranha-sem-volta-para-casa',
     posicao: 9,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'homem-aranha-sem-volta-para-casa',
+    slug: 'doutor-estranho-no-multiverso-da-loucura',
     posicao: 10,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'doutor-estranho-no-multiverso-da-loucura',
+    slug: 'pantera-negra-wakanda-para-sempre',
     posicao: 11,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'pantera-negra-wakanda-para-sempre',
-    posicao: 12,
-    prioridade: 'PRINCIPAL',
-  },
-  {
     slug: 'homem-formiga-e-a-vespa-quantumania',
-    posicao: 13,
+    posicao: 12,
     prioridade: 'CONTEXTO',
   },
   {
     slug: 'as-marvels',
-    posicao: 14,
+    posicao: 13,
     prioridade: 'CONTEXTO',
   },
   {
     slug: 'x-men',
-    posicao: 15,
+    posicao: 14,
     prioridade: 'PRINCIPAL',
   },
   {
     slug: 'x-men-2',
-    posicao: 16,
+    posicao: 15,
     prioridade: 'CONTEXTO',
   },
   {
     slug: 'deadpool-e-wolverine',
-    posicao: 17,
+    posicao: 16,
     prioridade: 'PRINCIPAL',
   },
   {
     slug: 'capitao-america-admiravel-mundo-novo',
-    posicao: 18,
+    posicao: 17,
     prioridade: 'PRINCIPAL',
   },
   {
     slug: 'thunderbolts',
-    posicao: 19,
+    posicao: 18,
     prioridade: 'PRINCIPAL',
   },
   {
     slug: 'homem-aranha-um-novo-dia',
-    posicao: 20,
+    posicao: 19,
     prioridade: 'CONTEXTO',
   },
   {
     slug: 'quarteto-fantastico-primeiros-passos',
-    posicao: 21,
+    posicao: 20,
     prioridade: 'PRINCIPAL',
   },
 ] as const;
@@ -1030,3 +1025,4 @@ export const ACONTECIMENTO_PERSONAGENS = [
     ],
   },
 ] as const;
+
