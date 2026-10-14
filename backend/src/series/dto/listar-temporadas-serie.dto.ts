@@ -70,8 +70,8 @@ export class TemporadaItemRespostaDto {
   @ApiProperty({ example: 2021 })
   anoLancamento!: number;
 
-  @ApiProperty({ example: 1 })
-  numeroTemporada!: number;
+  @ApiProperty({ example: 1, type: Number, nullable: true })
+  numeroTemporada!: number | null;
 
   @ApiProperty({ example: 'Loki é levado à AVT após fugir com o Tesseract.' })
   resumoSemSpoiler!: string;

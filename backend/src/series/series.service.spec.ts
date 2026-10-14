@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { SeriesService } from './series.service';
-import { Serie } from '../database/entities/catalog.entities';
+import { Obra, Serie } from '../database/entities/catalog.entities';
 
 describe('SeriesService', () => {
   let service: SeriesService;
@@ -23,6 +23,11 @@ describe('SeriesService', () => {
     findOne: jest.fn(),
   };
 
+  const mockObrasRepo = {
+    findAndCount: jest.fn(),
+    findOne: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -32,6 +37,10 @@ describe('SeriesService', () => {
         {
           provide: getRepositoryToken(Serie),
           useValue: mockRepository,
+        },
+        {
+          provide: getRepositoryToken(Obra),
+          useValue: mockObrasRepo,
         },
       ],
     }).compile();
