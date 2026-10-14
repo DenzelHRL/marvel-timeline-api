@@ -32,6 +32,7 @@ export class PersonagensController{
         return await this.personagensService.buscar(slug);
     }
 
+    // Modificar o endpoint quando houver a implementação de autenticação e autorização do guard
     @Post()
     async criar(
         @Body(new ValidationPipe()) createPersonagemDto: CriarPersonagemDto, 
@@ -40,6 +41,7 @@ export class PersonagensController{
         return await this.personagensService.criar(createPersonagemDto, authHeader);
     }
 
+    // Modificar o endpoint quando houver a implementação de autenticação e autorização do guard
     @Patch(PERSONAGENS_ROUTES.atualizar)
     async atualizar(
         @Param('id', new ParseUUIDPipe()) id: string, 
@@ -48,4 +50,9 @@ export class PersonagensController{
     ): Promise<PersonagemRespostaDto>{
         return await this.personagensService.atualizar(id, updatePersonagemDto, authHeader);
     }
+}
+
+@Controller('admin/personagens')
+export class PersonagensAdminController{
+    // Adicionar métodos para gerenciar personagens, como criar, atualizar e excluir, com autenticação e autorização adequadas.
 }
