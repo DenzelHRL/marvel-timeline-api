@@ -39,15 +39,15 @@ fica em `request.user`, disponível também como `@CurrentUser('id')`.
 ## Exigir perfil e/ou permissão
 
 Importe `AcessoModule` junto de `AuthModule` no módulo que declara o controller.
-Use `Authorize` para proteger a rota com JWT e verificar os requisitos:
+Use `Autorizar` para proteger a rota com JWT e verificar os requisitos:
 
 ```ts
-import { Authorize } from '../acesso/access.decorators';
+import { Autorizar } from '../acesso/autorizacao.decorators';
 import { CurrentUser } from '../auth/auth.decorators';
 import { AuthenticatedUser } from '../auth/auth.types';
 
 @Get()
-@Authorize({
+@Autorizar({
   roles: ['ADMIN'],
   permissions: ['usuarios:consultar_todos'],
 })
@@ -64,7 +64,7 @@ listarUsuarios(@CurrentUser() usuario: AuthenticatedUser) {
 - Use os códigos exatos do seed e da matriz. Não confie em IDs ou perfis enviados
   pelo cliente.
 
-Os módulos que usam `Authorize` devem importar `AuthModule` e `AcessoModule`;
+Os módulos que usam `Autorizar` devem importar `AuthModule` e `AcessoModule`;
 `AcessoModule` fornece o guard de autorização e `AuthModule` fornece o guard
 JWT. Para usar somente `Authenticated`, importe `AuthModule`. Não use o
 `GoogleAuthGuard` para proteger APIs: ele só inicia e conclui o fluxo OAuth
@@ -75,4 +75,4 @@ Google.
 Os decorators são infraestrutura compartilhada, não atribuem responsabilidade
 de endpoint. Cada responsável protege suas próprias rotas conforme a coluna
 Acesso da matriz. Rotas públicas, como cadastro, login e OAuth, não recebem
-`Authenticated` nem `Authorize`.
+`Authenticated` nem `Autorizar`.

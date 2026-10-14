@@ -9,7 +9,7 @@ import {
   PerfilPermissao,
 } from '../database/entities';
 import { AcessoController } from './acesso.controller';
-import { AccessControlGuard } from './access-control.guard';
+import { ControleAcessoGuard } from './controle-acesso.guard';
 import { AcessoService } from './acesso.service';
 
 @Module({
@@ -24,7 +24,7 @@ import { AcessoService } from './acesso.service';
     ]),
   ],
   controllers: [AcessoController],
-  providers: [AcessoService, AccessControlGuard],
-  exports: [AccessControlGuard],
+  providers: [AcessoService, ControleAcessoGuard],
+  exports: [ControleAcessoGuard],
 })
 export class AcessoModule {}

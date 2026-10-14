@@ -8,25 +8,25 @@ import {
 import { Reflector } from '@nestjs/core';
 import { AuthenticatedUser } from '../auth/auth.types';
 import {
-  REQUIRED_PERMISSIONS_METADATA,
-  REQUIRED_ROLES_METADATA,
-} from './access.metadata';
+  PERMISSOES_REQUERIDAS_METADATA,
+  PERFIS_REQUERIDOS_METADATA,
+} from './autorizacao.metadata';
 
 interface AuthenticatedRequest {
   user?: AuthenticatedUser;
 }
 
 @Injectable()
-export class AccessControlGuard implements CanActivate {
+export class ControleAcessoGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(
-      REQUIRED_ROLES_METADATA,
+      PERFIS_REQUERIDOS_METADATA,
       [context.getHandler(), context.getClass()],
     );
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
-      REQUIRED_PERMISSIONS_METADATA,
+      PERMISSOES_REQUERIDAS_METADATA,
       [context.getHandler(), context.getClass()],
     );
 

@@ -1,12 +1,12 @@
 import { applyDecorators, SetMetadata, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
-import { AccessControlGuard } from './access-control.guard';
+import { ControleAcessoGuard } from './controle-acesso.guard';
 import {
-  REQUIRED_PERMISSIONS_METADATA,
-  REQUIRED_ROLES_METADATA,
-} from './access.metadata';
+  PERMISSOES_REQUERIDAS_METADATA,
+  PERFIS_REQUERIDOS_METADATA,
+} from './autorizacao.metadata';
 
-export function Authorize(options: {
+export function Autorizar(options: {
   roles?: string[];
   permissions?: string[];
 }): MethodDecorator & ClassDecorator {
@@ -14,20 +14,20 @@ export function Authorize(options: {
     (!options.roles || options.roles.length === 0) &&
     (!options.permissions || options.permissions.length === 0)
   ) {
-    throw new Error('Authorize exige ao menos um perfil ou uma permissão.');
+    throw new Error('Autorizar exige ao menos um perfil ou uma permissão.');
   }
 
   const decorators: Array<ClassDecorator | MethodDecorator> = [
-    UseGuards(JwtAuthGuard, AccessControlGuard),
+    UseGuards(JwtAuthGuard, ControleAcessoGuard),
   ];
 
   if (options.roles?.length) {
-    decorators.push(SetMetadata(REQUIRED_ROLES_METADATA, options.roles));
+    decorators.push(SetMetadata(PERFIS_REQUERIDOS_METADATA, options.roles));
   }
 
   if (options.permissions?.length) {
     decorators.push(
-      SetMetadata(REQUIRED_PERMISSIONS_METADATA, options.permissions),
+      SetMetadata(PERMISSOES_REQUERIDAS_METADATA, options.permissions),
     );
   }
 

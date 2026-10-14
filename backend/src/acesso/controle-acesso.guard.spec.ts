@@ -6,10 +6,10 @@ import {
 import { Reflector } from '@nestjs/core';
 import { AuthenticatedUser } from '../auth/auth.types';
 import {
-  REQUIRED_PERMISSIONS_METADATA,
-  REQUIRED_ROLES_METADATA,
-} from './access.metadata';
-import { AccessControlGuard } from './access-control.guard';
+  PERMISSOES_REQUERIDAS_METADATA,
+  PERFIS_REQUERIDOS_METADATA,
+} from './autorizacao.metadata';
+import { ControleAcessoGuard } from './controle-acesso.guard';
 
 describe('Guard de autorização', () => {
   const user: AuthenticatedUser = {
@@ -19,7 +19,7 @@ describe('Guard de autorização', () => {
   };
 
   let requirements: Map<string, string[] | undefined>;
-  let guard: AccessControlGuard;
+  let guard: ControleAcessoGuard;
   let request: { user?: AuthenticatedUser };
 
   const context = (): ExecutionContext =>
@@ -35,7 +35,7 @@ describe('Guard de autorização', () => {
     const reflector = {
       getAllAndOverride: jest.fn((key: string) => requirements.get(key)),
     } as unknown as Reflector;
-    guard = new AccessControlGuard(reflector);
+    guard = new ControleAcessoGuard(reflector);
   });
 
   it('permite quando a rota não declara requisitos adicionais', () => {
@@ -44,7 +44,7 @@ describe('Guard de autorização', () => {
 
   it('exige usuário autenticado quando a rota declara perfil ou permissão', () => {
     request.user = undefined;
-    requirements.set(REQUIRED_PERMISSIONS_METADATA, [
+    requirements.set(PERMISSOES_REQUERIDAS_METADATA, [
       'usuarios:consultar_todos',
     ]);
 
@@ -52,19 +52,19 @@ describe('Guard de autorização', () => {
   });
 
   it('aceita qualquer um dos perfis declarados', () => {
-    requirements.set(REQUIRED_ROLES_METADATA, ['LEITOR', 'ADMIN']);
+    requirements.set(PERFIS_REQUERIDOS_METADATA, ['LEITOR', 'ADMIN']);
 
     expect(guard.canActivate(context())).toBe(true);
   });
 
   it('nega perfil não autorizado', () => {
-    requirements.set(REQUIRED_ROLES_METADATA, ['LEITOR']);
+    requirements.set(PERFIS_REQUERIDOS_METADATA, ['LEITOR']);
 
     expect(() => guard.canActivate(context())).toThrow(ForbiddenException);
   });
 
   it('exige todas as permissões declaradas', () => {
-    requirements.set(REQUIRED_PERMISSIONS_METADATA, [
+    requirements.set(PERMISSOES_REQUERIDAS_METADATA, [
       'usuarios:consultar_todos',
       'usuarios:alterar_status',
     ]);
@@ -73,7 +73,7 @@ describe('Guard de autorização', () => {
   });
 
   it('permite quando o usuário possui todas as permissões declaradas', () => {
-    requirements.set(REQUIRED_PERMISSIONS_METADATA, [
+    requirements.set(PERMISSOES_REQUERIDAS_METADATA, [
       'usuarios:consultar_todos',
       'acessos:alterar_permissoes',
     ]);

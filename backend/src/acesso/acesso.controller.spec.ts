@@ -2,7 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
-import { AccessControlGuard } from './access-control.guard';
+import { ControleAcessoGuard } from './controle-acesso.guard';
 import { AcessoController } from './acesso.controller';
 import { AcessoService } from './acesso.service';
 
@@ -93,7 +93,7 @@ describe('AcessoController', () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })
-      .overrideGuard(AccessControlGuard)
+      .overrideGuard(ControleAcessoGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })
       .compile();
 
