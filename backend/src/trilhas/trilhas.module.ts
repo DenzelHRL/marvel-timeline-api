@@ -6,10 +6,11 @@ import {
   Trilha,
   EtapaTrilha,
 } from '../database/entities/catalog.entities';
+import { ExplorarController } from './explorar.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Trilha, EtapaTrilha])],
-  controllers: [TrilhasController],
+  controllers: [TrilhasController, ExplorarController],
   providers: [TrilhasService],
 })
 export class TrilhasModule {}
