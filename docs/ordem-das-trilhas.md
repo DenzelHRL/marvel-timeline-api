@@ -2,7 +2,9 @@
 
 As trilhas usam a ordem dos acontecimentos da história principal de cada obra, e não o ano de lançamento. Flashbacks, viagens no tempo e cenas pós-créditos não são usados para deslocar o filme inteiro.
 
-A curta preserva as 21 obras selecionadas, incluindo Capitã Marvel como contexto inicial. A longa preserva as 34 obras selecionadas. A longa é uma seleção ampliada, não um catálogo completo de tudo que a Marvel lançou.
+A curta tem 20 obras e não inclui Capitã Marvel. Essa obra permanece no catálogo e na longa. A longa preserva as 34 obras selecionadas. A longa é uma seleção ampliada, não um catálogo completo de tudo que a Marvel lançou.
+
+Homem-Formiga e a Vespa abre a curta porque sua história principal antecede Guerra Infinita. A curta não começa estritamente em Guerra Infinita quando usamos a ordem dos acontecimentos.
 
 ## Histórias de outras linhas do tempo
 
@@ -54,27 +56,26 @@ Essas exceções não transformam a lista em uma ordem de lançamento. A linha p
 
 ## Trilha curta
 
-1. Capitã Marvel
-2. Homem-Formiga e a Vespa
-3. Vingadores: Guerra Infinita
-4. Vingadores: Ultimato
-5. Loki — temporada 1
-6. Loki — temporada 2
-7. WandaVision — temporada 1
-8. Shang-Chi e a Lenda dos Dez Anéis
-9. Falcão e o Soldado Invernal — temporada 1
-10. Homem-Aranha: Sem Volta para Casa
-11. Doutor Estranho no Multiverso da Loucura
-12. Pantera Negra: Wakanda Para Sempre
-13. Homem-Formiga e a Vespa: Quantumania
-14. As Marvels
-15. X-Men
-16. X-Men 2
-17. Deadpool & Wolverine
-18. Capitão América: Admirável Mundo Novo
-19. Thunderbolts*
-20. Homem-Aranha: Um Novo Dia
-21. Quarteto Fantástico: Primeiros Passos
+1. Homem-Formiga e a Vespa
+2. Vingadores: Guerra Infinita
+3. Vingadores: Ultimato
+4. Loki — temporada 1
+5. Loki — temporada 2
+6. WandaVision — temporada 1
+7. Shang-Chi e a Lenda dos Dez Anéis
+8. Falcão e o Soldado Invernal — temporada 1
+9. Homem-Aranha: Sem Volta para Casa
+10. Doutor Estranho no Multiverso da Loucura
+11. Pantera Negra: Wakanda Para Sempre
+12. Homem-Formiga e a Vespa: Quantumania
+13. As Marvels
+14. X-Men
+15. X-Men 2
+16. Deadpool & Wolverine
+17. Capitão América: Admirável Mundo Novo
+18. Thunderbolts*
+19. Homem-Aranha: Um Novo Dia
+20. Quarteto Fantástico: Primeiros Passos
 
 ## Aplicar a correção no banco local
 
@@ -86,13 +87,13 @@ npm run db:seed
 npm run db:verify
 ```
 
-A nova migration atualiza posições existentes em uma transação, sem excluir e recriar etapas. Os IDs, vínculos com obras, prioridades, justificativas e status das obras são preservados. A faixa temporária de posições evita colisões com a restrição de unicidade. Bancos novos recebem a mesma ordem pelos seeds.
+A nova migration atualiza posições existentes em uma transação, preservando as etapas mantidas e removendo somente o vínculo de Capitã Marvel com a curta. Os IDs, vínculos com obras, prioridades e justificativas das etapas mantidas, além dos status das obras, são preservados. Reverter a migration recria o vínculo removido com um novo ID e justificativa nula. A faixa temporária de posições evita colisões com a restrição de unicidade. Bancos novos recebem a mesma ordem pelos seeds.
 
 Se uma das duas trilhas tiver uma seleção personalizada, com etapas adicionadas ou removidas, a migration interrompe com uma mensagem e reverte a transação. Nesse caso, revise essa seleção antes de aplicar a correção. Não apague o banco para contornar o aviso.
 
 A correção é executada uma vez pelo histórico de migrations. Rodar o seed novamente não deve desfazer uma reordenação administrativa posterior. As posições no seed são a ordem inicial para bancos novos.
 
-Para conferir no Swagger, consulte `/trilhas/curta/etapas?pagina=1&limite=3`: o início deve ser Capitã Marvel, Homem-Formiga e a Vespa e Guerra Infinita. O mapa usa a mesma posição das etapas e acompanha a alteração automaticamente.
+Para conferir no Swagger, consulte `/trilhas/curta/etapas?pagina=1&limite=3`: o início deve ser Homem-Formiga e a Vespa, Guerra Infinita e Ultimato. O mapa usa a mesma posição das etapas e acompanha a alteração automaticamente.
 
 ## Referências para a ordem e as exceções
 
