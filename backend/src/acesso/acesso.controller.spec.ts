@@ -10,7 +10,11 @@ describe('AcessoController', () => {
   let app: INestApplication;
   let acessoService: Pick<
     AcessoService,
-    'listarUsuarios' | 'buscarUsuarioPorId'
+    | 'listarUsuarios'
+    | 'buscarUsuarioPorId'
+    | 'alterarStatusUsuario'
+    | 'atribuirPerfil'
+    | 'revogarPerfil'
   >;
 
   const respostaUsuario = {
@@ -32,6 +36,15 @@ describe('AcessoController', () => {
         totalPaginas: 1,
       }),
       buscarUsuarioPorId: jest.fn().mockResolvedValue(respostaUsuario),
+      alterarStatusUsuario: jest
+        .fn()
+        .mockResolvedValue({ ...respostaUsuario, ativo: false }),
+      atribuirPerfil: jest.fn().mockResolvedValue({
+        usuarioId: respostaUsuario.id,
+        perfilId: '02a12345-6789-4abc-8def-0123456789ab',
+        codigo: 'LEITOR',
+      }),
+      revogarPerfil: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -113,5 +126,67 @@ describe('AcessoController', () => {
     await request(app.getHttpServer())
       .get(`/admin/usuarios/${respostaUsuario.id}`)
       .expect(404);
+  });
+
+  it('altera o status da conta', async () => {
+    await request(app.getHttpServer())
+      .patch(`/admin/usuarios/${respostaUsuario.id}/status`)
+      .send({ ativo: false })
+      .expect(200)
+      .expect({ ...respostaUsuario, ativo: false });
+
+    expect(acessoService.alterarStatusUsuario).toHaveBeenCalledWith(
+      respostaUsuario.id,
+      false,
+    );
+  });
+
+  it('rejeita alteração de status com valor diferente de boolean', async () => {
+    await request(app.getHttpServer())
+      .patch(`/admin/usuarios/${respostaUsuario.id}/status`)
+      .send({ ativo: 'false' })
+      .expect(400);
+
+    expect(acessoService.alterarStatusUsuario).not.toHaveBeenCalled();
+  });
+
+  it('atribui um perfil à conta', async () => {
+    await request(app.getHttpServer())
+      .post(`/admin/usuarios/${respostaUsuario.id}/perfis`)
+      .send({ perfilId: '02a12345-6789-4abc-8def-0123456789ab' })
+      .expect(201)
+      .expect({
+        usuarioId: respostaUsuario.id,
+        perfilId: '02a12345-6789-4abc-8def-0123456789ab',
+        codigo: 'LEITOR',
+      });
+
+    expect(acessoService.atribuirPerfil).toHaveBeenCalledWith(
+      respostaUsuario.id,
+      '02a12345-6789-4abc-8def-0123456789ab',
+    );
+  });
+
+  it('rejeita UUID de perfil inválido', async () => {
+    await request(app.getHttpServer())
+      .post(`/admin/usuarios/${respostaUsuario.id}/perfis`)
+      .send({ perfilId: 'id-invalido' })
+      .expect(400);
+
+    expect(acessoService.atribuirPerfil).not.toHaveBeenCalled();
+  });
+
+  it('revoga um perfil da conta e responde sem conteúdo', async () => {
+    await request(app.getHttpServer())
+      .delete(
+        `/admin/usuarios/${respostaUsuario.id}/perfis/02a12345-6789-4abc-8def-0123456789ab`,
+      )
+      .expect(204)
+      .expect('');
+
+    expect(acessoService.revogarPerfil).toHaveBeenCalledWith(
+      respostaUsuario.id,
+      '02a12345-6789-4abc-8def-0123456789ab',
+    );
   });
 });

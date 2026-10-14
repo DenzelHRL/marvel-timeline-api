@@ -1,14 +1,23 @@
 import {
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
+  Body,
   NotFoundException,
   Param,
   ParseUUIDPipe,
+  Patch,
+  Post,
   Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -18,6 +27,11 @@ import {
 } from '@nestjs/swagger';
 import { Authorize } from './access.decorators';
 import { AcessoService } from './acesso.service';
+import {
+  AlterarStatusUsuarioDto,
+  AtribuirPerfilDto,
+  AtribuirPerfilRespostaDto,
+} from './dto';
 import { ListarUsuariosDto } from './dto/listar-usuarios.dto';
 import { ListarUsuariosRespostaDto } from './dto/listar-usuarios-resposta.dto';
 import { UsuarioAdminRespostaDto } from './dto/usuario-admin-resposta.dto';
@@ -92,5 +106,95 @@ export class AcessoController {
     }
 
     return usuario;
+  }
+
+  @Patch('usuarios/:id/status')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['usuarios:alterar_status'],
+  })
+  @ApiOperation({
+    summary: 'Ativar ou desativar uma conta de usuário',
+    description:
+      'Impede desativar o último administrador ativo capaz de recuperar o acesso.',
+  })
+  @ApiOkResponse({
+    description: 'Status atualizado.',
+    type: UsuarioAdminRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'O UUID ou o corpo da requisição é inválido.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  @ApiNotFoundResponse({ description: 'Usuário não encontrado.' })
+  @ApiConflictResponse({
+    description:
+      'A alteração deixaria o sistema sem administrador recuperável.',
+  })
+  alterarStatusUsuario(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AlterarStatusUsuarioDto,
+  ): Promise<UsuarioAdminRespostaDto> {
+    return this.acessoService.alterarStatusUsuario(id, dto.ativo);
+  }
+
+  @Post('usuarios/:id/perfis')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['acessos:atribuir_perfil'],
+  })
+  @ApiOperation({ summary: 'Atribuir um perfil a uma conta de usuário' })
+  @ApiCreatedResponse({
+    description: 'Perfil atribuído.',
+    type: AtribuirPerfilRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'O UUID do usuário ou o corpo da requisição é inválido.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  @ApiNotFoundResponse({
+    description: 'Usuário ou perfil não encontrado.',
+  })
+  @ApiConflictResponse({ description: 'Esse perfil já está atribuído.' })
+  atribuirPerfil(
+    @Param('id', ParseUUIDPipe) usuarioId: string,
+    @Body() dto: AtribuirPerfilDto,
+  ): Promise<AtribuirPerfilRespostaDto> {
+    return this.acessoService.atribuirPerfil(usuarioId, dto.perfilId);
+  }
+
+  @Delete('usuarios/:id/perfis/:perfilId')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['acessos:revogar_perfil'],
+  })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revogar um perfil atribuído a uma conta' })
+  @ApiNoContentResponse({ description: 'Perfil revogado.' })
+  @ApiBadRequestResponse({
+    description: 'O UUID do usuário ou do perfil é inválido.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  @ApiNotFoundResponse({
+    description: 'Usuário, perfil ou vínculo não encontrado.',
+  })
+  @ApiConflictResponse({
+    description:
+      'A revogação deixaria o sistema sem administrador recuperável.',
+  })
+  revogarPerfil(
+    @Param('id', ParseUUIDPipe) usuarioId: string,
+    @Param('perfilId', ParseUUIDPipe) perfilId: string,
+  ): Promise<void> {
+    return this.acessoService.revogarPerfil(usuarioId, perfilId);
   }
 }
