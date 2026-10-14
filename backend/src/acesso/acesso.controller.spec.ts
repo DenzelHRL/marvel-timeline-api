@@ -15,6 +15,10 @@ describe('AcessoController', () => {
     | 'alterarStatusUsuario'
     | 'atribuirPerfil'
     | 'revogarPerfil'
+    | 'buscarPerfilPorId'
+    | 'listarPerfis'
+    | 'listarPermissoes'
+    | 'buscarPermissaoPorId'
   >;
 
   const respostaUsuario = {
@@ -45,6 +49,42 @@ describe('AcessoController', () => {
         codigo: 'LEITOR',
       }),
       revogarPerfil: jest.fn().mockResolvedValue(undefined),
+      buscarPerfilPorId: jest.fn().mockResolvedValue({
+        id: '02a12345-6789-4abc-8def-0123456789ab',
+        codigo: 'ADMIN',
+        descricao: 'Edita catálogo, trilhas, contas e acessos.',
+      }),
+      listarPerfis: jest.fn().mockResolvedValue({
+        dados: [
+          {
+            id: '02a12345-6789-4abc-8def-0123456789ab',
+            codigo: 'ADMIN',
+            descricao: 'Edita catálogo, trilhas, contas e acessos.',
+          },
+        ],
+        total: 1,
+        pagina: 1,
+        limite: 20,
+        totalPaginas: 1,
+      }),
+      listarPermissoes: jest.fn().mockResolvedValue({
+        dados: [
+          {
+            id: '04a12345-6789-4abc-8def-0123456789ab',
+            codigo: 'usuarios:consultar_todos',
+            descricao: 'Consultar a lista de usuários para administração.',
+          },
+        ],
+        total: 1,
+        pagina: 1,
+        limite: 20,
+        totalPaginas: 1,
+      }),
+      buscarPermissaoPorId: jest.fn().mockResolvedValue({
+        id: '04a12345-6789-4abc-8def-0123456789ab',
+        codigo: 'usuarios:consultar_todos',
+        descricao: 'Consultar a lista de usuários para administração.',
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -188,5 +228,131 @@ describe('AcessoController', () => {
       respostaUsuario.id,
       '02a12345-6789-4abc-8def-0123456789ab',
     );
+  });
+
+  it('consulta um perfil pelo UUID', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/perfis/02a12345-6789-4abc-8def-0123456789ab')
+      .expect(200)
+      .expect({
+        id: '02a12345-6789-4abc-8def-0123456789ab',
+        codigo: 'ADMIN',
+        descricao: 'Edita catálogo, trilhas, contas e acessos.',
+      });
+
+    expect(acessoService.buscarPerfilPorId).toHaveBeenCalledWith(
+      '02a12345-6789-4abc-8def-0123456789ab',
+    );
+  });
+
+  it('retorna 404 quando o perfil não existe', async () => {
+    jest.spyOn(acessoService, 'buscarPerfilPorId').mockResolvedValue(null);
+
+    await request(app.getHttpServer())
+      .get('/admin/perfis/02a12345-6789-4abc-8def-0123456789ab')
+      .expect(404);
+  });
+
+  it('lista perfis com filtros e paginação', async () => {
+    await request(app.getHttpServer())
+      .get(
+        '/admin/perfis?codigo=ADMIN&descricao=acessos&pagina=2&limite=10',
+      )
+      .expect(200)
+      .expect({
+        dados: [
+          {
+            id: '02a12345-6789-4abc-8def-0123456789ab',
+            codigo: 'ADMIN',
+            descricao: 'Edita catálogo, trilhas, contas e acessos.',
+          },
+        ],
+        total: 1,
+        pagina: 1,
+        limite: 20,
+        totalPaginas: 1,
+      });
+
+    expect(acessoService.listarPerfis).toHaveBeenCalledWith({
+      codigo: 'ADMIN',
+      descricao: 'acessos',
+      pagina: 2,
+      limite: 10,
+    });
+  });
+
+  it('rejeita filtros vazios ou paginação acima do limite na lista de perfis', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/perfis?codigo=%20&limite=51')
+      .expect(400);
+
+    expect(acessoService.listarPerfis).not.toHaveBeenCalled();
+  });
+
+  it('rejeita identificador de perfil que não seja UUID', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/perfis/id-invalido')
+      .expect(400);
+
+    expect(acessoService.buscarPerfilPorId).not.toHaveBeenCalled();
+  });
+
+  it('lista permissões com filtros e paginação', async () => {
+    await request(app.getHttpServer())
+      .get(
+        '/admin/permissoes?codigo=usuarios&descricao=administra%C3%A7%C3%A3o&pagina=2&limite=10',
+      )
+      .expect(200)
+      .expect({
+        dados: [
+          {
+            id: '04a12345-6789-4abc-8def-0123456789ab',
+            codigo: 'usuarios:consultar_todos',
+            descricao: 'Consultar a lista de usuários para administração.',
+          },
+        ],
+        total: 1,
+        pagina: 1,
+        limite: 20,
+        totalPaginas: 1,
+      });
+
+    expect(acessoService.listarPermissoes).toHaveBeenCalledWith({
+      codigo: 'usuarios',
+      descricao: 'administração',
+      pagina: 2,
+      limite: 10,
+    });
+  });
+
+  it('rejeita filtros vazios ou paginação acima do limite na lista de permissões', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/permissoes?codigo=%20&limite=51')
+      .expect(400);
+
+    expect(acessoService.listarPermissoes).not.toHaveBeenCalled();
+  });
+
+  it('consulta uma permissão pelo UUID', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/permissoes/04a12345-6789-4abc-8def-0123456789ab')
+      .expect(200)
+      .expect({
+        id: '04a12345-6789-4abc-8def-0123456789ab',
+        codigo: 'usuarios:consultar_todos',
+        descricao: 'Consultar a lista de usuários para administração.',
+      });
+
+    expect(acessoService.buscarPermissaoPorId).toHaveBeenCalledWith(
+      '04a12345-6789-4abc-8def-0123456789ab',
+    );
+  });
+
+  it('retorna 404 quando a permissão não existe', async () => {
+    jest.spyOn(acessoService, 'buscarPermissaoPorId').mockResolvedValue(null);
+
+    await request(app.getHttpServer())
+      .get('/admin/permissoes/04a12345-6789-4abc-8def-0123456789ab')
+      .expect(404);
   });
 });

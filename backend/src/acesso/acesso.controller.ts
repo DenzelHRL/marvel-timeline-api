@@ -31,6 +31,12 @@ import {
   AlterarStatusUsuarioDto,
   AtribuirPerfilDto,
   AtribuirPerfilRespostaDto,
+  ListarPerfisDto,
+  ListarPerfisRespostaDto,
+  ListarPermissoesDto,
+  ListarPermissoesRespostaDto,
+  PermissaoAdminRespostaDto,
+  PerfilAdminRespostaDto,
 } from './dto';
 import { ListarUsuariosDto } from './dto/listar-usuarios.dto';
 import { ListarUsuariosRespostaDto } from './dto/listar-usuarios-resposta.dto';
@@ -196,5 +202,117 @@ export class AcessoController {
     @Param('perfilId', ParseUUIDPipe) perfilId: string,
   ): Promise<void> {
     return this.acessoService.revogarPerfil(usuarioId, perfilId);
+  }
+
+  @Get('perfis')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['acessos:alterar_permissoes'],
+  })
+  @ApiOperation({
+    summary: 'Listar perfis de acesso',
+    description:
+      'Busca perfis por código e/ou descrição, com paginação dos resultados.',
+  })
+  @ApiOkResponse({
+    description: 'Perfis retornados com metadados de paginação.',
+    type: ListarPerfisRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Filtros ou parâmetros de paginação inválidos.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  listarPerfis(
+    @Query() filtros: ListarPerfisDto,
+  ): Promise<ListarPerfisRespostaDto> {
+    return this.acessoService.listarPerfis(filtros);
+  }
+
+  @Get('perfis/:id')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['acessos:alterar_permissoes'],
+  })
+  @ApiOperation({ summary: 'Consultar um perfil pelo identificador' })
+  @ApiOkResponse({
+    description: 'Dados do perfil encontrado.',
+    type: PerfilAdminRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'O identificador informado não é um UUID válido.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  @ApiNotFoundResponse({ description: 'Perfil não encontrado.' })
+  async buscarPerfilPorId(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PerfilAdminRespostaDto> {
+    const perfil = await this.acessoService.buscarPerfilPorId(id);
+    if (!perfil) {
+      throw new NotFoundException('Perfil não encontrado.');
+    }
+
+    return perfil;
+  }
+
+  @Get('permissoes')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['acessos:alterar_permissoes'],
+  })
+  @ApiOperation({
+    summary: 'Listar permissões administrativas disponíveis',
+    description:
+      'Permite filtrar por código e descrição; os resultados são paginados.',
+  })
+  @ApiOkResponse({
+    description: 'Permissões retornadas com metadados de paginação.',
+    type: ListarPermissoesRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Filtros ou parâmetros de paginação inválidos.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  listarPermissoes(
+    @Query() filtros: ListarPermissoesDto,
+  ): Promise<ListarPermissoesRespostaDto> {
+    return this.acessoService.listarPermissoes(filtros);
+  }
+
+  @Get('permissoes/:id')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['acessos:alterar_permissoes'],
+  })
+  @ApiOperation({ summary: 'Consultar uma permissão pelo identificador' })
+  @ApiOkResponse({
+    description: 'Dados da permissão encontrada.',
+    type: PermissaoAdminRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'O identificador informado não é um UUID válido.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  @ApiNotFoundResponse({ description: 'Permissão não encontrada.' })
+  async buscarPermissaoPorId(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PermissaoAdminRespostaDto> {
+    const permissao = await this.acessoService.buscarPermissaoPorId(id);
+    if (!permissao) {
+      throw new NotFoundException('Permissão não encontrada.');
+    }
+
+    return permissao;
   }
 }

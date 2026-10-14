@@ -12,11 +12,22 @@ import {
   ILike,
   Repository,
 } from 'typeorm';
-import { Perfil, Usuario, UsuarioPerfil } from '../database/entities';
+import {
+  Perfil,
+  Permissao,
+  Usuario,
+  UsuarioPerfil,
+} from '../database/entities';
 import {
   AtribuirPerfilRespostaDto,
+  ListarPerfisDto,
+  ListarPerfisRespostaDto,
+  ListarPermissoesDto,
+  ListarPermissoesRespostaDto,
   ListarUsuariosDto,
   ListarUsuariosRespostaDto,
+  PermissaoAdminRespostaDto,
+  PerfilAdminRespostaDto,
   UsuarioAdminRespostaDto,
 } from './dto';
 
@@ -34,6 +45,10 @@ export class AcessoService {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuariosRepository: Repository<Usuario>,
+    @InjectRepository(Perfil)
+    private readonly perfisRepository: Repository<Perfil>,
+    @InjectRepository(Permissao)
+    private readonly permissoesRepository: Repository<Permissao>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -88,6 +103,82 @@ export class AcessoService {
     });
 
     return usuario ? this.toResposta(usuario) : null;
+  }
+
+  async buscarPerfilPorId(id: string): Promise<PerfilAdminRespostaDto | null> {
+    const perfil = await this.perfisRepository.findOne({
+      where: { id },
+      select: { id: true, codigo: true, descricao: true },
+    });
+
+    return perfil;
+  }
+
+  async listarPerfis(
+    filtros: ListarPerfisDto,
+  ): Promise<ListarPerfisRespostaDto> {
+    const where: FindOptionsWhere<Perfil> = {};
+    if (filtros.codigo) {
+      where.codigo = ILike(`%${filtros.codigo}%`);
+    }
+    if (filtros.descricao) {
+      where.descricao = ILike(`%${filtros.descricao}%`);
+    }
+
+    const [perfis, total] = await this.perfisRepository.findAndCount({
+      where,
+      select: { id: true, codigo: true, descricao: true },
+      order: { codigo: 'ASC', id: 'ASC' },
+      take: filtros.limite,
+      skip: (filtros.pagina - 1) * filtros.limite,
+    });
+
+    return {
+      dados: perfis,
+      total,
+      pagina: filtros.pagina,
+      limite: filtros.limite,
+      totalPaginas: Math.ceil(total / filtros.limite),
+    };
+  }
+
+  async listarPermissoes(
+    filtros: ListarPermissoesDto,
+  ): Promise<ListarPermissoesRespostaDto> {
+    const where: FindOptionsWhere<Permissao> = {};
+    if (filtros.codigo) {
+      where.codigo = ILike(`%${filtros.codigo}%`);
+    }
+    if (filtros.descricao) {
+      where.descricao = ILike(`%${filtros.descricao}%`);
+    }
+
+    const [permissoes, total] = await this.permissoesRepository.findAndCount({
+      where,
+      select: { id: true, codigo: true, descricao: true },
+      order: { codigo: 'ASC', id: 'ASC' },
+      take: filtros.limite,
+      skip: (filtros.pagina - 1) * filtros.limite,
+    });
+
+    return {
+      dados: permissoes,
+      total,
+      pagina: filtros.pagina,
+      limite: filtros.limite,
+      totalPaginas: Math.ceil(total / filtros.limite),
+    };
+  }
+
+  async buscarPermissaoPorId(
+    id: string,
+  ): Promise<PermissaoAdminRespostaDto | null> {
+    const permissao = await this.permissoesRepository.findOne({
+      where: { id },
+      select: { id: true, codigo: true, descricao: true },
+    });
+
+    return permissao;
   }
 
   async alterarStatusUsuario(

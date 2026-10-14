@@ -1,13 +1,28 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { DataSource, EntityManager, Repository } from 'typeorm';
-import { Perfil, Usuario, UsuarioPerfil } from '../database/entities';
-import { ListarUsuariosDto } from './dto';
+import {
+  Perfil,
+  Permissao,
+  Usuario,
+  UsuarioPerfil,
+} from '../database/entities';
+import {
+  ListarPerfisDto,
+  ListarPermissoesDto,
+  ListarUsuariosDto,
+} from './dto';
 import { AcessoService } from './acesso.service';
 
 describe('AcessoService', () => {
   let service: AcessoService;
   let usuariosRepository: jest.Mocked<
     Pick<Repository<Usuario>, 'findAndCount' | 'findOne'>
+  >;
+  let perfisRepository: jest.Mocked<
+    Pick<Repository<Perfil>, 'findAndCount' | 'findOne'>
+  >;
+  let permissoesRepository: jest.Mocked<
+    Pick<Repository<Permissao>, 'findAndCount' | 'findOne'>
   >;
   let manager: {
     findOne: jest.Mock;
@@ -32,9 +47,22 @@ describe('AcessoService', () => {
     codigo: 'ADMIN',
     descricao: 'Administrador',
   } satisfies Perfil;
+  const permissaoConsultarUsuarios = {
+    id: '04a12345-6789-4abc-8def-0123456789ab',
+    codigo: 'usuarios:consultar_todos',
+    descricao: 'Consultar a lista de usuários para administração.',
+  } satisfies Permissao;
 
   beforeEach(() => {
     usuariosRepository = {
+      findAndCount: jest.fn(),
+      findOne: jest.fn(),
+    };
+    perfisRepository = {
+      findAndCount: jest.fn(),
+      findOne: jest.fn(),
+    };
+    permissoesRepository = {
       findAndCount: jest.fn(),
       findOne: jest.fn(),
     };
@@ -53,6 +81,8 @@ describe('AcessoService', () => {
     };
     service = new AcessoService(
       usuariosRepository as unknown as Repository<Usuario>,
+      perfisRepository as unknown as Repository<Perfil>,
+      permissoesRepository as unknown as Repository<Permissao>,
       dataSource as unknown as DataSource,
     );
   });
@@ -140,6 +170,115 @@ describe('AcessoService', () => {
     usuariosRepository.findOne.mockResolvedValue(null);
 
     await expect(service.buscarUsuarioPorId(usuario.id)).resolves.toBeNull();
+  });
+
+  it('consulta um perfil pelo ID selecionando apenas seus campos públicos', async () => {
+    perfisRepository.findOne.mockResolvedValue(perfilAdmin);
+
+    await expect(service.buscarPerfilPorId(perfilAdmin.id)).resolves.toEqual(
+      perfilAdmin,
+    );
+    expect(perfisRepository.findOne).toHaveBeenCalledWith({
+      where: { id: perfilAdmin.id },
+      select: { id: true, codigo: true, descricao: true },
+    });
+  });
+
+  it('retorna null quando o perfil não existe', async () => {
+    perfisRepository.findOne.mockResolvedValue(null);
+
+    await expect(service.buscarPerfilPorId(perfilAdmin.id)).resolves.toBeNull();
+  });
+
+  it('lista perfis filtrados com paginação e ordenação estável', async () => {
+    perfisRepository.findAndCount.mockResolvedValue([[perfilAdmin], 21]);
+    const filtros = Object.assign(new ListarPerfisDto(), {
+      codigo: 'ADMIN',
+      descricao: 'Administrador',
+      pagina: 2,
+      limite: 10,
+    });
+
+    await expect(service.listarPerfis(filtros)).resolves.toEqual({
+      dados: [perfilAdmin],
+      total: 21,
+      pagina: 2,
+      limite: 10,
+      totalPaginas: 3,
+    });
+    expect(perfisRepository.findAndCount).toHaveBeenCalledWith({
+      where: {
+        codigo: expect.objectContaining({
+          _type: 'ilike',
+          _value: '%ADMIN%',
+        }),
+        descricao: expect.objectContaining({
+          _type: 'ilike',
+          _value: '%Administrador%',
+        }),
+      },
+      select: { id: true, codigo: true, descricao: true },
+      order: { codigo: 'ASC', id: 'ASC' },
+      take: 10,
+      skip: 10,
+    });
+  });
+
+  it('lista permissões filtradas com paginação e ordenação estável', async () => {
+    permissoesRepository.findAndCount.mockResolvedValue([
+      [permissaoConsultarUsuarios],
+      21,
+    ]);
+    const filtros = Object.assign(new ListarPermissoesDto(), {
+      codigo: 'usuarios',
+      descricao: 'administração',
+      pagina: 2,
+      limite: 10,
+    });
+
+    await expect(service.listarPermissoes(filtros)).resolves.toEqual({
+      dados: [permissaoConsultarUsuarios],
+      total: 21,
+      pagina: 2,
+      limite: 10,
+      totalPaginas: 3,
+    });
+    expect(permissoesRepository.findAndCount).toHaveBeenCalledWith({
+      where: {
+        codigo: expect.objectContaining({
+          _type: 'ilike',
+          _value: '%usuarios%',
+        }),
+        descricao: expect.objectContaining({
+          _type: 'ilike',
+          _value: '%administração%',
+        }),
+      },
+      select: { id: true, codigo: true, descricao: true },
+      order: { codigo: 'ASC', id: 'ASC' },
+      take: 10,
+      skip: 10,
+    });
+  });
+
+  it('consulta uma permissão pelo ID selecionando apenas seus campos públicos', async () => {
+    permissoesRepository.findOne.mockResolvedValue(permissaoConsultarUsuarios);
+
+    await expect(
+      service.buscarPermissaoPorId(permissaoConsultarUsuarios.id),
+    ).resolves.toEqual(permissaoConsultarUsuarios);
+    expect(permissoesRepository.findOne).toHaveBeenCalledWith({
+      where: { id: permissaoConsultarUsuarios.id },
+      select: { id: true, codigo: true, descricao: true },
+    });
+  });
+
+  it('retorna null quando a permissão não existe', async () => {
+    permissoesRepository.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.buscarPermissaoPorId(permissaoConsultarUsuarios.id),
+    ).resolves.toBeNull();
   });
 
   it('altera o status de conta existente sem retornar o hash', async () => {

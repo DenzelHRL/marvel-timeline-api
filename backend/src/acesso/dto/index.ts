@@ -1,6 +1,12 @@
 export { AlterarStatusUsuarioDto } from './alterar-status-usuario.dto';
 export { AtribuirPerfilDto } from './atribuir-perfil.dto';
 export { AtribuirPerfilRespostaDto } from './atribuir-perfil-resposta.dto';
+export { ListarPerfisDto } from './listar-perfis.dto';
+export { ListarPerfisRespostaDto } from './listar-perfis-resposta.dto';
+export { ListarPermissoesDto } from './listar-permissoes.dto';
+export { ListarPermissoesRespostaDto } from './listar-permissoes-resposta.dto';
 export { ListarUsuariosDto } from './listar-usuarios.dto';
 export { ListarUsuariosRespostaDto } from './listar-usuarios-resposta.dto';
+export { PermissaoAdminRespostaDto } from './permissao-admin-resposta.dto';
+export { PerfilAdminRespostaDto } from './perfil-admin-resposta.dto';
 export { UsuarioAdminRespostaDto } from './usuario-admin-resposta.dto';
