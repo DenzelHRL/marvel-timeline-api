@@ -2,15 +2,12 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import {
   Perfil,
+  PerfilPermissao,
   Permissao,
   Usuario,
   UsuarioPerfil,
 } from '../database/entities';
-import {
-  ListarPerfisDto,
-  ListarPermissoesDto,
-  ListarUsuariosDto,
-} from './dto';
+import { ListarPerfisDto, ListarPermissoesDto, ListarUsuariosDto } from './dto';
 import { AcessoService } from './acesso.service';
 
 describe('AcessoService', () => {
@@ -22,8 +19,22 @@ describe('AcessoService', () => {
     Pick<Repository<Perfil>, 'findAndCount' | 'findOne'>
   >;
   let permissoesRepository: jest.Mocked<
-    Pick<Repository<Permissao>, 'findAndCount' | 'findOne'>
+    Pick<
+      Repository<Permissao>,
+      'findAndCount' | 'findOne' | 'createQueryBuilder'
+    >
   >;
+  let permissionQueryBuilder: {
+    innerJoin: jest.Mock;
+    where: jest.Mock;
+    andWhere: jest.Mock;
+    select: jest.Mock;
+    orderBy: jest.Mock;
+    addOrderBy: jest.Mock;
+    take: jest.Mock;
+    skip: jest.Mock;
+    getManyAndCount: jest.Mock;
+  };
   let manager: {
     findOne: jest.Mock;
     query: jest.Mock;
@@ -52,6 +63,11 @@ describe('AcessoService', () => {
     codigo: 'usuarios:consultar_todos',
     descricao: 'Consultar a lista de usuários para administração.',
   } satisfies Permissao;
+  const permissaoAlterarPermissoes = {
+    id: '05a12345-6789-4abc-8def-0123456789ab',
+    codigo: 'acessos:alterar_permissoes',
+    descricao: 'Alterar os vínculos entre perfis e permissões.',
+  } satisfies Permissao;
 
   beforeEach(() => {
     usuariosRepository = {
@@ -62,10 +78,39 @@ describe('AcessoService', () => {
       findAndCount: jest.fn(),
       findOne: jest.fn(),
     };
+    permissionQueryBuilder = {
+      innerJoin: jest.fn(),
+      where: jest.fn(),
+      andWhere: jest.fn(),
+      select: jest.fn(),
+      orderBy: jest.fn(),
+      addOrderBy: jest.fn(),
+      take: jest.fn(),
+      skip: jest.fn(),
+      getManyAndCount: jest.fn(),
+    };
+    for (const method of [
+      'innerJoin',
+      'where',
+      'andWhere',
+      'select',
+      'orderBy',
+      'addOrderBy',
+      'take',
+      'skip',
+    ] as const) {
+      permissionQueryBuilder[method].mockReturnValue(permissionQueryBuilder);
+    }
     permissoesRepository = {
       findAndCount: jest.fn(),
       findOne: jest.fn(),
-    };
+      createQueryBuilder: jest.fn().mockReturnValue(permissionQueryBuilder),
+    } as unknown as jest.Mocked<
+      Pick<
+        Repository<Permissao>,
+        'findAndCount' | 'findOne' | 'createQueryBuilder'
+      >
+    >;
     manager = {
       findOne: jest.fn(),
       query: jest.fn(),
@@ -281,6 +326,79 @@ describe('AcessoService', () => {
     ).resolves.toBeNull();
   });
 
+  it('lista permissões vinculadas ao perfil com filtros e paginação', async () => {
+    perfisRepository.findOne.mockResolvedValue(perfilAdmin);
+    permissionQueryBuilder.getManyAndCount.mockResolvedValue([
+      [permissaoConsultarUsuarios],
+      21,
+    ]);
+    const filtros = Object.assign(new ListarPermissoesDto(), {
+      codigo: 'usuarios',
+      descricao: 'administração',
+      pagina: 2,
+      limite: 10,
+    });
+
+    await expect(
+      service.listarPermissoesDoPerfil(perfilAdmin.id, filtros),
+    ).resolves.toEqual({
+      dados: [permissaoConsultarUsuarios],
+      total: 21,
+      pagina: 2,
+      limite: 10,
+      totalPaginas: 3,
+    });
+    expect(permissoesRepository.createQueryBuilder).toHaveBeenCalledWith(
+      'permissao',
+    );
+    expect(permissionQueryBuilder.innerJoin).toHaveBeenCalledWith(
+      PerfilPermissao,
+      'perfil_permissao',
+      'perfil_permissao.permissao_id = permissao.id',
+    );
+    expect(permissionQueryBuilder.where).toHaveBeenCalledWith(
+      'perfil_permissao.perfil_id = :perfilId',
+      { perfilId: perfilAdmin.id },
+    );
+    expect(permissionQueryBuilder.andWhere).toHaveBeenNthCalledWith(
+      1,
+      'permissao.codigo ILIKE :codigo',
+      { codigo: '%usuarios%' },
+    );
+    expect(permissionQueryBuilder.andWhere).toHaveBeenNthCalledWith(
+      2,
+      'permissao.descricao ILIKE :descricao',
+      { descricao: '%administração%' },
+    );
+    expect(permissionQueryBuilder.select).toHaveBeenCalledWith([
+      'permissao.id',
+      'permissao.codigo',
+      'permissao.descricao',
+    ]);
+    expect(permissionQueryBuilder.orderBy).toHaveBeenCalledWith(
+      'permissao.codigo',
+      'ASC',
+    );
+    expect(permissionQueryBuilder.addOrderBy).toHaveBeenCalledWith(
+      'permissao.id',
+      'ASC',
+    );
+    expect(permissionQueryBuilder.take).toHaveBeenCalledWith(10);
+    expect(permissionQueryBuilder.skip).toHaveBeenCalledWith(10);
+  });
+
+  it('retorna null ao listar permissões de um perfil inexistente', async () => {
+    perfisRepository.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.listarPermissoesDoPerfil(
+        perfilAdmin.id,
+        new ListarPermissoesDto(),
+      ),
+    ).resolves.toBeNull();
+    expect(permissoesRepository.createQueryBuilder).not.toHaveBeenCalled();
+  });
+
   it('altera o status de conta existente sem retornar o hash', async () => {
     manager.findOne
       .mockResolvedValueOnce(perfilAdmin)
@@ -337,6 +455,7 @@ describe('AcessoService', () => {
       expect.stringContaining("perfil_admin.codigo = 'ADMIN'"),
       [
         usuario.id,
+        null,
         null,
         ['acessos:atribuir_perfil', 'acessos:alterar_permissoes'],
         2,
@@ -468,9 +587,12 @@ describe('AcessoService', () => {
       service.revogarPerfil(usuario.id, perfilLeitor.id),
     ).resolves.toBeUndefined();
     expect(manager.query).toHaveBeenCalledWith(
-      expect.stringContaining('up_permissao.perfil_id <> $2::uuid'),
+      expect.stringContaining(
+        '($3::uuid IS NULL OR up_permissao.perfil_id <> $3::uuid)',
+      ),
       [
         null,
+        perfilLeitor.id,
         perfilLeitor.id,
         ['acessos:atribuir_perfil', 'acessos:alterar_permissoes'],
         2,
@@ -493,5 +615,144 @@ describe('AcessoService', () => {
       service.revogarPerfil(usuario.id, perfilAdmin.id),
     ).rejects.toThrow(NotFoundException);
     expect(manager.delete).not.toHaveBeenCalled();
+  });
+
+  it('concede uma permissão existente a um perfil', async () => {
+    manager.findOne
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(permissaoConsultarUsuarios)
+      .mockResolvedValueOnce(null);
+    manager.insert.mockResolvedValue({ identifiers: [] });
+
+    await expect(
+      service.concederPermissaoAoPerfil(
+        perfilAdmin.id,
+        permissaoConsultarUsuarios.id,
+      ),
+    ).resolves.toEqual({
+      perfilId: perfilAdmin.id,
+      permissaoId: permissaoConsultarUsuarios.id,
+      codigo: permissaoConsultarUsuarios.codigo,
+    });
+    expect(manager.insert).toHaveBeenCalledWith(PerfilPermissao, {
+      perfilId: perfilAdmin.id,
+      permissaoId: permissaoConsultarUsuarios.id,
+    });
+  });
+
+  it('rejeita conceder uma permissão já vinculada ao perfil', async () => {
+    manager.findOne
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(permissaoConsultarUsuarios)
+      .mockResolvedValueOnce({
+        perfilId: perfilAdmin.id,
+        permissaoId: permissaoConsultarUsuarios.id,
+      });
+
+    await expect(
+      service.concederPermissaoAoPerfil(
+        perfilAdmin.id,
+        permissaoConsultarUsuarios.id,
+      ),
+    ).rejects.toThrow(ConflictException);
+    expect(manager.insert).not.toHaveBeenCalled();
+  });
+
+  it('retorna não encontrado ao conceder uma permissão a um perfil inexistente', async () => {
+    manager.findOne
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(null);
+
+    await expect(
+      service.concederPermissaoAoPerfil(
+        perfilAdmin.id,
+        permissaoConsultarUsuarios.id,
+      ),
+    ).rejects.toThrow(NotFoundException);
+    expect(manager.insert).not.toHaveBeenCalled();
+  });
+
+  it('revoga uma permissão comum de um perfil', async () => {
+    manager.findOne
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(permissaoConsultarUsuarios)
+      .mockResolvedValueOnce({
+        perfilId: perfilAdmin.id,
+        permissaoId: permissaoConsultarUsuarios.id,
+      });
+    manager.delete.mockResolvedValue({ affected: 1 });
+
+    await expect(
+      service.revogarPermissaoDoPerfil(
+        perfilAdmin.id,
+        permissaoConsultarUsuarios.id,
+      ),
+    ).resolves.toBeUndefined();
+    expect(manager.query).not.toHaveBeenCalled();
+    expect(manager.delete).toHaveBeenCalledWith(PerfilPermissao, {
+      perfilId: perfilAdmin.id,
+      permissaoId: permissaoConsultarUsuarios.id,
+    });
+  });
+
+  it('impede revogar uma permissão de recuperação sem outro administrador recuperável', async () => {
+    manager.findOne
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(permissaoAlterarPermissoes)
+      .mockResolvedValueOnce({
+        perfilId: perfilAdmin.id,
+        permissaoId: permissaoAlterarPermissoes.id,
+      });
+    manager.query.mockResolvedValue([]);
+
+    await expect(
+      service.revogarPermissaoDoPerfil(
+        perfilAdmin.id,
+        permissaoAlterarPermissoes.id,
+      ),
+    ).rejects.toThrow(ConflictException);
+    expect(manager.query).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '($3::uuid IS NULL OR up_permissao.perfil_id <> $3::uuid)',
+      ),
+      [
+        null,
+        null,
+        perfilAdmin.id,
+        ['acessos:atribuir_perfil', 'acessos:alterar_permissoes'],
+        2,
+      ],
+    );
+    expect(manager.delete).not.toHaveBeenCalled();
+  });
+
+  it('permite revogar uma permissão de recuperação se outro administrador permanecer', async () => {
+    manager.findOne
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(permissaoAlterarPermissoes)
+      .mockResolvedValueOnce({
+        perfilId: perfilAdmin.id,
+        permissaoId: permissaoAlterarPermissoes.id,
+      });
+    manager.query.mockResolvedValue([
+      { id: '03a12345-6789-4abc-8def-0123456789ab' },
+    ]);
+    manager.delete.mockResolvedValue({ affected: 1 });
+
+    await expect(
+      service.revogarPermissaoDoPerfil(
+        perfilAdmin.id,
+        permissaoAlterarPermissoes.id,
+      ),
+    ).resolves.toBeUndefined();
+    expect(manager.delete).toHaveBeenCalledWith(PerfilPermissao, {
+      perfilId: perfilAdmin.id,
+      permissaoId: permissaoAlterarPermissoes.id,
+    });
   });
 });

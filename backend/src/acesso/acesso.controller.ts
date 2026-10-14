@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import {
@@ -37,6 +38,7 @@ import {
   ListarPermissoesRespostaDto,
   PermissaoAdminRespostaDto,
   PerfilAdminRespostaDto,
+  PerfilPermissaoRespostaDto,
 } from './dto';
 import { ListarUsuariosDto } from './dto/listar-usuarios.dto';
 import { ListarUsuariosRespostaDto } from './dto/listar-usuarios-resposta.dto';
@@ -258,6 +260,102 @@ export class AcessoController {
     }
 
     return perfil;
+  }
+
+  @Get('perfis/:id/permissoes')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['acessos:alterar_permissoes'],
+  })
+  @ApiOperation({
+    summary: 'Listar permissões concedidas a um perfil',
+    description:
+      'Filtra por código e/ou descrição e pagina somente as permissões vinculadas ao perfil.',
+  })
+  @ApiOkResponse({
+    description: 'Permissões do perfil retornadas com paginação.',
+    type: ListarPermissoesRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'O UUID do perfil, filtros ou paginação são inválidos.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  @ApiNotFoundResponse({ description: 'Perfil não encontrado.' })
+  async listarPermissoesDoPerfil(
+    @Param('id', ParseUUIDPipe) perfilId: string,
+    @Query() filtros: ListarPermissoesDto,
+  ): Promise<ListarPermissoesRespostaDto> {
+    const resposta = await this.acessoService.listarPermissoesDoPerfil(
+      perfilId,
+      filtros,
+    );
+    if (!resposta) {
+      throw new NotFoundException('Perfil não encontrado.');
+    }
+
+    return resposta;
+  }
+
+  @Put('perfis/:id/permissoes/:permissaoId')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['acessos:alterar_permissoes'],
+  })
+  @ApiOperation({ summary: 'Conceder uma permissão a um perfil' })
+  @ApiOkResponse({
+    description: 'Permissão concedida ao perfil.',
+    type: PerfilPermissaoRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'O UUID do perfil ou da permissão é inválido.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  @ApiNotFoundResponse({
+    description: 'Perfil ou permissão não encontrado.',
+  })
+  @ApiConflictResponse({
+    description: 'A permissão já está concedida ao perfil.',
+  })
+  concederPermissaoAoPerfil(
+    @Param('id', ParseUUIDPipe) perfilId: string,
+    @Param('permissaoId', ParseUUIDPipe) permissaoId: string,
+  ): Promise<PerfilPermissaoRespostaDto> {
+    return this.acessoService.concederPermissaoAoPerfil(perfilId, permissaoId);
+  }
+
+  @Delete('perfis/:id/permissoes/:permissaoId')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['acessos:alterar_permissoes'],
+  })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revogar uma permissão de um perfil' })
+  @ApiNoContentResponse({ description: 'Permissão revogada do perfil.' })
+  @ApiBadRequestResponse({
+    description: 'O UUID do perfil ou da permissão é inválido.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  @ApiNotFoundResponse({
+    description: 'Perfil, permissão ou vínculo não encontrado.',
+  })
+  @ApiConflictResponse({
+    description:
+      'A revogação deixaria o sistema sem administrador capaz de recuperar o acesso.',
+  })
+  revogarPermissaoDoPerfil(
+    @Param('id', ParseUUIDPipe) perfilId: string,
+    @Param('permissaoId', ParseUUIDPipe) permissaoId: string,
+  ): Promise<void> {
+    return this.acessoService.revogarPermissaoDoPerfil(perfilId, permissaoId);
   }
 
   @Get('permissoes')

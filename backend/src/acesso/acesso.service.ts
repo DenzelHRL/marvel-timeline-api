@@ -14,6 +14,7 @@ import {
 } from 'typeorm';
 import {
   Perfil,
+  PerfilPermissao,
   Permissao,
   Usuario,
   UsuarioPerfil,
@@ -28,6 +29,7 @@ import {
   ListarUsuariosRespostaDto,
   PermissaoAdminRespostaDto,
   PerfilAdminRespostaDto,
+  PerfilPermissaoRespostaDto,
   UsuarioAdminRespostaDto,
 } from './dto';
 
@@ -112,6 +114,132 @@ export class AcessoService {
     });
 
     return perfil;
+  }
+
+  async listarPermissoesDoPerfil(
+    perfilId: string,
+    filtros: ListarPermissoesDto,
+  ): Promise<ListarPermissoesRespostaDto | null> {
+    const perfil = await this.perfisRepository.findOne({
+      where: { id: perfilId },
+      select: { id: true },
+    });
+    if (!perfil) {
+      return null;
+    }
+
+    const query = this.permissoesRepository
+      .createQueryBuilder('permissao')
+      .innerJoin(
+        PerfilPermissao,
+        'perfil_permissao',
+        'perfil_permissao.permissao_id = permissao.id',
+      )
+      .where('perfil_permissao.perfil_id = :perfilId', { perfilId });
+
+    if (filtros.codigo) {
+      query.andWhere('permissao.codigo ILIKE :codigo', {
+        codigo: `%${filtros.codigo}%`,
+      });
+    }
+    if (filtros.descricao) {
+      query.andWhere('permissao.descricao ILIKE :descricao', {
+        descricao: `%${filtros.descricao}%`,
+      });
+    }
+
+    const [permissoes, total] = await query
+      .select(['permissao.id', 'permissao.codigo', 'permissao.descricao'])
+      .orderBy('permissao.codigo', 'ASC')
+      .addOrderBy('permissao.id', 'ASC')
+      .take(filtros.limite)
+      .skip((filtros.pagina - 1) * filtros.limite)
+      .getManyAndCount();
+
+    return {
+      dados: permissoes,
+      total,
+      pagina: filtros.pagina,
+      limite: filtros.limite,
+      totalPaginas: Math.ceil(total / filtros.limite),
+    };
+  }
+
+  async concederPermissaoAoPerfil(
+    perfilId: string,
+    permissaoId: string,
+  ): Promise<PerfilPermissaoRespostaDto> {
+    return this.dataSource.transaction(async (manager) => {
+      await this.bloquearPerfilAdmin(manager);
+
+      const perfil = await manager.findOne(Perfil, { where: { id: perfilId } });
+      if (!perfil) {
+        throw new NotFoundException('Perfil não encontrado.');
+      }
+
+      const permissao = await manager.findOne(Permissao, {
+        where: { id: permissaoId },
+      });
+      if (!permissao) {
+        throw new NotFoundException('Permissão não encontrada.');
+      }
+
+      const vinculoExistente = await manager.findOne(PerfilPermissao, {
+        where: { perfilId, permissaoId },
+      });
+      if (vinculoExistente) {
+        throw new ConflictException(
+          'Essa permissão já está concedida ao perfil.',
+        );
+      }
+
+      await manager.insert(PerfilPermissao, { perfilId, permissaoId });
+      return { perfilId, permissaoId, codigo: permissao.codigo };
+    });
+  }
+
+  async revogarPermissaoDoPerfil(
+    perfilId: string,
+    permissaoId: string,
+  ): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      await this.bloquearPerfilAdmin(manager);
+
+      const perfil = await manager.findOne(Perfil, { where: { id: perfilId } });
+      if (!perfil) {
+        throw new NotFoundException('Perfil não encontrado.');
+      }
+
+      const permissao = await manager.findOne(Permissao, {
+        where: { id: permissaoId },
+      });
+      if (!permissao) {
+        throw new NotFoundException('Permissão não encontrada.');
+      }
+
+      const vinculo = await manager.findOne(PerfilPermissao, {
+        where: { perfilId, permissaoId },
+      });
+      if (!vinculo) {
+        throw new NotFoundException(
+          'A permissão não está concedida ao perfil.',
+        );
+      }
+
+      if (
+        PERMISSOES_RECUPERACAO_ACESSO.includes(permissao.codigo) &&
+        !(await this.existeAdministradorRecuperavel(
+          manager,
+          null,
+          null,
+          perfilId,
+        ))
+      ) {
+        throw this.ultimoAdministradorException();
+      }
+
+      await manager.delete(PerfilPermissao, { perfilId, permissaoId });
+    });
   }
 
   async listarPerfis(
@@ -201,7 +329,7 @@ export class AcessoService {
         });
         if (
           possuiPerfilAdmin &&
-          !(await this.existeAdministradorRecuperavel(manager, id, null))
+          !(await this.existeAdministradorRecuperavel(manager, id, null, null))
         ) {
           throw this.ultimoAdministradorException();
         }
@@ -295,7 +423,12 @@ export class AcessoService {
         (await manager.findOne(UsuarioPerfil, {
           where: { usuarioId, perfilId: perfilAdmin.id },
         })) &&
-        !(await this.existeAdministradorRecuperavel(manager, null, perfilId))
+        !(await this.existeAdministradorRecuperavel(
+          manager,
+          null,
+          perfilId,
+          perfilId,
+        ))
       ) {
         throw this.ultimoAdministradorException();
       }
@@ -320,7 +453,8 @@ export class AcessoService {
   private async existeAdministradorRecuperavel(
     manager: EntityManager,
     excluirUsuarioId: string | null,
-    excluirPerfilId: string | null,
+    excluirPerfilAdminId: string | null,
+    excluirPerfilPermissaoId: string | null,
   ): Promise<boolean> {
     const administradores = await manager.query<UsuarioIdRow[]>(
       `
@@ -335,14 +469,15 @@ export class AcessoService {
           AND perfil_admin.codigo = 'ADMIN'
           AND ($1::uuid IS NULL OR u.id <> $1::uuid)
           AND ($2::uuid IS NULL OR up_admin.perfil_id <> $2::uuid)
-          AND ($2::uuid IS NULL OR up_permissao.perfil_id <> $2::uuid)
-          AND permissao.codigo = ANY($3::varchar[])
+          AND ($3::uuid IS NULL OR up_permissao.perfil_id <> $3::uuid)
+          AND permissao.codigo = ANY($4::varchar[])
         GROUP BY u.id
-        HAVING COUNT(DISTINCT permissao.codigo) = $4
+        HAVING COUNT(DISTINCT permissao.codigo) = $5
       `,
       [
         excluirUsuarioId,
-        excluirPerfilId,
+        excluirPerfilAdminId,
+        excluirPerfilPermissaoId,
         PERMISSOES_RECUPERACAO_ACESSO,
         PERMISSOES_RECUPERACAO_ACESSO.length,
       ],

@@ -17,6 +17,9 @@ describe('AcessoController', () => {
     | 'revogarPerfil'
     | 'buscarPerfilPorId'
     | 'listarPerfis'
+    | 'listarPermissoesDoPerfil'
+    | 'concederPermissaoAoPerfil'
+    | 'revogarPermissaoDoPerfil'
     | 'listarPermissoes'
     | 'buscarPermissaoPorId'
   >;
@@ -67,6 +70,25 @@ describe('AcessoController', () => {
         limite: 20,
         totalPaginas: 1,
       }),
+      listarPermissoesDoPerfil: jest.fn().mockResolvedValue({
+        dados: [
+          {
+            id: '04a12345-6789-4abc-8def-0123456789ab',
+            codigo: 'usuarios:consultar_todos',
+            descricao: 'Consultar a lista de usuários para administração.',
+          },
+        ],
+        total: 1,
+        pagina: 1,
+        limite: 20,
+        totalPaginas: 1,
+      }),
+      concederPermissaoAoPerfil: jest.fn().mockResolvedValue({
+        perfilId: '02a12345-6789-4abc-8def-0123456789ab',
+        permissaoId: '04a12345-6789-4abc-8def-0123456789ab',
+        codigo: 'usuarios:consultar_todos',
+      }),
+      revogarPermissaoDoPerfil: jest.fn().mockResolvedValue(undefined),
       listarPermissoes: jest.fn().mockResolvedValue({
         dados: [
           {
@@ -253,11 +275,110 @@ describe('AcessoController', () => {
       .expect(404);
   });
 
-  it('lista perfis com filtros e paginação', async () => {
+  it('lista permissões de um perfil com filtros e paginação', async () => {
     await request(app.getHttpServer())
       .get(
-        '/admin/perfis?codigo=ADMIN&descricao=acessos&pagina=2&limite=10',
+        '/admin/perfis/02a12345-6789-4abc-8def-0123456789ab/permissoes?codigo=usuarios&descricao=administra%C3%A7%C3%A3o&pagina=2&limite=10',
       )
+      .expect(200)
+      .expect({
+        dados: [
+          {
+            id: '04a12345-6789-4abc-8def-0123456789ab',
+            codigo: 'usuarios:consultar_todos',
+            descricao: 'Consultar a lista de usuários para administração.',
+          },
+        ],
+        total: 1,
+        pagina: 1,
+        limite: 20,
+        totalPaginas: 1,
+      });
+
+    expect(acessoService.listarPermissoesDoPerfil).toHaveBeenCalledWith(
+      '02a12345-6789-4abc-8def-0123456789ab',
+      {
+        codigo: 'usuarios',
+        descricao: 'administração',
+        pagina: 2,
+        limite: 10,
+      },
+    );
+  });
+
+  it('rejeita UUID inválido e filtros inválidos na lista de permissões do perfil', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/perfis/id-invalido/permissoes')
+      .expect(400);
+    await request(app.getHttpServer())
+      .get(
+        '/admin/perfis/02a12345-6789-4abc-8def-0123456789ab/permissoes?codigo=%20&limite=51',
+      )
+      .expect(400);
+
+    expect(acessoService.listarPermissoesDoPerfil).not.toHaveBeenCalled();
+  });
+
+  it('retorna 404 ao listar permissões de um perfil inexistente', async () => {
+    jest
+      .spyOn(acessoService, 'listarPermissoesDoPerfil')
+      .mockResolvedValue(null);
+
+    await request(app.getHttpServer())
+      .get('/admin/perfis/02a12345-6789-4abc-8def-0123456789ab/permissoes')
+      .expect(404);
+  });
+
+  it('concede permissão a um perfil', async () => {
+    await request(app.getHttpServer())
+      .put(
+        '/admin/perfis/02a12345-6789-4abc-8def-0123456789ab/permissoes/04a12345-6789-4abc-8def-0123456789ab',
+      )
+      .expect(200)
+      .expect({
+        perfilId: '02a12345-6789-4abc-8def-0123456789ab',
+        permissaoId: '04a12345-6789-4abc-8def-0123456789ab',
+        codigo: 'usuarios:consultar_todos',
+      });
+
+    expect(acessoService.concederPermissaoAoPerfil).toHaveBeenCalledWith(
+      '02a12345-6789-4abc-8def-0123456789ab',
+      '04a12345-6789-4abc-8def-0123456789ab',
+    );
+  });
+
+  it('rejeita UUIDs inválidos ao conceder permissão a um perfil', async () => {
+    await request(app.getHttpServer())
+      .put(
+        '/admin/perfis/id-invalido/permissoes/04a12345-6789-4abc-8def-0123456789ab',
+      )
+      .expect(400);
+    await request(app.getHttpServer())
+      .put(
+        '/admin/perfis/02a12345-6789-4abc-8def-0123456789ab/permissoes/id-invalido',
+      )
+      .expect(400);
+
+    expect(acessoService.concederPermissaoAoPerfil).not.toHaveBeenCalled();
+  });
+
+  it('revoga permissão de um perfil sem conteúdo', async () => {
+    await request(app.getHttpServer())
+      .delete(
+        '/admin/perfis/02a12345-6789-4abc-8def-0123456789ab/permissoes/04a12345-6789-4abc-8def-0123456789ab',
+      )
+      .expect(204)
+      .expect('');
+
+    expect(acessoService.revogarPermissaoDoPerfil).toHaveBeenCalledWith(
+      '02a12345-6789-4abc-8def-0123456789ab',
+      '04a12345-6789-4abc-8def-0123456789ab',
+    );
+  });
+
+  it('lista perfis com filtros e paginação', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/perfis?codigo=ADMIN&descricao=acessos&pagina=2&limite=10')
       .expect(200)
       .expect({
         dados: [

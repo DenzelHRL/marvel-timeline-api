@@ -9,4 +9,5 @@ export { ListarUsuariosDto } from './listar-usuarios.dto';
 export { ListarUsuariosRespostaDto } from './listar-usuarios-resposta.dto';
 export { PermissaoAdminRespostaDto } from './permissao-admin-resposta.dto';
 export { PerfilAdminRespostaDto } from './perfil-admin-resposta.dto';
+export { PerfilPermissaoRespostaDto } from './perfil-permissao-resposta.dto';
 export { UsuarioAdminRespostaDto } from './usuario-admin-resposta.dto';
