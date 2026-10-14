@@ -3,9 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { databaseOptions } from './database/data-source';
+import { TrilhasModule } from './trilhas/trilhas.module';
 
 @Module({
-  imports: [TypeOrmModule.forRoot(databaseOptions())],
+  imports: [TypeOrmModule.forRoot(databaseOptions()), TrilhasModule],
   controllers: [AppController],
   providers: [AppService],
 })
