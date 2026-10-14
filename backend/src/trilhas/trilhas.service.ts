@@ -4,7 +4,7 @@ import { Repository, FindOptionsWhere, ILike } from 'typeorm';
 import { Trilha, EtapaTrilha, Obra } from '../database/entities/catalog.entities';
 import { ListarTrilhasDto } from './dto/listar-trilhas.dto';
 import { ListarEtapasDto } from './dto/listar-etapas.dto';
-
+import { ItemMapaDto, MapaTrilhaRespostaDto } from './dto/mapa-trilha-resposta.dto';
 
 
 
@@ -97,6 +97,62 @@ async listarEtapas(slug: string, filtros: ListarEtapasDto) {
     .skip((filtros.pagina - 1) * filtros.limite)
     .take(filtros.limite)
     .getManyAndCount();
+
+  return {
+    dados,
+    total,
+    pagina: filtros.pagina,
+    limite: filtros.limite,
+    totalPaginas: Math.ceil(total / filtros.limite),
+  };
+}
+
+async consultarMapa(
+  slug: string,
+  filtros: ListarEtapasDto,
+): Promise<MapaTrilhaRespostaDto> {
+  const trilha = await this.buscarPublicadaPorSlug(slug);
+
+  const consulta = this.etapasRepository
+    .createQueryBuilder('etapa')
+    .innerJoin(Obra, 'obra', 'obra.id = etapa.obraId')
+    .where('etapa.trilhaId = :trilhaId', {
+      trilhaId: trilha.id,
+    })
+    .andWhere('obra.status = :status', {
+      status: 'PUBLICADA',
+    });
+
+  if (filtros.prioridade) {
+    consulta.andWhere('etapa.prioridade = :prioridade', {
+      prioridade: filtros.prioridade,
+    });
+  }
+
+  if (filtros.obraId) {
+    consulta.andWhere('etapa.obraId = :obraId', {
+      obraId: filtros.obraId,
+    });
+  }
+
+  const total = await consulta.getCount();
+
+  const dados = await consulta
+    .select('etapa.id', 'id')
+    .addSelect('etapa.trilhaId', 'trilhaId')
+    .addSelect('etapa.obraId', 'obraId')
+    .addSelect('etapa.posicao', 'posicao')
+    .addSelect('etapa.prioridade', 'prioridade')
+    .addSelect('etapa.justificativa', 'justificativa')
+    .addSelect('obra.slug', 'obraSlug')
+    .addSelect('obra.titulo', 'titulo')
+    .addSelect('obra.imagemUrl', 'imagemUrl')
+    .addSelect('obra.resumoSemSpoiler', 'resumoSemSpoiler')
+    .orderBy('etapa.posicao', 'ASC')
+    .addOrderBy('etapa.id', 'ASC')
+    .offset((filtros.pagina - 1) * filtros.limite)
+    .limit(filtros.limite)
+    .getRawMany<ItemMapaDto>();
 
   return {
     dados,
