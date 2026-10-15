@@ -1,8 +1,8 @@
 # Matriz inicial de endpoints — proposta para discussão do grupo
 
-**Situação em 30/09/2026:** são **78 combinações de método + rota planejadas**, com 76 de produto/gestão e 2 analíticas opcionais; **0 implementadas nesta matriz**. Nada aqui conta para a P1 antes de código, Swagger e teste. O objetivo é implementar **pelo menos 60 válidas e demonstráveis**, com margem, e ajustar a seleção junto aos responsáveis. O enunciado define o mínimo, não um teto. Consideramos método + rota como endpoint conforme a confirmação relatada pelo grupo.
+**Situação em 13/10/2026:** são **78 combinações de método + rota planejadas**, com 76 de produto/gestão e 2 analíticas opcionais. O objetivo é implementar **pelo menos 60 válidas e demonstráveis**, com margem, e ajustar a seleção junto aos responsáveis. O enunciado define o mínimo, não um teto. Consideramos método + rota como endpoint conforme a confirmação relatada pelo grupo.
 
-`E` = essencial; `C` = complementar; `A` = administrativo; `N` = analítico; `O` = opcional. `P[filtro1, filtro2]` = listagem **com paginação**, `pagina=1`, `limite=20`, máximo 50, metadados, validação de filtros e os dois filtros mínimos indicados por **colunas do banco**. `—` = não se aplica. `Público` = sem token; `JWT` = autenticado, com o perfil e a permissão indicados. `AD` = responsável a definir pelo grupo, nunca crédito de autoria presumido. `P/P/P` = implementação/Swagger/teste **pendentes**. Alterar estas três letras e o responsável conforme entregas reais. Os caminhos `:id`, `:slug`, `:obraId` etc. são parâmetros, não endpoints separados por registro.
+`E` = essencial; `C` = complementar; `A` = administrativo; `N` = analítico; `O` = opcional. `P[filtro1, filtro2]` = listagem **com paginação**, `pagina=1`, `limite=20`, máximo 50, metadados, validação de filtros e os dois filtros mínimos indicados por **colunas do banco**. `—` = não se aplica. `Público` = sem token; `JWT` = autenticado, com o perfil e a permissão indicados. `AD` = responsável a definir pelo grupo, nunca crédito de autoria presumido. `P/P/P` = implementação/Swagger/teste **pendentes**. A validação OAuth com o provedor real depende de credenciais configuradas. Alterar os estados e o responsável conforme entregas reais. Os caminhos `:id`, `:slug`, `:obraId` etc. são parâmetros, não endpoints separados por registro.
 
 Permissões estão no [seed](../backend/src/database/seeds/seed-data.ts). Para listas públicas, só dados publicados e sem spoilers por padrão. Para listas administrativas, o filtro de estado pode incluir rascunhos e arquivados; campos de senha nunca saem da API. Todos os bodies terão DTOs e validações. A coluna de regra indica uma **candidata de regra de serviço** para o catálogo que será detalhado e testado; `—` não dispensa validação.
 
@@ -13,7 +13,7 @@ Permissões estão no [seed](../backend/src/database/seeds/seed-data.ts). Para l
 | 01 | E | `POST /auth/cadastro` | Criar conta local; nome, e-mail, senha | — | Público | R11 | AD | P/P/P |
 | 02 | E | `POST /auth/login` | Conferir credenciais e emitir JWT; e-mail, senha | — | Público | R11 | AD | P/P/P |
 | 03 | C | `GET /auth/google` | Iniciar OAuth Google; redirecionamento | — | Público | R12 | AD | P/P/P |
-| 04 | C | `GET /auth/google/callback` | Concluir OAuth, associar identidade e emitir sessão; `code`, `state` | — | Público | R12 | AD | P/P/P |
+| 04 | C | `GET /auth/google/callback` | Concluir OAuth, associar identidade e emitir JWT; `code`, `state` | — | Público | R12 | AD | P/P/P |
 | 05 | E | `GET /usuarios/me` | Consultar conta atual; token | — | JWT `LEITOR/ADMIN`, `conta:consultar_propria` | — | AD | P/P/P |
 | 06 | E | `PATCH /usuarios/me` | Alterar nome/e-mail próprios; DTO | — | JWT `LEITOR/ADMIN`, `conta:editar_propria` | R11 | AD | P/P/P |
 | 07 | C | `GET /usuarios/me/permissoes` | Ver permissões efetivas da conta, sem duplicar por perfil | P[`codigo`, `descricao`] | JWT `LEITOR/ADMIN`, `conta:consultar_propria` | — | AD | P/P/P |

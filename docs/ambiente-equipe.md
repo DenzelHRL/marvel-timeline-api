@@ -142,10 +142,10 @@ npm run db:verify
 | --- | --- | --- |
 | `npm ci` | Instala as versões do lockfile. | Instalação termina sem erro. |
 | `db:migrate` | Aplica migrations ainda pendentes. | 2 na instalação inicial atual; 0 se já aplicadas. |
-| `db:seed` | Insere os dados iniciais. | 2 perfis, 26 permissões, 34 obras, 2 trilhas e 55 etapas. |
+| `db:seed` | Insere os dados iniciais. | 2 perfis, 26 permissões, 34 obras, 2 trilhas e 54 etapas. |
 | `db:verify` | Confere tabelas, migrations e dados mínimos. | `Tabelas do domínio: 16/16` e `Banco pronto para desenvolver rotas`. |
 
-A trilha curta tem 21 etapas e a longa, 34. As contagens podem aumentar conforme o projeto evoluir.
+A trilha curta tem 20 etapas e a longa, 34. As contagens podem aumentar conforme o projeto evoluir.
 
 O seed é repetível e evita duplicar os registros iniciais. Ele **não é um reset**: usa principalmente `ON CONFLICT DO NOTHING`, preserva registros já existentes e não restaura automaticamente campos alterados nos testes. Os IDs são UUIDs gerados em cada banco; use slugs e consultas para localizar registros, sem copiar IDs fixos do banco de um colega.
 
@@ -243,3 +243,4 @@ Use senhas de pelo menos 8 caracteres e execute `npm run db:seed` novamente. O s
 - [Requisitos do Docker Desktop para Windows](https://docs.docker.com/desktop/setup/install/windows-install/)
 - [PostgreSQL para Windows](https://www.postgresql.org/download/windows/)
 - [Publicação futura da API e do banco](publicar-banco.md)
+

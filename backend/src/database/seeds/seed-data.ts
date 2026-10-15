@@ -302,6 +302,7 @@ export const OBRAS = [
   },
 ] as const;
 
+// Ordem dos acontecimentos na linha principal; exceções do multiverso em docs/ordem-das-trilhas.md.
 export const ETAPAS_LONGA = [
   {
     slug: 'capitao-america-o-primeiro-vingador',
@@ -309,67 +310,67 @@ export const ETAPAS_LONGA = [
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'homem-de-ferro',
+    slug: 'capita-marvel',
     posicao: 2,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'thor',
+    slug: 'homem-de-ferro',
     posicao: 3,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'os-vingadores',
+    slug: 'thor',
     posicao: 4,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'capitao-america-2-o-soldado-invernal',
+    slug: 'os-vingadores',
     posicao: 5,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'guardioes-da-galaxia',
+    slug: 'capitao-america-2-o-soldado-invernal',
     posicao: 6,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'vingadores-era-de-ultron',
+    slug: 'guardioes-da-galaxia',
     posicao: 7,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'homem-formiga',
+    slug: 'vingadores-era-de-ultron',
     posicao: 8,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'capitao-america-guerra-civil',
+    slug: 'homem-formiga',
     posicao: 9,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'doutor-estranho',
+    slug: 'capitao-america-guerra-civil',
     posicao: 10,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'homem-aranha-de-volta-ao-lar',
+    slug: 'pantera-negra',
     posicao: 11,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'thor-ragnarok',
+    slug: 'homem-aranha-de-volta-ao-lar',
     posicao: 12,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'pantera-negra',
+    slug: 'doutor-estranho',
     posicao: 13,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'vingadores-guerra-infinita',
+    slug: 'thor-ragnarok',
     posicao: 14,
     prioridade: 'PRINCIPAL',
   },
@@ -379,7 +380,7 @@ export const ETAPAS_LONGA = [
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'capita-marvel',
+    slug: 'vingadores-guerra-infinita',
     posicao: 16,
     prioridade: 'PRINCIPAL',
   },
@@ -389,17 +390,17 @@ export const ETAPAS_LONGA = [
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'wandavision-temporada-1',
+    slug: 'loki-temporada-1',
     posicao: 18,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'falcao-e-o-soldado-invernal-temporada-1',
+    slug: 'loki-temporada-2',
     posicao: 19,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'loki-temporada-1',
+    slug: 'wandavision-temporada-1',
     posicao: 20,
     prioridade: 'PRINCIPAL',
   },
@@ -409,29 +410,29 @@ export const ETAPAS_LONGA = [
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'homem-aranha-sem-volta-para-casa',
+    slug: 'falcao-e-o-soldado-invernal-temporada-1',
     posicao: 22,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'doutor-estranho-no-multiverso-da-loucura',
+    slug: 'homem-aranha-sem-volta-para-casa',
     posicao: 23,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'pantera-negra-wakanda-para-sempre',
+    slug: 'doutor-estranho-no-multiverso-da-loucura',
     posicao: 24,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'homem-formiga-e-a-vespa-quantumania',
+    slug: 'pantera-negra-wakanda-para-sempre',
     posicao: 25,
-    prioridade: 'CONTEXTO',
+    prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'loki-temporada-2',
+    slug: 'homem-formiga-e-a-vespa-quantumania',
     posicao: 26,
-    prioridade: 'PRINCIPAL',
+    prioridade: 'CONTEXTO',
   },
   {
     slug: 'as-marvels',
@@ -464,55 +465,55 @@ export const ETAPAS_LONGA = [
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'quarteto-fantastico-primeiros-passos',
+    slug: 'homem-aranha-um-novo-dia',
     posicao: 33,
-    prioridade: 'PRINCIPAL',
+    prioridade: 'CONTEXTO',
   },
   {
-    slug: 'homem-aranha-um-novo-dia',
+    slug: 'quarteto-fantastico-primeiros-passos',
     posicao: 34,
-    prioridade: 'CONTEXTO',
+    prioridade: 'PRINCIPAL',
   },
 ] as const;
 
 export const ETAPAS_CURTA = [
   {
-    slug: 'vingadores-guerra-infinita',
+    slug: 'homem-formiga-e-a-vespa',
     posicao: 1,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'homem-formiga-e-a-vespa',
+    slug: 'vingadores-guerra-infinita',
     posicao: 2,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'capita-marvel',
+    slug: 'vingadores-ultimato',
     posicao: 3,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'vingadores-ultimato',
+    slug: 'loki-temporada-1',
     posicao: 4,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'wandavision-temporada-1',
+    slug: 'loki-temporada-2',
     posicao: 5,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'falcao-e-o-soldado-invernal-temporada-1',
+    slug: 'wandavision-temporada-1',
     posicao: 6,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'loki-temporada-1',
+    slug: 'shang-chi-e-a-lenda-dos-dez-aneis',
     posicao: 7,
     prioridade: 'PRINCIPAL',
   },
   {
-    slug: 'shang-chi-e-a-lenda-dos-dez-aneis',
+    slug: 'falcao-e-o-soldado-invernal-temporada-1',
     posicao: 8,
     prioridade: 'PRINCIPAL',
   },
@@ -537,49 +538,44 @@ export const ETAPAS_CURTA = [
     prioridade: 'CONTEXTO',
   },
   {
-    slug: 'loki-temporada-2',
-    posicao: 13,
-    prioridade: 'PRINCIPAL',
-  },
-  {
     slug: 'as-marvels',
-    posicao: 14,
+    posicao: 13,
     prioridade: 'CONTEXTO',
   },
   {
     slug: 'x-men',
-    posicao: 15,
+    posicao: 14,
     prioridade: 'PRINCIPAL',
   },
   {
     slug: 'x-men-2',
-    posicao: 16,
+    posicao: 15,
     prioridade: 'CONTEXTO',
   },
   {
     slug: 'deadpool-e-wolverine',
-    posicao: 17,
+    posicao: 16,
     prioridade: 'PRINCIPAL',
   },
   {
     slug: 'capitao-america-admiravel-mundo-novo',
-    posicao: 18,
+    posicao: 17,
     prioridade: 'PRINCIPAL',
   },
   {
     slug: 'thunderbolts',
-    posicao: 19,
+    posicao: 18,
     prioridade: 'PRINCIPAL',
+  },
+  {
+    slug: 'homem-aranha-um-novo-dia',
+    posicao: 19,
+    prioridade: 'CONTEXTO',
   },
   {
     slug: 'quarteto-fantastico-primeiros-passos',
     posicao: 20,
     prioridade: 'PRINCIPAL',
-  },
-  {
-    slug: 'homem-aranha-um-novo-dia',
-    posicao: 21,
-    prioridade: 'CONTEXTO',
   },
 ] as const;
 
@@ -1029,3 +1025,4 @@ export const ACONTECIMENTO_PERSONAGENS = [
     ],
   },
 ] as const;
+

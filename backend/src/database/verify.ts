@@ -78,7 +78,7 @@ async function main(): Promise<void> {
     requireAtLeast(
       'Etapas',
       await count('SELECT count(*)::int AS total FROM etapas_trilha'),
-      55,
+      54,
     );
     requireAtLeast(
       'Etapas da trilha curta',
@@ -87,7 +87,7 @@ async function main(): Promise<void> {
          JOIN trilhas t ON t.id = e.trilha_id WHERE t.slug = $1`,
         ['curta'],
       ),
-      21,
+      20,
     );
     requireAtLeast(
       'Etapas da trilha longa',
@@ -168,3 +168,4 @@ void main().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;
 });
+

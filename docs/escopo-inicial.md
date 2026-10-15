@@ -17,6 +17,19 @@ Entrega P1: backend NestJS + PostgreSQL/TypeORM até 16/10/2026. A **trilha curt
 
 Esses quatro exemplos são o **primeiro fluxo de leitura**, ainda a implementar. O método + rota só conta para a P1 depois de funcionar, constar na matriz de endpoints, ter Swagger e poder ser demonstrado.
 
+## Adaptação da referência One Piece
+
+O projeto de referência oferece operações de cadastro/gestão e consultas que reúnem dados de várias tabelas para a experiência do mapa. Na Marvel, a unidade que o leitor visita é a **obra**; o percurso fica em `trilhas` + `etapas_trilha`. Cada chamada a uma rota parametrizada atende qualquer obra cadastrada. As 34 obras não se tornam 34 endpoints.
+
+| Ideia da referência | Estrutura equivalente neste projeto |
+| --- | --- |
+| Arco, ilha e vínculo para definir percurso | `trilhas`, `etapas_trilha` e `obras`; a mesma obra pode estar nas duas trilhas |
+| Personagem em contexto narrativo | `personagens` e `participacoes` por obra; sem versões separadas neste recorte |
+| Eventos e participantes | `acontecimentos` e `acontecimento_personagens` |
+| Contas, perfis e permissões | `usuarios`, `usuario_perfis`, `perfis`, `permissoes` e `perfil_permissoes` |
+| Consultas de Wiki voltadas ao mapa | Respostas agregadas de exploração, montadas pela camada de serviço a partir das tabelas existentes |
+
+Duas consultas de exploração a especificar na matriz, além das rotas de catálogo:
 ## Estrutura da experiência de exploração
 
 A unidade que o leitor visita é a **obra**; o percurso fica em `trilhas` + `etapas_trilha`. As consultas de exploração reúnem dados das tabelas para apresentar cada etapa do mapa. Cada rota parametrizada atende qualquer obra cadastrada: as 34 obras não se tornam 34 endpoints.
