@@ -32,6 +32,7 @@ import {
   AlterarStatusUsuarioDto,
   AtribuirPerfilDto,
   AtribuirPerfilRespostaDto,
+  EditarUsuarioAdminDto,
   ListarPerfisDto,
   ListarPerfisRespostaDto,
   ListarPermissoesDto,
@@ -114,6 +115,39 @@ export class AcessoController {
     }
 
     return usuario;
+  }
+
+  @Patch('usuarios/:id')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['usuarios:editar'],
+  })
+  @ApiOperation({
+    summary: 'Editar nome ou e-mail de uma conta',
+    description:
+      'Atualiza parcialmente o nome e/ou e-mail da conta. Não altera senha.',
+  })
+  @ApiOkResponse({
+    description: 'Dados da conta atualizados.',
+    type: UsuarioAdminRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'O UUID ou o corpo da requisição é inválido ou não contém campos editáveis.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
+  })
+  @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
+  @ApiNotFoundResponse({ description: 'Usuário não encontrado.' })
+  @ApiConflictResponse({
+    description: 'Já existe uma conta com esse e-mail.',
+  })
+  editarUsuario(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: EditarUsuarioAdminDto,
+  ): Promise<UsuarioAdminRespostaDto> {
+    return this.acessoService.editarUsuario(id, dto);
   }
 
   @Patch('usuarios/:id/status')
