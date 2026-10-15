@@ -4,9 +4,15 @@ import { PersonagensAdminController, PersonagensController } from "./personagens
 import { PersonagensService } from "./personagens.service";
 import { PersonagensRepository } from "./personagens.repository";
 import { Personagem } from "../database/entities/story.entities";
+import { AuthModule } from "../auth/auth.module";
+import { AcessoModule } from "../acesso/acesso.module";
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Personagem])],
+    imports: [
+        TypeOrmModule.forFeature([Personagem]),
+        AuthModule,
+        AcessoModule,
+    ],
     controllers: [PersonagensController, PersonagensAdminController],
     providers: [PersonagensService, PersonagensRepository],
     exports: [PersonagensService, PersonagensRepository]
