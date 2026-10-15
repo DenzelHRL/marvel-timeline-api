@@ -42,6 +42,12 @@ interface UsuarioIdRow {
   id: string;
 }
 
+interface ExclusoesAdministradorRecuperavel {
+  usuarioId?: string;
+  vinculoUsuarioPerfil?: { usuarioId: string; perfilId: string };
+  vinculoPerfilPermissao?: { perfilId: string; codigo: string };
+}
+
 @Injectable()
 export class AcessoService {
   constructor(
@@ -228,12 +234,9 @@ export class AcessoService {
 
       if (
         PERMISSOES_RECUPERACAO_ACESSO.includes(permissao.codigo) &&
-        !(await this.existeAdministradorRecuperavel(
-          manager,
-          null,
-          null,
-          perfilId,
-        ))
+        !(await this.existeAdministradorRecuperavel(manager, {
+          vinculoPerfilPermissao: { perfilId, codigo: permissao.codigo },
+        }))
       ) {
         throw this.ultimoAdministradorException();
       }
@@ -329,7 +332,9 @@ export class AcessoService {
         });
         if (
           possuiPerfilAdmin &&
-          !(await this.existeAdministradorRecuperavel(manager, id, null, null))
+          !(await this.existeAdministradorRecuperavel(manager, {
+            usuarioId: id,
+          }))
         ) {
           throw this.ultimoAdministradorException();
         }
@@ -423,12 +428,9 @@ export class AcessoService {
         (await manager.findOne(UsuarioPerfil, {
           where: { usuarioId, perfilId: perfilAdmin.id },
         })) &&
-        !(await this.existeAdministradorRecuperavel(
-          manager,
-          null,
-          perfilId,
-          perfilId,
-        ))
+        !(await this.existeAdministradorRecuperavel(manager, {
+          vinculoUsuarioPerfil: { usuarioId, perfilId },
+        }))
       ) {
         throw this.ultimoAdministradorException();
       }
@@ -452,9 +454,7 @@ export class AcessoService {
 
   private async existeAdministradorRecuperavel(
     manager: EntityManager,
-    excluirUsuarioId: string | null,
-    excluirPerfilAdminId: string | null,
-    excluirPerfilPermissaoId: string | null,
+    exclusoes: ExclusoesAdministradorRecuperavel,
   ): Promise<boolean> {
     const administradores = await manager.query<UsuarioIdRow[]>(
       `
@@ -468,16 +468,31 @@ export class AcessoService {
         WHERE u.ativo = TRUE
           AND perfil_admin.codigo = 'ADMIN'
           AND ($1::uuid IS NULL OR u.id <> $1::uuid)
-          AND ($2::uuid IS NULL OR up_admin.perfil_id <> $2::uuid)
-          AND ($3::uuid IS NULL OR up_permissao.perfil_id <> $3::uuid)
-          AND permissao.codigo = ANY($4::varchar[])
+          AND NOT (
+            $2::uuid IS NOT NULL
+            AND u.id = $2::uuid
+            AND up_admin.perfil_id = $3::uuid
+          )
+          AND NOT (
+            $2::uuid IS NOT NULL
+            AND up_permissao.usuario_id = $2::uuid
+            AND up_permissao.perfil_id = $3::uuid
+          )
+          AND NOT (
+            $4::uuid IS NOT NULL
+            AND up_permissao.perfil_id = $4::uuid
+            AND permissao.codigo = $5
+          )
+          AND permissao.codigo = ANY($6::varchar[])
         GROUP BY u.id
-        HAVING COUNT(DISTINCT permissao.codigo) = $5
+        HAVING COUNT(DISTINCT permissao.codigo) = $7
       `,
       [
-        excluirUsuarioId,
-        excluirPerfilAdminId,
-        excluirPerfilPermissaoId,
+        exclusoes.usuarioId ?? null,
+        exclusoes.vinculoUsuarioPerfil?.usuarioId ?? null,
+        exclusoes.vinculoUsuarioPerfil?.perfilId ?? null,
+        exclusoes.vinculoPerfilPermissao?.perfilId ?? null,
+        exclusoes.vinculoPerfilPermissao?.codigo ?? null,
         PERMISSOES_RECUPERACAO_ACESSO,
         PERMISSOES_RECUPERACAO_ACESSO.length,
       ],
