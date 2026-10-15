@@ -13,7 +13,6 @@ export class CriarPersonagemDto{
     
     @IsString()
     @IsOptional()
-    @MaxLength(160)
     descricaoPublica?: string | null;
     
     @IsOptional()

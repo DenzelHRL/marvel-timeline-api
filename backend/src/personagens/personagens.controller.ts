@@ -3,9 +3,9 @@ import { PERSONAGENS_ROUTES } from './personagens.routes';
 import { PersonagensService } from './personagens.service';
 import {PersonagemRespostaDto} from './dto/personagens.busca-respostas.dto';
 import {CriarPersonagemDto} from './dto/personagens.criar-personagem.dto';
-import { ParticipacaoDto } from '../participacoes/dto/participacao.dto';
 import {ListarPersonagensDto} from './dto/personagens.listar-Personagens.dto';
-import {atualizarPersonagemDto} from './dto/personagens.atualizar-personagem.dto';
+import {AtualizarPersonagemDto} from './dto/personagens.atualizar-personagem.dto';
+import { BuscarPersonagemParamsDto } from './dto/personagens.buscar-personagens.dto';
 
 @Controller(PERSONAGENS_ROUTES.base)
 export class PersonagensController{
@@ -24,35 +24,45 @@ export class PersonagensController{
 
         consulta: ListarPersonagensDto,
     ){
-        return this.personagensService.listarTodos();
+        return this.personagensService.listarTodos(consulta);
     }
 
     @Get(PERSONAGENS_ROUTES.buscarPorSlug)
-    async buscar(@Param('slug') slug:string): Promise<PersonagemRespostaDto>{
-        return await this.personagensService.buscar(slug);
+    async buscar(@Param(new ValidationPipe()) params: BuscarPersonagemParamsDto): Promise<PersonagemRespostaDto>{
+        return await this.personagensService.buscar(params.slug);
     }
 
     // Modificar o endpoint quando houver a implementação de autenticação e autorização do guard
     @Post()
     async criar(
-        @Body(new ValidationPipe()) createPersonagemDto: CriarPersonagemDto, 
-        @Headers('Authorization') authHeader: string
+        @Body(new ValidationPipe({
+            transform: true,
+            whitelist: true,
+            forbidNonWhitelisted: true
+        })) createPersonagemDto: CriarPersonagemDto, 
     ): Promise<PersonagemRespostaDto> {
-        return await this.personagensService.criar(createPersonagemDto, authHeader);
+        return await this.personagensService.criar(createPersonagemDto);
     }
 
     // Modificar o endpoint quando houver a implementação de autenticação e autorização do guard
     @Patch(PERSONAGENS_ROUTES.atualizar)
     async atualizar(
         @Param('id', new ParseUUIDPipe()) id: string, 
-        @Body(new ValidationPipe()) updatePersonagemDto: atualizarPersonagemDto, 
-        @Headers('Authorization') authHeader: string
+        @Body(new ValidationPipe({
+            transform: true,
+            whitelist: true,
+            forbidNonWhitelisted: true
+        })) updatePersonagemDto: AtualizarPersonagemDto, 
     ): Promise<PersonagemRespostaDto>{
-        return await this.personagensService.atualizar(id, updatePersonagemDto, authHeader);
+        return await this.personagensService.atualizar(id, updatePersonagemDto);
     }
 }
 
 @Controller('admin/personagens')
 export class PersonagensAdminController{
-    // Adicionar métodos para gerenciar personagens, como criar, atualizar e excluir, com autenticação e autorização adequadas.
+    constructor(private readonly personagensService: PersonagensService){}
+    @Get('/:id')
+    async buscar(@Param('id', new ParseUUIDPipe()) id: string): Promise<PersonagemRespostaDto>{
+        return await this.personagensService.adminBuscar(id);
+    }
 }

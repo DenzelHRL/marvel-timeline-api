@@ -18,5 +18,7 @@ export class PersonagemParticipacoes{
     }
     
     @Post('/obras/:obraId/participacoes')
-    async criarParticipacao(@Param('obraId', new ParseUUIDPipe()) obraId: string, @Body(new ValidationPipe()) createParticipacaoDto: ParticipacaoDto)
+    async criarParticipacao(@Param('obraId', new ParseUUIDPipe()) obraId: string, @Body(new ValidationPipe()) createParticipacaoDto: ParticipacaoDto){
+        return await this.participacaoService.criarParticipacao(obraId, createParticipacaoDto);
+    }
 }
