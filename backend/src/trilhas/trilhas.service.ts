@@ -163,6 +163,67 @@ async consultarMapa(
   };
 }
 
+async consultarObraNaTrilha(slug: string, obraSlug: string) {
+  const trilha = await this.buscarPublicadaPorSlug(slug);
+
+  const consulta = this.etapasRepository
+    .createQueryBuilder('etapa')
+    .innerJoin(Obra, 'obra', 'obra.id = etapa.obraId')
+    .where('etapa.trilhaId = :trilhaId', {
+      trilhaId: trilha.id,
+    })
+    .andWhere('obra.status = :status', {
+      status: 'PUBLICADA',
+    })
+    .select('etapa.id', 'id')
+    .addSelect('etapa.trilhaId', 'trilhaId')
+    .addSelect('etapa.obraId', 'obraId')
+    .addSelect('etapa.posicao', 'posicao')
+    .addSelect('etapa.prioridade', 'prioridade')
+    .addSelect('etapa.justificativa', 'justificativa')
+    .addSelect('obra.slug', 'obraSlug')
+    .addSelect('obra.titulo', 'titulo')
+    .addSelect('obra.imagemUrl', 'imagemUrl')
+    .addSelect('obra.resumoSemSpoiler', 'resumoSemSpoiler');
+
+  const atual = await consulta
+    .clone()
+    .andWhere('obra.slug = :obraSlug', { obraSlug })
+    .getRawOne<ItemMapaDto>();
+
+  if (!atual) {
+    throw new NotFoundException(
+      'Obra não encontrada nesta trilha publicada.',
+    );
+  }
+
+  const [anterior, proxima] = await Promise.all([
+    consulta
+      .clone()
+      .andWhere('etapa.posicao < :posicao', {
+        posicao: atual.posicao,
+      })
+      .orderBy('etapa.posicao', 'DESC')
+      .limit(1)
+      .getRawOne<ItemMapaDto>(),
+
+    consulta
+      .clone()
+      .andWhere('etapa.posicao > :posicao', {
+        posicao: atual.posicao,
+      })
+      .orderBy('etapa.posicao', 'ASC')
+      .limit(1)
+      .getRawOne<ItemMapaDto>(),
+  ]);
+
+  return {
+    atual,
+    anterior: anterior ?? null,
+    proxima: proxima ?? null,
+  };
+}
+
 
 
 }
