@@ -3,7 +3,7 @@ import { IsOptional, IsString, IsUrl, Matches, MaxLength } from "class-validator
 export class CriarPersonagemDto{
     @IsString()
     @MaxLength(160)
-    @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, { message: 'O slug deve conter letras minúsculas, números e hífens entre palavras.' })
     slug: string;
     
     @IsString()

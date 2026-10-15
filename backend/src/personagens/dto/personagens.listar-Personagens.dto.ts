@@ -5,13 +5,13 @@ export class ListarPersonagensDto {
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    pagina: number;
+    pagina: number = 1;
 
     @Type(() => Number)
     @IsInt()
     @Min(1)
     @Max(50)
-    limite: number;
+    limite: number = 20;
 
     @IsOptional()
     @IsString()

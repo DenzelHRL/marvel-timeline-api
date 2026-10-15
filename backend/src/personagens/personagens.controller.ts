@@ -33,7 +33,6 @@ export class PersonagensController{
         return await this.personagensService.buscar(params.slug);
     }
 
-    // Modificar o endpoint quando houver a implementação de autenticação e autorização do guard
     @Post()
     @Authorize({
         roles: ['ADMIN'],
@@ -49,7 +48,6 @@ export class PersonagensController{
         return await this.personagensService.criar(createPersonagemDto);
     }
 
-    // Modificar o endpoint quando houver a implementação de autenticação e autorização do guard
     @Patch(PERSONAGENS_ROUTES.atualizar)
     @Authorize({
         roles: ['ADMIN'],
