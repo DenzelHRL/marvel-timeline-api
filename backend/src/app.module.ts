@@ -8,6 +8,7 @@ import { databaseOptions } from './database/data-source';
 import { ComentariosModule } from './comentarios/comentarios.module';
 import { TrilhasModule } from './trilhas/trilhas.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
+import { ProgressoModule } from './progresso/progresso.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     ComentariosModule,
     TrilhasModule,
     UsuariosModule,
+    ProgressoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
