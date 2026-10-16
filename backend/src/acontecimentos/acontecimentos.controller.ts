@@ -5,6 +5,7 @@ import { AcontecimentosService } from "./acontecimentos.service";
 import { CriarEventoDto } from "./dto/acontecimentos.criar-evento.dto";
 import { AtualizarEventoDto } from "./dto/acontecimentos.atualizar-evento.dto";
 import { BuscarPersonagensEmEventosDto } from "./dto/acontecimentos.buscar-personagem.dto";
+import { Authorize } from "../acesso/autorizacao.decorators";
 
 @Controller()
 @ApiTags('Acontecimentos')
@@ -32,6 +33,11 @@ export class AcontecimentosController{
     }
     
     @Post('obras/:obraId/acontecimentos')
+    @HttpCode(HttpStatus.CREATED)
+    @Authorize({
+        roles: ['ADMIN'],
+        permissions: ['acontecimentos:criar'],
+    })
     async criarEvento(
         @Param('obraId', new ParseUUIDPipe()) obraId: string,
         @Body(
@@ -47,6 +53,10 @@ export class AcontecimentosController{
     }
 
     @Patch('acontecimentos/:id')
+    @Authorize({
+        roles: ['ADMIN'],
+        permissions: ['acontecimentos:editar'],
+    })
     async editarEvento(
         @Param('obraId', new ParseUUIDPipe()) obraId: string,
         @Body(
@@ -62,6 +72,10 @@ export class AcontecimentosController{
     }
 
     @Delete('acontecimentos/:id')
+    @Authorize({
+        roles: ['ADMIN'],
+        permissions: ['acontecimentos:editar'],
+    })
     @HttpCode(HttpStatus.NO_CONTENT)
     async removerEvento(@Param('id', new ParseUUIDPipe()) id: string){
         await this.service.removerEvento(id);
@@ -79,6 +93,10 @@ export class AcontecimentosController{
     }
 
     @Post('acontecimentos/:id/personagens')
+    @Authorize({
+        roles: ['ADMIN'],
+        permissions: ['acontecimentos:editar'],
+    })
     async associarPersonagens(
         @Param('id', new ParseUUIDPipe()) id: string,
         @Body(new ParseUUIDPipe()) personagemId: string
@@ -87,6 +105,11 @@ export class AcontecimentosController{
     }
 
     @Delete('acontecimentos/:id/personagens/:personagemId')
+    @Authorize({
+        roles: ['ADMIN'],
+        permissions: ['acontecimentos:editar'],
+    })
+    @HttpCode(HttpStatus.NO_CONTENT)
     async retirarAssociacao(
         @Param('id', new ParseUUIDPipe()) id: string, 
         @Param('personagemId', new ParseUUIDPipe()) personagemId: string
