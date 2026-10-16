@@ -8,12 +8,14 @@ import { databaseOptions } from './database/data-source';
 import { PersonagensModule } from './personagens/personagens.module';
 import { TrilhasModule } from './trilhas/trilhas.module';
 import { ComentariosModule } from './comentarios/comentarios.module';
+import { ParticipacaoModule } from './participacoes/participacao.module';
 
 @Module({
   imports: [
     
     TypeOrmModule.forRoot(databaseOptions()),
     PersonagensModule,
+    ParticipacaoModule,
     AuthModule,
     AcessoModule,
     ComentariosModule,

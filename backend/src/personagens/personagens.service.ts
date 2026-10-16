@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import { PersonagensRepository } from "./personagens.repository";
 import { ListarPersonagensDto } from "./dto/personagens.listar-Personagens.dto";
-import { PersonagemRespostaDto } from "./dto/personagens.busca-respostas.dto";
+import { PersonagemRespostaDto } from "./dto/personagens.resposta.dto";
 import { Personagem } from "../database/entities";
 import { CriarPersonagemDto } from "./dto/personagens.criar-personagem.dto";
 import { AtualizarPersonagemDto } from "./dto/personagens.atualizar-personagem.dto";

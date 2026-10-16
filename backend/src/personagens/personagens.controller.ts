@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, ValidationPipe, Headers, Patch, ParseUUIDPipe } from '@nestjs/common';
 import { PERSONAGENS_ROUTES } from './personagens.routes';
 import { PersonagensService } from './personagens.service';
-import {PersonagemRespostaDto} from './dto/personagens.busca-respostas.dto';
+import {PersonagemRespostaDto} from './dto/personagens.resposta.dto';
 import {CriarPersonagemDto} from './dto/personagens.criar-personagem.dto';
 import {ListarPersonagensDto} from './dto/personagens.listar-Personagens.dto';
 import {AtualizarPersonagemDto} from './dto/personagens.atualizar-personagem.dto';
