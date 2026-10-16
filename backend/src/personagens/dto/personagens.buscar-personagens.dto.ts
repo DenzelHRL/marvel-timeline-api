@@ -1,8 +1,13 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsString, Matches, MaxLength } from "class-validator";
 
 export class BuscarPersonagemParamsDto {
   @IsString()
   @MaxLength(160)
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  @ApiProperty({
+    description: 'Identificador textual do personagem, com letras minúsculas, números e hífens',
+    maxLength: 160,
+  })
   slug: string;
 }

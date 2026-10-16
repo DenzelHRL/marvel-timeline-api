@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { Participacao, Personagem } from "../database/entities";
+import { Obra, Participacao, Personagem } from "../database/entities";
 import { AuthModule } from "../auth/auth.module";
 import { AcessoModule } from "../acesso/acesso.module";
 import { ParticipacaoController } from "./participacoes.controller";
@@ -9,7 +9,11 @@ import { ParticipacaoRepository } from "./participacao.repository";
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Participacao]),
+        TypeOrmModule.forFeature([
+            Participacao,
+            Obra,
+            Personagem
+        ]),
         AuthModule,
         AcessoModule,
     ],
