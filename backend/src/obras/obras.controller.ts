@@ -1,6 +1,17 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -11,6 +22,9 @@ import { ObrasService } from './obras.service';
 import { ListarObrasDto } from './dto/listar-obras.dto';
 import { ConsultarObraDto } from './dto/consultar-obra.dto';
 import { ListarObrasRespostaDto, ObraRespostaDto } from './dto/obra-resposta.dto';
+import { CriarObraDto } from './dto/criar-obra.dto';
+import { AtualizarObraDto } from './dto/atualizar-obra.dto';
+import { AlterarStatusObraDto } from './dto/alterar-status-obra.dto';
 
 @ApiTags('Obras')
 @Controller('obras')
@@ -58,5 +72,84 @@ export class ObrasController {
     @Query() query: ConsultarObraDto,
   ) {
     return this.obrasService.consultarPorSlug(slug, query);
+  }
+
+  @Post()
+  @ApiOperation({
+    summary: 'Cadastrar nova obra',
+    description:
+      'Cria um novo filme ou temporada no catalogo com status RASCUNHO (Regra R04).',
+  })
+  @ApiCreatedResponse({
+    description: 'Obra criada com sucesso.',
+    type: ObraRespostaDto,
+  })
+  @ApiConflictResponse({
+    description: 'Slug em uso ou numero de temporada repetido na serie.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Dados invalidos ou incoerentes entre tipo e serie/temporada.',
+  })
+  criar(@Body() dto: CriarObraDto) {
+    return this.obrasService.criar(dto);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Editar dados de uma obra',
+    description: 'Atualiza dados de uma obra existente pelo id (Regra R04).',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID da obra',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Obra atualizada com sucesso.',
+    type: ObraRespostaDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Obra nao encontrada.',
+  })
+  @ApiConflictResponse({
+    description: 'Slug ou numero de temporada em conflito.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Dados invalidos.',
+  })
+  atualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AtualizarObraDto,
+  ) {
+    return this.obrasService.atualizar(id, dto);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({
+    summary: 'Alterar status de uma obra',
+    description:
+      'Publica ou arquiva uma obra. Aplica verificacoes de dependencias (Regra R02).',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID da obra',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Status atualizado com sucesso.',
+    type: ObraRespostaDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Obra nao encontrada.',
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Transicao invalida (serie nao publicada ou pertencente a trilha publicada).',
+  })
+  alterarStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AlterarStatusObraDto,
+  ) {
+    return this.obrasService.alterarStatus(id, dto);
   }
 }
