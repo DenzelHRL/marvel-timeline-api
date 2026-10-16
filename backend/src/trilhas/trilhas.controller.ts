@@ -25,13 +25,18 @@ import { Authorize } from '../acesso/autorizacao.decorators';
 import { TrilhasService } from './trilhas.service';
 import { CriarTrilhaDto } from './dto/criar-trilha.dto';
 import { AtualizarTrilhaDto } from './dto/atualizar-trilha.dto';
+import { AlterarStatusTrilhaDto } from './dto/alterar-status-trilha.dto';
+import { CriarEtapaDto } from './dto/criar-etapa.dto';
 import { ListarTrilhasDto } from './dto/listar-trilhas.dto';
 import {
   ListarTrilhasRespostaDto,
   TrilhaRespostaDto,
 } from './dto/listar-trilhas-resposta.dto';
 import { ListarEtapasDto } from './dto/listar-etapas.dto';
-import { ListarEtapasRespostaDto } from './dto/listar-etapas-resposta.dto';
+import {
+  EtapaRespostaDto,
+  ListarEtapasRespostaDto,
+} from './dto/listar-etapas-resposta.dto';
 import { TrilhaAdminRespostaDto } from './dto/trilha-admin-resposta.dto';
 
 @ApiTags('Trilhas')
@@ -177,5 +182,88 @@ export class TrilhasController {
     @Body() dto: AtualizarTrilhaDto,
   ) {
     return this.trilhasService.atualizar(id, dto);
+  }
+
+  @Patch(':id/status')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['trilhas:editar'],
+  })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Alterar o status de uma trilha',
+    description:
+      'Altera o status para RASCUNHO, PUBLICADA ou ARQUIVADA. Para publicar, a trilha precisa ter ao menos uma etapa vinculada a uma obra publicada. Exige perfil ADMIN e permissão trilhas:editar.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID da trilha.',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Status da trilha atualizado.',
+    type: TrilhaAdminRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'UUID ou status inválido, ou tentativa de publicar uma trilha sem etapa com obra publicada.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido ou conta inativa.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Perfil ou permissão insuficiente.',
+  })
+  @ApiNotFoundResponse({
+    description: 'Trilha não encontrada.',
+  })
+  alterarStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AlterarStatusTrilhaDto,
+  ) {
+    return this.trilhasService.alterarStatus(id, dto);
+  }
+
+  @Post(':id/etapas')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['etapas:editar'],
+  })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Adicionar uma etapa à trilha',
+    description:
+      'Vincula uma obra à trilha na posição informada e desloca as etapas seguintes. A mesma obra não pode aparecer duas vezes na mesma trilha. Trilhas publicadas só podem receber obras publicadas. Exige perfil ADMIN e permissão etapas:editar.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID da trilha que receberá a etapa.',
+    format: 'uuid',
+  })
+  @ApiCreatedResponse({
+    description: 'Etapa criada e posições seguintes ajustadas.',
+    type: EtapaRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'UUID ou dados inválidos, posição fora do intervalo permitido, ou obra não publicada para uma trilha publicada.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido ou conta inativa.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Perfil ou permissão insuficiente.',
+  })
+  @ApiNotFoundResponse({
+    description: 'Trilha ou obra não encontrada.',
+  })
+  @ApiConflictResponse({
+    description: 'Essa obra já está vinculada à trilha.',
+  })
+  criarEtapa(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CriarEtapaDto,
+  ) {
+    return this.trilhasService.criarEtapa(id, dto);
   }
 }
