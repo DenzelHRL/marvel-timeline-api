@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -22,6 +24,7 @@ import {
 import { Authorize } from '../acesso/autorizacao.decorators';
 import { TrilhasService } from './trilhas.service';
 import { CriarTrilhaDto } from './dto/criar-trilha.dto';
+import { AtualizarTrilhaDto } from './dto/atualizar-trilha.dto';
 import { ListarTrilhasDto } from './dto/listar-trilhas.dto';
 import {
   ListarTrilhasRespostaDto,
@@ -115,8 +118,8 @@ export class TrilhasController {
       'Cria uma trilha com status inicial RASCUNHO. Exige perfil ADMIN e permissão trilhas:criar.',
   })
   @ApiCreatedResponse({
-  description: 'Trilha criada com status RASCUNHO.',
-  type: TrilhaAdminRespostaDto,
+    description: 'Trilha criada com status RASCUNHO.',
+    type: TrilhaAdminRespostaDto,
   })
   @ApiBadRequestResponse({
     description: 'Dados inválidos no corpo da requisição.',
@@ -132,5 +135,47 @@ export class TrilhasController {
   })
   criar(@Body() dto: CriarTrilhaDto) {
     return this.trilhasService.criar(dto);
+  }
+
+  @Patch(':id')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['trilhas:editar'],
+  })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Editar os dados de uma trilha',
+    description:
+      'Atualiza apenas os campos informados entre nome, slug e descrição. Não altera status nem etapas. Exige perfil ADMIN e permissão trilhas:editar.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID da trilha.',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Trilha atualizada.',
+    type: TrilhaAdminRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'UUID ou dados do corpo inválidos.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido ou conta inativa.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Perfil ou permissão insuficiente.',
+  })
+  @ApiNotFoundResponse({
+    description: 'Trilha não encontrada.',
+  })
+  @ApiConflictResponse({
+    description: 'Já existe uma trilha com esse slug.',
+  })
+  atualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AtualizarTrilhaDto,
+  ) {
+    return this.trilhasService.atualizar(id, dto);
   }
 }
