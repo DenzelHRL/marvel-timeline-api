@@ -8,6 +8,7 @@ export class AtualizarMinhaContaDTO{
         example: "Tobias Avellar",
         maxLength: 160
     })
+    @Transform(({value}) => (typeof value === "string" ? value.trim() : value))
     @IsOptional()
     @IsString({message: "nome deve ser uma string"})
     @MinLength(2, {message: "nome deve ter no mínimo 2 caracteres"})

@@ -143,7 +143,7 @@ export class ComentariosController {
     // Endpoint: 65 -> GET /usuarios/me/comentarios
     @Get("usuarios/me/comentarios")
     @ApiBearerAuth()
-    @Authorize({permissions: ["comentarios:consultar_propria"]})
+    @Authorize({permissions: ["conta:consultar_propria"]})
     @ApiOperation({
         summary: "Consultar histórico de comentários do próprio autor",
         description: "Retorna todos os comentários postados pelo usuário logado com paginação e filtros.",
