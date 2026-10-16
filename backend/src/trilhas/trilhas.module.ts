@@ -9,6 +9,7 @@ import {
 import { TrilhasController } from './trilhas.controller';
 import { ExplorarController } from './explorar.controller';
 import { TrilhasService } from './trilhas.service';
+import { EtapasTrilhaService } from './etapas-trilha.service';
 
 @Module({
   imports: [
@@ -17,6 +18,6 @@ import { TrilhasService } from './trilhas.service';
     AcessoModule,
   ],
   controllers: [TrilhasController, ExplorarController],
-  providers: [TrilhasService],
+  providers: [TrilhasService, EtapasTrilhaService],
 })
 export class TrilhasModule {}
