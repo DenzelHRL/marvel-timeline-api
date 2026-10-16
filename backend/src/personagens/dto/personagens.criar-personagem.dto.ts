@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsOptional, IsString, IsUrl, Matches, MaxLength } from "class-validator";
 
 export class CriarPersonagemDto{
@@ -24,6 +25,8 @@ export class CriarPersonagemDto{
     @IsOptional()
     @ApiPropertyOptional({
       description: 'Descrição pública do personagem, sem spoilers. Aceita null',
+      type: String,
+      nullable: true,
     })
     descricaoPublica?: string | null;
     
@@ -31,6 +34,14 @@ export class CriarPersonagemDto{
     @IsUrl({protocols: ['http', 'https'], require_protocol: true}, { message: 'A URL da imagem deve ser válida e começar com http:// ou https://' })
     @ApiPropertyOptional({
       description: 'URL da imagem do personagem, iniciada por http:// ou https://. Aceita null',
+      type: String,
+      nullable: true,
+    })
+    @Transform(({value}) =>{
+      if(typeof value === 'string' && value.trim() ===''){
+        return null;
+      }
+      return value;
     })
     imagemUrl?: string | null;
 }

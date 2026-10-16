@@ -28,6 +28,11 @@ export class ParticipacaoService{
         });
 
         return {
+            obra: {
+                id: obra.id,
+                titulo: obra.titulo,
+                slug: obra.slug
+            },
             itens: participacoes.map((participacoes: Participacao) => this.toRespostaDto(participacoes, incluirSpoilers)),
             meta:{
                 pagina: consulta.pagina,
