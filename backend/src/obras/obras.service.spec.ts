@@ -2,7 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { ObrasService } from './obras.service';
-import { Obra } from '../database/entities/catalog.entities';
+import {
+  EtapaTrilha,
+  Obra,
+  Serie,
+  Trilha,
+} from '../database/entities/catalog.entities';
 
 describe('ObrasService', () => {
   let service: ObrasService;
@@ -26,6 +31,20 @@ describe('ObrasService', () => {
   const mockRepository = {
     findAndCount: jest.fn(),
     findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
+
+  const mockSeriesRepo = {
+    findOne: jest.fn(),
+  };
+
+  const mockTrilhasRepo = {
+    findOne: jest.fn(),
+  };
+
+  const mockEtapasRepo = {
+    find: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -37,6 +56,18 @@ describe('ObrasService', () => {
         {
           provide: getRepositoryToken(Obra),
           useValue: mockRepository,
+        },
+        {
+          provide: getRepositoryToken(Serie),
+          useValue: mockSeriesRepo,
+        },
+        {
+          provide: getRepositoryToken(Trilha),
+          useValue: mockTrilhasRepo,
+        },
+        {
+          provide: getRepositoryToken(EtapaTrilha),
+          useValue: mockEtapasRepo,
         },
       ],
     }).compile();
