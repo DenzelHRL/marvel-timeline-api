@@ -11,6 +11,7 @@ import {
   Trilha,
 } from '../database/entities/catalog.entities';
 import { AtualizarEtapaDto } from './dto/atualizar-etapa.dto';
+import { ReordenarEtapasDto } from './dto/reordenar-etapas.dto';
 
 @Injectable()
 export class EtapasTrilhaService {
@@ -147,7 +148,6 @@ export class EtapasTrilhaService {
           },
         });
 
-        
         for (const etapaSeguinte of etapasSeguintes) {
           await etapasRepository.update(
             {
@@ -159,6 +159,110 @@ export class EtapasTrilhaService {
             },
           );
         }
+      },
+    );
+  }
+
+  async reordenar(
+    trilhaId: string,
+    dto: ReordenarEtapasDto,
+  ): Promise<EtapaTrilha[]> {
+    return this.trilhasRepository.manager.transaction(
+      async (manager) => {
+        const trilhasRepository = manager.getRepository(Trilha);
+        const etapasRepository = manager.getRepository(EtapaTrilha);
+
+        const trilha = await trilhasRepository.findOne({
+          where: { id: trilhaId },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!trilha) {
+          throw new NotFoundException('Trilha não encontrada.');
+        }
+
+        const etapas = await etapasRepository.find({
+          where: { trilhaId },
+          order: {
+            posicao: 'ASC',
+          },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (etapas.length === 0) {
+          throw new BadRequestException(
+            'A trilha não possui etapas para reordenar.',
+          );
+        }
+
+        const etapaIds = dto.etapaIds.map(
+          (id) => id.toLowerCase(),
+        );
+
+        const idsRecebidos = new Set(etapaIds);
+
+        const idsDaTrilha = new Set(
+          etapas.map((etapa) => etapa.id.toLowerCase()),
+        );
+
+        const listaCompleta =
+          etapaIds.length === etapas.length &&
+          idsRecebidos.size === etapas.length &&
+          etapaIds.every((id) => idsDaTrilha.has(id));
+
+        if (!listaCompleta) {
+          throw new BadRequestException(
+            'Informe todas as etapas desta trilha exatamente uma vez, sem incluir etapas de outras trilhas.',
+          );
+        }
+
+        const maiorPosicao = etapas.reduce(
+          (maior, etapa) => Math.max(maior, etapa.posicao),
+          0,
+        );
+
+        const limiteInteiro = 2147483647;
+
+        if (maiorPosicao + etapas.length > limiteInteiro) {
+          throw new BadRequestException(
+            'As posições atuais excedem o limite permitido para reordenação.',
+          );
+        }
+
+        // Primeira fase: move todas as etapas para posições
+        // temporárias acima da maior posição existente.
+        for (let indice = 0; indice < etapas.length; indice++) {
+          await etapasRepository.update(
+            {
+              id: etapas[indice].id,
+              trilhaId,
+            },
+            {
+              posicao: maiorPosicao + indice + 1,
+            },
+          );
+        }
+
+        // Segunda fase: aplica a ordem solicitada,
+        // com posições consecutivas a partir de 1.
+        for (let indice = 0; indice < etapaIds.length; indice++) {
+          await etapasRepository.update(
+            {
+              id: etapaIds[indice],
+              trilhaId,
+            },
+            {
+              posicao: indice + 1,
+            },
+          );
+        }
+
+        return etapasRepository.find({
+          where: { trilhaId },
+          order: {
+            posicao: 'ASC',
+          },
+        });
       },
     );
   }

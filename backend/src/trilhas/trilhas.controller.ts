@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import {
@@ -33,6 +34,7 @@ import { AtualizarTrilhaDto } from './dto/atualizar-trilha.dto';
 import { AlterarStatusTrilhaDto } from './dto/alterar-status-trilha.dto';
 import { CriarEtapaDto } from './dto/criar-etapa.dto';
 import { AtualizarEtapaDto } from './dto/atualizar-etapa.dto';
+import { ReordenarEtapasDto } from './dto/reordenar-etapas.dto';
 import { ListarTrilhasDto } from './dto/listar-trilhas.dto';
 import {
   ListarTrilhasRespostaDto,
@@ -364,5 +366,47 @@ export class TrilhasController {
     @Param('etapaId', ParseUUIDPipe) etapaId: string,
   ): Promise<void> {
     return this.etapasTrilhaService.remover(id, etapaId);
+  }
+
+  @Put(':id/ordem')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['etapas:editar'],
+  })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Reordenar as etapas de uma trilha',
+    description:
+      'Recebe os IDs de todas as etapas da trilha, exatamente uma vez, na ordem desejada. Atualiza as posições em uma única transação, usando posições temporárias para evitar colisões. Preserva as obras, prioridades e justificativas. Exige perfil ADMIN e permissão etapas:editar.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID da trilha que será reordenada.',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description:
+      'Etapas retornadas na nova ordem, com posições consecutivas a partir de 1.',
+    type: EtapaRespostaDto,
+    isArray: true,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'UUID ou lista inválida, IDs repetidos, etapas ausentes ou de outra trilha, trilha sem etapas ou posições acima do limite permitido.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido ou conta inativa.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Perfil ou permissão insuficiente.',
+  })
+  @ApiNotFoundResponse({
+    description: 'Trilha não encontrada.',
+  })
+  reordenarEtapas(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReordenarEtapasDto,
+  ) {
+    return this.etapasTrilhaService.reordenar(id, dto);
   }
 }
