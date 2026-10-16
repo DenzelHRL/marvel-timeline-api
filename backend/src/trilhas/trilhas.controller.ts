@@ -23,10 +23,12 @@ import {
 } from '@nestjs/swagger';
 import { Authorize } from '../acesso/autorizacao.decorators';
 import { TrilhasService } from './trilhas.service';
+import { EtapasTrilhaService } from './etapas-trilha.service';
 import { CriarTrilhaDto } from './dto/criar-trilha.dto';
 import { AtualizarTrilhaDto } from './dto/atualizar-trilha.dto';
 import { AlterarStatusTrilhaDto } from './dto/alterar-status-trilha.dto';
 import { CriarEtapaDto } from './dto/criar-etapa.dto';
+import { AtualizarEtapaDto } from './dto/atualizar-etapa.dto';
 import { ListarTrilhasDto } from './dto/listar-trilhas.dto';
 import {
   ListarTrilhasRespostaDto,
@@ -44,6 +46,7 @@ import { TrilhaAdminRespostaDto } from './dto/trilha-admin-resposta.dto';
 export class TrilhasController {
   constructor(
     private readonly trilhasService: TrilhasService,
+    private readonly etapasTrilhaService: EtapasTrilhaService,
   ) {}
 
   @Get()
@@ -265,5 +268,51 @@ export class TrilhasController {
     @Body() dto: CriarEtapaDto,
   ) {
     return this.trilhasService.criarEtapa(id, dto);
+  }
+
+  @Patch(':id/etapas/:etapaId')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['etapas:editar'],
+  })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Editar uma etapa da trilha',
+    description:
+      'Altera prioridade e/ou justificativa da etapa. Envie justificativa null para removê-la. Não altera a obra vinculada nem a posição. Exige perfil ADMIN e permissão etapas:editar.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID da trilha.',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'etapaId',
+    description: 'UUID da etapa pertencente à trilha.',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Etapa atualizada.',
+    type: EtapaRespostaDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'UUID ou dados inválidos, ou corpo sem campos editáveis.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido ou conta inativa.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Perfil ou permissão insuficiente.',
+  })
+  @ApiNotFoundResponse({
+    description: 'Trilha ou etapa não encontrada na trilha.',
+  })
+  atualizarEtapa(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('etapaId', ParseUUIDPipe) etapaId: string,
+    @Body() dto: AtualizarEtapaDto,
+  ) {
+    return this.etapasTrilhaService.atualizar(id, etapaId, dto);
   }
 }
