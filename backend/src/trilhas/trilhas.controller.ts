@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -14,6 +17,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -314,5 +318,51 @@ export class TrilhasController {
     @Body() dto: AtualizarEtapaDto,
   ) {
     return this.etapasTrilhaService.atualizar(id, etapaId, dto);
+  }
+
+  @Delete(':id/etapas/:etapaId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['etapas:editar'],
+  })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Remover uma etapa da trilha',
+    description:
+      'Remove o vínculo da obra com a trilha e reduz em uma unidade as posições seguintes, na mesma transação. A obra permanece no catálogo. Uma trilha publicada precisa manter ao menos uma etapa com obra publicada. Exige perfil ADMIN e permissão etapas:editar.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID da trilha.',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'etapaId',
+    description: 'UUID da etapa pertencente à trilha.',
+    format: 'uuid',
+  })
+  @ApiNoContentResponse({
+    description:
+      'Etapa removida e posições seguintes ajustadas. Resposta sem corpo.',
+  })
+  @ApiBadRequestResponse({
+    description:
+      'UUID inválido ou tentativa de deixar uma trilha publicada sem etapa com obra publicada.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido ou conta inativa.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Perfil ou permissão insuficiente.',
+  })
+  @ApiNotFoundResponse({
+    description: 'Trilha ou etapa não encontrada na trilha.',
+  })
+  removerEtapa(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('etapaId', ParseUUIDPipe) etapaId: string,
+  ): Promise<void> {
+    return this.etapasTrilhaService.remover(id, etapaId);
   }
 }
