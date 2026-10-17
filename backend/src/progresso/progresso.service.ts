@@ -17,14 +17,14 @@ export class ProgressoService{
         const query = this.dataSource
             .getRepository(Progresso)
             .createQueryBuilder("p")
-            .where("p.status = :status", {status});
+            .where("p.usuario_id = :usuarioId", {usuarioId});
 
         if(status){
             query.andWhere("p.status = :status", {status});
         }
 
         if(obraId){
-            query.andHaving("p.obra_id = :obraId", {obraId});
+            query.andWhere("p.obra_id = :obraId", {obraId});
         }
 
         query.orderBy("p.atualizado_em", "DESC");
@@ -145,7 +145,7 @@ export class ProgressoService{
             .getRepository(Progresso)
             .createQueryBuilder("p")
             .where("p.usuario_id = :usuarioId", {usuarioId})
-            .andWhere("p.obra_id IN (:...obraIds", {obraIds})
+            .andWhere("p.obra_id IN (:...obraIds)", {obraIds})
             .getMany();
 
             let concluidas = 0;
