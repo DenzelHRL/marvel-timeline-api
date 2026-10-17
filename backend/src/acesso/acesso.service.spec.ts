@@ -457,6 +457,8 @@ describe('AcessoService', () => {
         usuario.id,
         null,
         null,
+        null,
+        null,
         ['acessos:atribuir_perfil', 'acessos:alterar_permissoes'],
         2,
       ],
@@ -562,6 +564,45 @@ describe('AcessoService', () => {
     expect(manager.delete).not.toHaveBeenCalled();
   });
 
+  it('permite revogar o perfil ADMIN quando outro administrador recuperável existe', async () => {
+    manager.findOne
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce(usuario)
+      .mockResolvedValueOnce(perfilAdmin)
+      .mockResolvedValueOnce({
+        usuarioId: usuario.id,
+        perfilId: perfilAdmin.id,
+      })
+      .mockResolvedValueOnce({
+        usuarioId: usuario.id,
+        perfilId: perfilAdmin.id,
+      });
+    manager.query.mockResolvedValue([
+      { id: '03a12345-6789-4abc-8def-0123456789ab' },
+    ]);
+    manager.delete.mockResolvedValue({ affected: 1 });
+
+    await expect(
+      service.revogarPerfil(usuario.id, perfilAdmin.id),
+    ).resolves.toBeUndefined();
+    expect(manager.query).toHaveBeenCalledWith(
+      expect.stringContaining('up_admin.perfil_id = $3::uuid'),
+      [
+        null,
+        usuario.id,
+        perfilAdmin.id,
+        null,
+        null,
+        ['acessos:atribuir_perfil', 'acessos:alterar_permissoes'],
+        2,
+      ],
+    );
+    expect(manager.delete).toHaveBeenCalledWith(UsuarioPerfil, {
+      usuarioId: usuario.id,
+      perfilId: perfilAdmin.id,
+    });
+  });
+
   it('permite revogar outro perfil do ADMIN se ele mantiver as permissões de recuperação', async () => {
     const perfilLeitor = {
       ...perfilAdmin,
@@ -587,13 +628,13 @@ describe('AcessoService', () => {
       service.revogarPerfil(usuario.id, perfilLeitor.id),
     ).resolves.toBeUndefined();
     expect(manager.query).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '($3::uuid IS NULL OR up_permissao.perfil_id <> $3::uuid)',
-      ),
+      expect.stringContaining('up_permissao.usuario_id = $2::uuid'),
       [
         null,
+        usuario.id,
         perfilLeitor.id,
-        perfilLeitor.id,
+        null,
+        null,
         ['acessos:atribuir_perfil', 'acessos:alterar_permissoes'],
         2,
       ],
@@ -716,13 +757,13 @@ describe('AcessoService', () => {
       ),
     ).rejects.toThrow(ConflictException);
     expect(manager.query).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '($3::uuid IS NULL OR up_permissao.perfil_id <> $3::uuid)',
-      ),
+      expect.stringContaining('permissao.codigo = $5'),
       [
         null,
         null,
+        null,
         perfilAdmin.id,
+        permissaoAlterarPermissoes.codigo,
         ['acessos:atribuir_perfil', 'acessos:alterar_permissoes'],
         2,
       ],

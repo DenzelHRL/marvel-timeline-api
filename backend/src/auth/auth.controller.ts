@@ -84,7 +84,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Iniciar autenticação com Google',
     description:
-      'Inicia o fluxo OAuth 2.0 e redireciona o navegador para a página de autorização do Google.',
+      'Copie http://localhost:3000/auth/google em uma nova guia do navegador, o Swagger não pode redirecionar para a autorização do Google. Escolha sua conta de google que eu tinha pedido antes (Corretor, passe o email pelo chat do teams de um dos membros que adicionamos você no OAuth). O endpoint de callback é o que vai aparecer depois de escolher a conta, junto dele o token. Cole esse token no authorize e você estará logado com sua',
   })
   @ApiFoundResponse({
     description: 'Redirecionamento para a autorização do Google.',

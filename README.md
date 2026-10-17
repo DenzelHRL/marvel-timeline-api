@@ -39,6 +39,10 @@ Para trabalhar em grupo: [guia das 16 tabelas e exemplo de rota](docs/modelo-ban
 
 O [modelo lógico em imagem](docs/modelo-logico.png) mostra os campos, chaves e relações do esquema preparado; o [SVG](docs/modelo-logico.svg) permite ampliar sem perder nitidez.
 
+## Documentar e testar endpoints
+
+O [guia de Swagger](docs/guia-swagger.md) explica a configuração compartilhada, a documentação de controllers e DTOs, o uso da tela de testes e a conferência das respostas. Cada integrante aplica esses passos às rotas da sua parte.
+
 ## Requisitos da P1
 
 Entrega até **16/10/2026**. O backend deverá incluir pelo menos 60 endpoints funcionais, Swagger/OpenAPI, autenticação, perfis e permissões, paginação e pelo menos dois filtros por campos da tabela em cada listagem, migrations, seeds e pelo menos 10 regras de negócio do domínio. As regras serão entregues em PDF junto com o link do repositório.

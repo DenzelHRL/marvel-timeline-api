@@ -58,10 +58,10 @@ export class AcessoController {
   @ApiOperation({
     summary: 'Listar contas de usuários',
     description:
-      'Busca contas por parte do nome e/ou e-mail, com paginação. Nunca retorna o hash da senha.',
+      'Busca contas com filtros opcionais.',
   })
   @ApiOkResponse({
-    description: 'Contas retornadas com metadados de paginação.',
+    description: 'Contas: ',
     type: ListarUsuariosRespostaDto,
   })
   @ApiBadRequestResponse({
@@ -87,10 +87,10 @@ export class AcessoController {
   @ApiOperation({
     summary: 'Consultar uma conta de usuário',
     description:
-      'Retorna os dados da conta identificada pelo UUID, sem incluir o hash da senha.',
+      'Retorna uma conta pelo UUID.',
   })
   @ApiOkResponse({
-    description: 'Conta encontrada.',
+    description: 'Conta: ',
     type: UsuarioAdminRespostaDto,
   })
   @ApiBadRequestResponse({
@@ -214,7 +214,7 @@ export class AcessoController {
   @ApiOperation({
     summary: 'Listar perfis de acesso',
     description:
-      'Busca perfis por código e/ou descrição, com paginação dos resultados.',
+      'Busca perfis com filtros opcionais',
   })
   @ApiOkResponse({
     description: 'Perfis retornados com metadados de paginação.',
@@ -366,7 +366,7 @@ export class AcessoController {
   @ApiOperation({
     summary: 'Listar permissões administrativas disponíveis',
     description:
-      'Permite filtrar por código e descrição; os resultados são paginados.',
+      'Permissões com filtros opcionais',
   })
   @ApiOkResponse({
     description: 'Permissões retornadas com metadados de paginação.',
