@@ -23,6 +23,7 @@ export class ListarEventosEmObrasDto{
     @IsOptional()
     @IsString()
     @MaxLength(40)
+    @ApiPropertyOptional({ description: 'Busca por parte da categoria.', maxLength: 40 })
     categoria?: string;
 
     @IsOptional()
@@ -33,6 +34,7 @@ export class ListarEventosEmObrasDto{
         return value;
     })
     @IsBoolean()
+    @ApiPropertyOptional({ description: 'Filtra por spoiler; resultados com spoiler exigem incluirSpoilers=true.' })
     contemSpoiler?: boolean;
 
     @IsOptional()

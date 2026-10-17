@@ -23,12 +23,14 @@ export class BuscarPersonagensEmEventosDto{
     @IsOptional()
     @IsString()
     @MaxLength(200)
-    nome: string; 
+    @ApiPropertyOptional({ description: 'Busca por parte do nome.', maxLength: 200 })
+    nome: string;
 
     @IsOptional()
     @IsString()
     @MaxLength(160)
-    slug: string; 
+    @ApiPropertyOptional({ description: 'Busca por parte do slug.', maxLength: 160 })
+    slug: string;
 
     @IsOptional()
     @Transform(({ value }) => {
