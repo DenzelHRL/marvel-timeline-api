@@ -12,12 +12,15 @@ import {
 } from '../database/entities/catalog.entities';
 import { AtualizarEtapaDto } from './dto/atualizar-etapa.dto';
 import { ReordenarEtapasDto } from './dto/reordenar-etapas.dto';
+import { CacheService } from '../cache/cache.service';
 
 @Injectable()
 export class EtapasTrilhaService {
   constructor(
     @InjectRepository(Trilha)
     private readonly trilhasRepository: Repository<Trilha>,
+
+    private readonly cacheService: CacheService
   ) {}
 
   async atualizar(
@@ -69,8 +72,9 @@ export class EtapasTrilhaService {
         if (dto.justificativa !== undefined) {
           etapa.justificativa = dto.justificativa;
         }
-
-        return etapasRepository.save(etapa);
+        const etapaAtualizada = await etapasRepository.save(etapa);
+        await this.cacheService.invalidarPorPadrao("trilhas:*");
+        return etapaAtualizada; 
       },
     );
   }
@@ -161,6 +165,8 @@ export class EtapasTrilhaService {
         }
       },
     );
+
+    await this.cacheService.invalidarPorPadrao("trilhas:*");
   }
 
   async reordenar(
@@ -257,12 +263,15 @@ export class EtapasTrilhaService {
           );
         }
 
-        return etapasRepository.find({
+        const etapasOrdenadas = await etapasRepository.find({
           where: { trilhaId },
           order: {
             posicao: 'ASC',
           },
         });
+          
+        await this.cacheService.invalidarPorPadrao("trilhas:*");
+        return etapasOrdenadas;
       },
     );
   }

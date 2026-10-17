@@ -14,5 +14,9 @@ services:
       interval: 5s
       retries: 10
 
+    redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
 volumes:
   marvel_postgres_data:

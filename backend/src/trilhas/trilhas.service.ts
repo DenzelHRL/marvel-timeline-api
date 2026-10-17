@@ -22,6 +22,7 @@ import { AlterarStatusTrilhaDto } from './dto/alterar-status-trilha.dto';
 import { CriarEtapaDto } from './dto/criar-etapa.dto';
 import { ListarTrilhasDto } from './dto/listar-trilhas.dto';
 import { ListarEtapasDto } from './dto/listar-etapas.dto';
+import {CacheService} from '../cache/cache.service';
 import {
   ItemMapaDto,
   MapaTrilhaRespostaDto,
@@ -35,9 +36,15 @@ export class TrilhasService {
 
     @InjectRepository(EtapaTrilha)
     private readonly etapasRepository: Repository<EtapaTrilha>,
+  
+    private readonly cacheService: CacheService
   ) {}
 
   async listarPublicadas(filtros: ListarTrilhasDto) {
+    const chaveCache = this.cacheService.gerarChave("trilhas:publicadas", filtros);
+    const emCache = await this.cacheService.obter(chaveCache);
+    if(emCache) return emCache;
+
     const where: FindOptionsWhere<Trilha> = {
       status: 'PUBLICADA',
     };
@@ -57,13 +64,16 @@ export class TrilhasService {
       skip: (filtros.pagina - 1) * filtros.limite,
     });
 
-    return {
+    const resposta = {
       dados,
       total,
       pagina: filtros.pagina,
       limite: filtros.limite,
       totalPaginas: Math.ceil(total / filtros.limite),
-    };
+    }
+
+    await this.cacheService.salvar(chaveCache, resposta);
+    return resposta;
   }
 
   async buscarPublicadaPorSlug(slug: string) {
@@ -82,6 +92,10 @@ export class TrilhasService {
   }
 
   async listarEtapas(slug: string, filtros: ListarEtapasDto) {
+    const chaveCache = this.cacheService.gerarChave(`trilhas:${slug}:etapas`, filtros);
+    const emCache = await this.cacheService.obter(chaveCache);
+    if(emCache) return emCache;
+
     const trilha = await this.buscarPublicadaPorSlug(slug);
 
     const consulta = this.etapasRepository
@@ -113,19 +127,27 @@ export class TrilhasService {
       .take(filtros.limite)
       .getManyAndCount();
 
-    return {
+
+    const resposta = {
       dados,
       total,
       pagina: filtros.pagina,
       limite: filtros.limite,
       totalPaginas: Math.ceil(total / filtros.limite),
-    };
+    }
+
+    await this.cacheService.salvar(chaveCache, resposta);
+    return resposta;
   }
 
   async consultarMapa(
     slug: string,
     filtros: ListarEtapasDto,
   ): Promise<MapaTrilhaRespostaDto> {
+    const chaveCache = this.cacheService.gerarChave(`trilhas:${slug}:mapa`, filtros);
+    const emCache = await this.cacheService.obter<MapaTrilhaRespostaDto>(chaveCache);
+    if (emCache) return emCache;
+
     const trilha = await this.buscarPublicadaPorSlug(slug);
 
     const consulta = this.etapasRepository
@@ -169,13 +191,17 @@ export class TrilhasService {
       .limit(filtros.limite)
       .getRawMany<ItemMapaDto>();
 
-    return {
+
+    const resposta = {
       dados,
       total,
       pagina: filtros.pagina,
       limite: filtros.limite,
       totalPaginas: Math.ceil(total / filtros.limite),
-    };
+    }
+
+    await this.cacheService.salvar(chaveCache, resposta);
+    return resposta;
   }
 
   async consultarObraNaTrilha(slug: string, obraSlug: string) {
@@ -258,6 +284,7 @@ export class TrilhasService {
     });
 
     try {
+      await this.cacheService.invalidarPorPadrao('trilhas:*');
       return await this.trilhasRepository.save(trilha);
     } catch (error: unknown) {
       if (error instanceof QueryFailedError) {
@@ -313,6 +340,7 @@ export class TrilhasService {
     }
 
     try {
+      await this.cacheService.invalidarPorPadrao('trilhas:*');
       return await this.trilhasRepository.save(trilha);
     } catch (error: unknown) {
       if (error instanceof QueryFailedError) {
@@ -370,6 +398,7 @@ export class TrilhasService {
 
         trilha.status = dto.status;
 
+        await this.cacheService.invalidarPorPadrao('trilhas:*');
         return trilhasRepository.save(trilha);
       },
     );
@@ -458,6 +487,7 @@ export class TrilhasService {
           justificativa: dto.justificativa ?? null,
         });
 
+        await this.cacheService.invalidarPorPadrao('trilhas:*');
         return etapasRepository.save(novaEtapa);
       },
     );

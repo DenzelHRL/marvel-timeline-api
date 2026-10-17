@@ -9,10 +9,12 @@ import { ComentariosModule } from './comentarios/comentarios.module';
 import { TrilhasModule } from './trilhas/trilhas.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ProgressoModule } from './progresso/progresso.module';
+import { CacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(databaseOptions()),
+    CacheModule,
     AuthModule,
     AcessoModule,
     ComentariosModule,
