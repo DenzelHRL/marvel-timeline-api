@@ -14,6 +14,7 @@ import {
   Trilha,
 } from '../database/entities/catalog.entities';
 import { ListarObrasDto } from './dto/listar-obras.dto';
+import { ListarObrasAdminDto } from './dto/listar-obras-admin.dto';
 import { ConsultarObraDto } from './dto/consultar-obra.dto';
 import { ListarObrasRespostaDto, ObraRespostaDto } from './dto/obra-resposta.dto';
 import { CriarObraDto } from './dto/criar-obra.dto';
@@ -231,5 +232,44 @@ export class ObrasService {
 
     obra.status = dto.status;
     return this.obrasRepo.save(obra);
+  }
+
+  // Endpoints administrativos (#76 e #77)
+  async listarAdmin(
+    filtros: ListarObrasAdminDto,
+  ): Promise<ListarObrasRespostaDto> {
+    const where: FindOptionsWhere<Obra> = {};
+
+    if (filtros.tipo) {
+      where.tipo = filtros.tipo;
+    }
+
+    if (filtros.status) {
+      where.status = filtros.status;
+    }
+
+    const [obras, total] = await this.obrasRepo.findAndCount({
+      where,
+      order: { anoLancamento: 'ASC', titulo: 'ASC' },
+      take: filtros.limite,
+      skip: (filtros.pagina - 1) * filtros.limite,
+    });
+
+    // Rota administrativa: inclui todos os campos sem ocultar spoiler para permitir edicao
+    return {
+      dados: obras,
+      total,
+      pagina: filtros.pagina,
+      limite: filtros.limite,
+      totalPaginas: Math.ceil(total / filtros.limite),
+    };
+  }
+
+  async consultarPorIdAdmin(id: string): Promise<ObraRespostaDto> {
+    const obra = await this.obrasRepo.findOne({ where: { id } });
+    if (!obra) {
+      throw new NotFoundException('Obra não encontrada.');
+    }
+    return obra;
   }
 }

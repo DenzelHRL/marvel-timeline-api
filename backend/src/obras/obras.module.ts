@@ -9,6 +9,7 @@ import {
   Trilha,
 } from '../database/entities/catalog.entities';
 import { ObrasController } from './obras.controller';
+import { AdminObrasController } from './admin-obras.controller';
 import { ObrasService } from './obras.service';
 
 @Module({
@@ -17,7 +18,7 @@ import { ObrasService } from './obras.service';
     AuthModule,
     AcessoModule,
   ],
-  controllers: [ObrasController],
+  controllers: [ObrasController, AdminObrasController],
   providers: [ObrasService],
   exports: [ObrasService],
 })

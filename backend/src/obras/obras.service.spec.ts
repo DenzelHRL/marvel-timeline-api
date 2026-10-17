@@ -399,4 +399,57 @@ describe('ObrasService', () => {
       ).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('listarAdmin (#76)', () => {
+    it('deve listar obras com filtros de tipo e status incluindo rascunhos', async () => {
+      const obras = [
+        mockObra,
+        { ...mockObra, id: 'obra-2', status: 'RASCUNHO' as const },
+      ];
+      mockRepository.findAndCount.mockResolvedValue([obras, 2]);
+
+      const resultado = await service.listarAdmin({
+        tipo: 'FILME',
+        status: 'RASCUNHO',
+        pagina: 1,
+        limite: 20,
+      });
+
+      expect(resultado.total).toBe(2);
+      expect(resultado.dados.length).toBe(2);
+      expect(resultado.dados[0].resumoComSpoiler).toBe(mockObra.resumoComSpoiler);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { tipo: 'FILME', status: 'RASCUNHO' },
+          order: { anoLancamento: 'ASC', titulo: 'ASC' },
+          take: 20,
+          skip: 0,
+        }),
+      );
+    });
+  });
+
+  describe('consultarPorIdAdmin (#77)', () => {
+    it('deve retornar uma obra por id mesmo em rascunho com resumoComSpoiler', async () => {
+      const obraRascunho = {
+        ...mockObra,
+        status: 'RASCUNHO' as const,
+      };
+      mockRepository.findOne.mockResolvedValue(obraRascunho);
+
+      const resultado = await service.consultarPorIdAdmin(obraRascunho.id);
+
+      expect(resultado.id).toBe(obraRascunho.id);
+      expect(resultado.status).toBe('RASCUNHO');
+      expect(resultado.resumoComSpoiler).toBe(obraRascunho.resumoComSpoiler);
+    });
+
+    it('deve lancar NotFoundException se a obra nao for encontrada', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.consultarPorIdAdmin('inexistente')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });
