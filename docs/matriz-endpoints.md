@@ -39,22 +39,22 @@ Permissões estão no [seed](../backend/src/database/seeds/seed-data.ts). Para l
 
 | # | Classe | Método e rota | Finalidade; body/parâmetros | Filtros/paginação | Acesso | Regra | Resp. | Código/Swagger/Teste |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 20 | E | `GET /series` | Descobrir séries publicadas | P[`titulo`, `slug`] | Público | R01 | AD | P/P/P |
-| 21 | E | `GET /series/:slug` | Dados de uma série | — | Público | R01 | AD | P/P/P |
-| 22 | E | `GET /series/:slug/temporadas` | Temporadas da série, como obras | P[`numeroTemporada`, `anoLancamento`] | Público | R01 | AD | P/P/P |
-| 23 | A | `POST /series` | Cadastrar série; título, slug, descrição | — | JWT `ADMIN`, `series:criar` | — | AD | P/P/P |
-| 24 | A | `PATCH /series/:id` | Alterar metadados; DTO parcial sem status | — | JWT `ADMIN`, `series:editar` | — | AD | P/P/P |
-| 25 | A | `PATCH /series/:id/status` | Publicar/arquivar; `{ status }` | — | JWT `ADMIN`, `series:editar` | R02 | AD | P/P/P |
+| 20 | E | `GET /series` | Descobrir séries publicadas | P[`titulo`, `slug`] | Público | R01 | Guilherme | C/S/T |
+| 21 | E | `GET /series/:slug` | Dados de uma série | — | Público | R01 | Guilherme | C/S/T |
+| 22 | E | `GET /series/:slug/temporadas` | Temporadas da série, como obras | P[`numeroTemporada`, `anoLancamento`] | Público | R01 | Guilherme | C/S/T |
+| 23 | A | `POST /series` | Cadastrar série; título, slug, descrição | — | JWT `ADMIN`, `series:criar` | — | Guilherme | C/S/T |
+| 24 | A | `PATCH /series/:id` | Alterar metadados; DTO parcial sem status | — | JWT `ADMIN`, `series:editar` | — | Guilherme | C/S/T |
+| 25 | A | `PATCH /series/:id/status` | Publicar/arquivar; `{ status }` | — | JWT `ADMIN`, `series:editar` | R02 | Guilherme | C/S/T |
 
 ## Obras — 5
 
 | # | Classe | Método e rota | Finalidade; body/parâmetros | Filtros/paginação | Acesso | Regra | Resp. | Código/Swagger/Teste |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 26 | E | `GET /obras` | Filmes e temporadas do catálogo | P[`tipo`, `anoLancamento`] | Público | R01 | AD | P/P/P |
-| 27 | E | `GET /obras/:slug` | Resumo e dados de uma obra; `incluirSpoilers` explícito | — | Público | R01, R03 | AD | P/P/P |
-| 28 | A | `POST /obras` | Criar filme/temporada; DTO de obra | — | JWT `ADMIN`, `obras:criar` | R04 | AD | P/P/P |
-| 29 | A | `PATCH /obras/:id` | Editar obra; DTO parcial sem status | — | JWT `ADMIN`, `obras:editar` | R04 | AD | P/P/P |
-| 30 | A | `PATCH /obras/:id/status` | Publicar/arquivar obra; `{ status }` | — | JWT `ADMIN`, `obras:editar` | R02 | AD | P/P/P |
+| 26 | E | `GET /obras` | Filmes e temporadas do catálogo | P[`tipo`, `anoLancamento`] | Público | R01 | Guilherme | C/S/T |
+| 27 | E | `GET /obras/:slug` | Resumo e dados de uma obra; `incluirSpoilers` explícito | — | Público | R01, R03 | Guilherme | C/S/T |
+| 28 | A | `POST /obras` | Criar filme/temporada; DTO de obra | — | JWT `ADMIN`, `obras:criar` | R04 | Guilherme | C/S/T |
+| 29 | A | `PATCH /obras/:id` | Editar obra; DTO parcial sem status | — | JWT `ADMIN`, `obras:editar` | R04 | Guilherme | C/S/T |
+| 30 | A | `PATCH /obras/:id/status` | Publicar/arquivar obra; `{ status }` | — | JWT `ADMIN`, `obras:editar` | R02 | Guilherme | C/S/T |
 
 ## Trilhas e ordenação — 10
 
@@ -142,8 +142,8 @@ Permissões estão no [seed](../backend/src/database/seeds/seed-data.ts). Para l
 | # | Classe | Método e rota | Finalidade; body/parâmetros | Filtros/paginação | Acesso | Regra | Resp. | Código/Swagger/Teste |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 75 | A | `PATCH /admin/usuarios/:id` | Editar nome/e-mail de outra conta; DTO parcial, sem senha/perfil/status | — | JWT `ADMIN`, `usuarios:editar` | R11 | AD | P/P/P |
-| 76 | A | `GET /admin/obras` | Encontrar obras para editar, incluindo rascunhos | P[`tipo`, `status`] | JWT `ADMIN`, `obras:editar` | — | AD | P/P/P |
-| 77 | A | `GET /admin/obras/:id` | Abrir obra por ID para edição, mesmo em rascunho | — | JWT `ADMIN`, `obras:editar` | — | AD | P/P/P |
+| 76 | A | `GET /admin/obras` | Encontrar obras para editar, incluindo rascunhos | P[`tipo`, `status`] | JWT `ADMIN`, `obras:editar` | — | Guilherme | C/S/T |
+| 77 | A | `GET /admin/obras/:id` | Abrir obra por ID para edição, mesmo em rascunho | — | JWT `ADMIN`, `obras:editar` | — | Guilherme | C/S/T |
 | 78 | A | `GET /admin/personagens/:id` | Abrir personagem por ID para edição | — | JWT `ADMIN`, `personagens:editar` | — | AD | P/P/P |
 
 Essas operações administrativas têm um propósito distinto de `GET /obras/:slug` e `GET /personagens/:slug`: as públicas usam um identificador legível para o leitor; a administração abre registros internos pelo ID, inclusive uma obra ainda não publicada. As edições de obra e personagem já estão nas linhas 29 e 44. Uma rota parametrizada atende todos os registros.
