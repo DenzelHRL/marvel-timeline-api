@@ -10,14 +10,18 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Authorize } from '../acesso/autorizacao.decorators';
 import { SeriesService } from './series.service';
 import { ListarSeriesDto } from './dto/listar-series.dto';
 import { ListarSeriesRespostaDto, SerieRespostaDto } from './dto/serie-resposta.dto';
@@ -100,7 +104,11 @@ export class SeriesController {
   }
 
   @Post()
-
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['series:criar'],
+  })
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Cadastrar serie',
     description: 'Cria uma nova serie com status inicial de rascunho.',
@@ -112,11 +120,18 @@ export class SeriesController {
   @ApiConflictResponse({
     description: 'Ja existe uma serie com esse slug.',
   })
+  @ApiUnauthorizedResponse({ description: 'Token ausente, invalido ou expirado.' })
+  @ApiForbiddenResponse({ description: 'Requer perfil ADMIN e permissao series:criar.' })
   criar(@Body() dto: CriarSerieDto) {
     return this.seriesService.criar(dto);
   }
 
   @Patch(':id')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['series:editar'],
+  })
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Editar dados da serie',
     description: 'Atualiza metadados da serie pelo id, sem alterar o status.',
@@ -136,6 +151,8 @@ export class SeriesController {
   @ApiConflictResponse({
     description: 'Slug ja esta em uso por outra serie.',
   })
+  @ApiUnauthorizedResponse({ description: 'Token ausente, invalido ou expirado.' })
+  @ApiForbiddenResponse({ description: 'Requer perfil ADMIN e permissao series:editar.' })
   atualizar(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AtualizarSerieDto,
@@ -144,6 +161,11 @@ export class SeriesController {
   }
 
   @Patch(':id/status')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['series:editar'],
+  })
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Alterar status da serie',
     description: 'Publica ou arquiva uma serie. Bloqueia o arquivamento caso tenha temporadas publicadas (Regra R02).',
@@ -163,6 +185,8 @@ export class SeriesController {
   @ApiBadRequestResponse({
     description: 'Nao e permitido arquivar uma serie com temporadas publicadas.',
   })
+  @ApiUnauthorizedResponse({ description: 'Token ausente, invalido ou expirado.' })
+  @ApiForbiddenResponse({ description: 'Requer perfil ADMIN e permissao series:editar.' })
   alterarStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AlterarStatusSerieDto,
