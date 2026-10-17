@@ -2,7 +2,7 @@
 
 [Índice](../plano-bonus.md) · [Contrato compartilhado](00-base-e-integracao.md) · [Serviço de projeção](03-cqrs-mapa.md)
 
-**Primeira ação:** criar um teste do worker com `ProjecaoMapaService` simulado. O worker recebe `trilhaId` e chama `reconstruir(trilhaId)`; não precisa esperar a implementação completa de CQRS para escrever esse teste.
+**Primeira ação:** criar um teste do worker com `ProjecaoMapaService` simulado. O worker recebe `trilhaId` e chama `reconstruir(trilhaId)`; o método já existe na main desde a PR #24.
 
 ## 1. O trabalho concreto da fila
 
@@ -20,7 +20,19 @@ Este guia usa `@nestjs/bullmq` + `bullmq`, não exemplos de `@nestjs/bull` mistu
 | `src/filas/outbox-relay.service.ts` | Encaminhar pendências do PostgreSQL ao Redis |
 | `src/filas/filas.spec.ts` | Testes de payload, repetição e falhas |
 
-Reutilizar `src/bonus/contratos.ts`, revisão/outbox e migrations da [base](00-base-e-integracao.md). Não criar outra tabela de eventos por conta própria.
+A revisão/outbox e a reconstrução já existem na main, pela PR #24. Criar apenas `src/bonus/contratos.ts` com o contrato da [base](00-base-e-integracao.md), além dos componentes de filas. Não recriar tabelas, migration de revisão ou serviço de projeção.
+
+Mapeamento concreto do relay para o payload:
+
+| Coluna em `mapa_outbox` | Campo do job |
+| --- | --- |
+| `event_id` | `eventId` |
+| `trilha_id` | `trilhaId` |
+| `versao::text` | `versao` |
+
+Usar `@InjectDataSource()` para ler a outbox no banco principal. Importar `ProjecaoMapaModule` e injetar `ProjecaoMapaService` no worker. O serviço expõe `reconstruir(trilhaId): Promise<void>` e usa `BancoLeituraService`; não adicionar outra conexão de leitura por `TypeOrmModule.forRoot()`.
+
+Preparar os dois bancos pelos comandos da base. `FILAS_ENABLED` deve controlar relay/worker separadamente de `CQRS_MAPA_ENABLED`: a fila precisa conseguir reconstruir a projeção mesmo enquanto o GET continua no principal. Não filtrar o lote apenas por trilhas publicadas; os eventos de trilhas arquivadas também precisam produzir projeções não públicas.
 
 Instalar versões compatíveis de `@nestjs/bullmq` e `bullmq` com `--save-exact`. Conferir peers da integração Nest e a API BullMQ efetivamente instalada; as documentações atuais podem descrever outro major. Usar clientes próprios para produtor e worker; não passar o cliente de cache para operações bloqueantes da fila.
 

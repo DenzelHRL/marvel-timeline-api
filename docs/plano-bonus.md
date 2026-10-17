@@ -2,7 +2,7 @@
 
 Este é o índice dos guias de implementação. Cada bônus tem um arquivo próprio, com etapas, arquivos a criar, pontos reais de integração e validações. Não há atribuição de pessoas: qualquer integrante pode assumir um bônus seguindo o respectivo guia.
 
-**Estado:** planejamento técnico, ainda não implementado por esta documentação. Exemplos são pontos de partida, não arquivos completos para substituir os atuais. A implementação precisa passar por build, lint, testes e revisão.
+**Estado em 17/10/2026:** CQRS, banco de leitura, revisão/outbox e reconstrução manual integrados pela [PR #24](https://github.com/DenzelHRL/marvel-timeline-api/pull/24). Logs/auditoria, cache e filas continuam como guias de implementação. Hooks de obras e validação integrada permanecem pendentes. Exemplos propostos não substituem arquivos existentes.
 
 ## 1. Escolher uma parte
 
@@ -24,8 +24,8 @@ Uma pessoa por vez integra mudanças em `backend/package.json`, `backend/package
 ## 3. Ordem prática
 
 1. Corrigir e validar as funcionalidades obrigatórias utilizadas. Não é necessário esperar todos os módulos da API terminarem para desenvolver um bônus isolado.
-2. Integrar a base de configuração e os contratos. Logs pode começar independentemente; cache pode começar pelos testes de chave/cliente; CQRS pelos handlers e projeção; filas pelos testes de produtor/worker.
-3. Entregar logs e o primeiro cache em `GET /trilhas`. Entregar a projeção e o comando CQRS sem reescrever os demais endpoints.
+2. Atualizar a branch com a main e preparar a base CQRS já existente. Logs pode começar independentemente; cache pelos testes de chave/cliente; filas pelo contrato do job e pelos testes de produtor/worker.
+3. Entregar logs e o primeiro cache em `GET /trilhas`. Reutilizar a projeção e o comando CQRS existentes, sem reescrever os demais endpoints.
 4. Conectar outbox, fila e reconstrução da projeção. Só habilitar leitura pela projeção após existir reconstrução inicial e alternativa para projeção atrasada.
 5. Habilitar cache do mapa por último e validar alterações, falhas e concorrência em conjunto.
 
@@ -33,7 +33,7 @@ O objetivo é preservar as URLs, DTOs de resposta, autenticação, paginação e
 
 ## 4. Base consultada
 
-Revisão em 17/10/2026, sobre a `main` no commit [`06f29fa`](https://github.com/DenzelHRL/marvel-timeline-api/commit/06f29fa54f0b27e9aa938d8cfb624f7fcd932748). Nesse ponto há NestJS 12, TypeORM 0.3, PostgreSQL 16 e autenticação/autorização compartilhadas; as dependências e infraestrutura dos bônus ainda não estão configuradas. Atualizar a análise se a base mudar.
+Revisão em 17/10/2026 sobre a main no commit [`7f4363c`](https://github.com/DenzelHRL/marvel-timeline-api/commit/7f4363cde7f5dea7b1f7e7136c01d9a93a6f0965). A configuração de leitura implementada troca apenas o nome do banco, preservando servidor e credenciais do principal. O guia diferencia componentes já existentes de propostas de Redis/filas.
 
 Referências internas: [matriz de endpoints](matriz-endpoints.md), [ambiente da equipe](ambiente-equipe.md), [autenticação e autorização](guia-autenticacao-e-autorizacao.md), [modelo do banco](modelo-banco.md) e [ordem das trilhas](ordem-das-trilhas.md).
 

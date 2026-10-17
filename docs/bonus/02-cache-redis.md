@@ -8,7 +8,7 @@
 
 1. Primeiro: `GET /trilhas`, implementado por `TrilhasService.listarPublicadas`.
 2. Depois: `GET /trilhas/:slug/etapas`, com prioridade e obraId.
-3. Por último: `GET /explorar/trilhas/:slug/mapa`, depois de integrar a leitura CQRS.
+3. Por último: `GET /explorar/trilhas/:slug/mapa`, cuja leitura CQRS já entrou na PR #24. O cache envolve o fluxo existente, sem ignorar a revisão e sem consultar diretamente uma projeção antiga.
 
 Os endpoints de perfil, administração, comentários e progresso não entram neste cache compartilhado. Não armazenar respostas autenticadas indiscriminadamente. O mapa continua usando `MapaTrilhaRespostaDto` e não inclui `resumoComSpoiler`.
 
@@ -77,11 +77,19 @@ No Nest/RxJS, compor a leitura assíncrona e `next.handle()` com operadores como
 
 ## 6. Invalidação após alterações
 
-Usar `CatalogoRevisaoService`, definido na base. Toda alteração relevante incrementa a revisão na **mesma transação** da escrita. A consulta posterior passa a usar outra chave; as antigas expiram pelo TTL. Não precisa varrer Redis nem apagar fila.
+Reutilizar `CatalogoRevisaoService`, já integrado em `src/catalogo-revisao/` pela PR #24; importar seu módulo onde necessário. Não criar outra revisão, migration ou tabela de eventos. Toda alteração relevante incrementa a revisão na **mesma transação** da escrita. A consulta posterior passa a usar outra chave; as antigas expiram pelo TTL. Não precisa varrer Redis nem apagar fila.
 
 Integrar todos os pontos listados na base, incluindo dados/status de obras e seeds/manutenção. Se faltar um desses hooks, o bônus ainda está incompleto. Na primeira entrega de listagem, integrar ao menos todas as escritas de metadados/status/criação de trilhas antes de habilitar `CACHE_ENABLED`.
 
 Antes de habilitar etapas/mapa, integrar também alterações de obras e etapas. A revisão é lida no PostgreSQL justamente para não depender de uma invalidação Redis que pode falhar após um commit.
+
+## Integração com a entrega CQRS atual
+
+- `CatalogoRevisaoService.atual()` lê a revisão no principal; usar string para preservar bigint.
+- Os hooks de trilhas/etapas já existem. Conferir os hooks de obras antes de habilitar cache de etapas/mapas; até isso estar integrado, limitar a primeira entrega a `GET /trilhas`.
+- O QueryBus retorna o mesmo `MapaTrilhaRespostaDto`; não trocar esse formato nem colocar metadados do cache no body.
+- Cache não reconstrói mapas e não marca `mapa_outbox.enfileirado_em`.
+- `CACHE_ENABLED`, cliente Redis e interceptor ainda precisam ser implementados. A flag `CQRS_MAPA_ENABLED` já existe e é independente.
 
 ## 7. Testes que comprovam a entrega
 

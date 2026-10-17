@@ -1,147 +1,110 @@
-# Implementar CQRS no mapa de uma trilha
+# CQRS do mapa: implementação e operação
 
-[Índice](../plano-bonus.md) · [Contrato compartilhado](00-base-e-integracao.md)
+[Índice](../plano-bonus.md) · [Contrato compartilhado](00-base-e-integracao.md) · [Filas](04-filas-bullmq.md)
 
-**Primeira ação:** extrair e testar a consulta atual de `TrilhasService.consultarMapa` sem alterar seu resultado. Ela será a comparação de referência e a alternativa quando a projeção estiver atrasada.
+## 1. Estado atual
 
-## 1. O que muda e o que permanece
+Integrado na main pela [PR #24](https://github.com/DenzelHRL/marvel-timeline-api/pull/24), commit `7f4363c`. Dependência instalada: `@nestjs/cqrs` 12.1.0, com NestJS 12 e TypeORM 0.3 existentes.
 
-CQRS separa o caminho que executa alterações do caminho que atende consultas. Neste projeto, vamos começar com **um comando de reordenação** e **uma consulta de mapa**, em vez de reescrever todas as rotas. Depois é possível ampliar o mesmo padrão.
+O PostgreSQL principal mantém os dados oficiais. Outro banco, `marvel_timeline_leitura`, armazena a projeção JSONB do mapa. Na configuração atual, os dois bancos ficam no mesmo servidor e usam as mesmas credenciais; isso não exige outra instância PostgreSQL.
 
-Para seguir o exemplo apresentado na aula, o PostgreSQL principal continua como fonte oficial de escrita e um **segundo banco PostgreSQL** armazena a projeção de leitura. Neste ambiente local, o Compose oferece uma segunda instância, mas dois bancos não exigem universalmente dois servidores. Só renomear services para Command/Query sem usar a projeção não entrega esse escopo.
+Há **um comando de reordenação** e **uma consulta de mapa** encaminhados pelos buses. Os demais endpoints preservam seus services. As sete escritas de trilhas e etapas atualizam revisão/outbox em transação. Não afirmar que todos os endpoints foram convertidos em handlers CQRS.
 
-Não mudar `GET /explorar/trilhas/:slug/mapa`, seus filtros ou `MapaTrilhaRespostaDto`. Não consultar a projeção para autenticação, permissão ou progresso pessoal.
+## 2. Arquivos existentes e fluxo
 
-## 2. Arquivos a criar e preservar
+Todos os caminhos abaixo são relativos a `backend/`.
 
-| Arquivo novo em `backend/` | Responsabilidade |
+| Arquivo/componente | Responsabilidade real |
 | --- | --- |
-| `src/trilhas/commands/reordenar-etapas.command.ts` | Dados do comando |
-| `src/trilhas/commands/reordenar-etapas.handler.ts` | Delegar à regra/transação já existente |
-| `src/trilhas/queries/consultar-mapa.query.ts` | Slug e filtros da consulta |
-| `src/trilhas/queries/consultar-mapa.handler.ts` | Chamar o serviço de leitura |
-| `src/projecao-mapa/projecao-mapa.module.ts` | Conexões/providers de projeção, sem importar trilhas |
-| `src/projecao-mapa/projecao-mapa.service.ts` | Reconstruir snapshot e salvar versão |
-| `src/projecao-mapa/mapa-leitura.service.ts` | Ler projeção válida ou consulta original |
-| `src/database/leitura-data-source.ts` | Configuração da conexão nomeada `leitura` |
-| `src/database/leitura-migrations/` | Migrations exclusivas do segundo banco |
-| `src/database/run-leitura-migrations.ts` | Executar/verificar/reverter migrations de leitura |
-| `src/database/reconstruir-mapas.ts` | Reconstrução inicial e reparo, usando o serviço de projeção |
-
-Instalar versão compatível de `@nestjs/cqrs`, com `--save-exact`. Reutilizar `pg`/TypeORM instalados. Registrar `CqrsModule` conforme a API da versão escolhida e handlers em `providers`; não presumir que instalar o pacote registra os handlers.
-
-Preservar em `TrilhasModule`: Auth/Acesso, controllers e services atuais. `EtapasTrilhaService.reordenar` já valida lista completa, duplicações, vínculo com a trilha, limites e usa transação com duas fases de posições. Não reimplementar essas regras no handler.
-
-## 3. Separar um comando e uma consulta
-
-Fluxos a implementar:
+| `src/trilhas/commands/reordenar-etapas.command.ts` | Transporta trilhaId e DTO |
+| `src/trilhas/commands/reordenar-etapas.handler.ts` | Delega a `EtapasTrilhaService.reordenar` |
+| `src/trilhas/queries/consultar-mapa.query.ts` | Transporta slug e filtros |
+| `src/trilhas/queries/consultar-mapa.handler.ts` | Consulta projeção quando habilitada; faz fallback pelo service original |
+| `src/trilhas/trilhas.module.ts` | Registra `CqrsModule.forRoot()` e os dois handlers |
+| `src/catalogo-revisao/catalogo-revisao.service.ts` | Lock global, revisão persistente e outbox transacional |
+| `src/projecao-mapa/banco-leitura.service.ts` | Inicialização tardia, compartilhamento e encerramento da conexão de leitura |
+| `src/projecao-mapa/projecao-mapa.service.ts` | `reconstruir(trilhaId)` monta e persiste snapshot versionado |
+| `src/projecao-mapa/mapa-leitura.service.ts` | `consultarSeAtual(slug, filtros)` retorna mapa válido ou undefined |
+| `src/database/leitura-data-source.ts` | Troca apenas o banco da configuração principal; impede usar o mesmo nome |
+| `src/database/leitura-migrations/1792233000000-CriarMapasLeitura.ts` | Cria `mapas_leitura` no segundo banco |
+| `src/database/migrations/1792237200000-PrepararAtualizacaoMapas.ts` | Cria revisão/outbox no principal |
+| `src/database/reconstruir-mapas.ts` | Reconstrói todas as trilhas usando o serviço público da projeção |
 
 ```text
-Controller de reordenação → CommandBus → ReordenarEtapasHandler
-    → EtapasTrilhaService.reordenar → commit principal
+PUT /trilhas/:id/ordem → CommandBus → ReordenarEtapasHandler
+  → EtapasTrilhaService.reordenar → domínio + revisão + outbox → commit
 
-ExplorarController.consultarMapa → QueryBus → ConsultarMapaHandler
-    → MapaLeituraService.consultar → projeção ou consulta original
+GET /explorar/trilhas/:slug/mapa → QueryBus → ConsultarMapaHandler
+  → MapaLeituraService.consultarSeAtual → mapa válido
+  → se desabilitado/ausente/atrasado/indisponível: TrilhasService.consultarMapa
 ```
 
-1. Comando recebe `trilhaId` e `ReordenarEtapasDto`; handler chama `reordenar` exatamente uma vez e devolve o mesmo array.
-2. Controller mantém `@Authorize`, `ParseUUIDPipe`, body e Swagger existentes. CQRS não substitui autorização.
-3. Query recebe `slug` e `ListarEtapasDto` já validados; handler devolve a mesma resposta paginada.
-4. Extrair a consulta original para um provider independente, por exemplo `ConsultaMapaOriginalService`, no módulo de projeção. `TrilhasService.consultarMapa` pode delegar a ele. Evitar que o fallback chame o QueryBus novamente e entre em recursão.
-5. Testar cada handler com dependências simuladas; em seguida testar com PostgreSQL real. Não encadear duas transações independentes para uma única escrita.
+Controllers preservam autorização, UUIDs, filtros, paginação e Swagger. O fallback não chama o QueryBus de novo. `ProjecaoMapaModule` não importa `TrilhasModule`; não criar esse ciclo para conectar a fila.
 
-## 4. Criar o banco de leitura
+## 3. Preparar e ativar
 
-Criar `mapas_leitura`, com uma linha por trilha:
+Seguir a [configuração compartilhada](00-base-e-integracao.md#2-infraestrutura-local). Criar previamente `marvel_timeline_leitura` no mesmo servidor do principal e acrescentar ao `.env` local:
 
-| Coluna | Tipo | Finalidade |
-| --- | --- | --- |
-| `trilha_id` | uuid PK | Identidade da trilha |
-| `versao` | bigint | Revisão global usada na montagem |
-| `publicada` | boolean | Tombstone lógico para trilha não pública |
-| `itens` | jsonb | Array completo ordenado de `ItemMapaDto`, sem campos extras |
-| `atualizado_em` | timestamptz | Diagnóstico interno |
+```dotenv
+READ_DB_NAME=marvel_timeline_leitura
+CQRS_MAPA_ENABLED=false
+```
 
-Não guardar só uma página; filtrar e paginar a coleção completa. Para o catálogo atual pequeno, uma projeção JSONB reduz a implementação. Se crescer, a modelagem por linhas pode ser revista.
-
-1. Configurar a conexão com nome `leitura`, entidades e migrations próprias, `synchronize: false` e `migrationsRun: false`.
-2. Registrar a conexão apenas quando habilitada. Com a integração Nest/TypeORM, declarar o nome no nível da configuração `forRootAsync` e usar esse mesmo nome nos tokens de injeção.
-3. O datasource CLI também precisa ser nomeado/configurado, apontando para o banco de leitura. Não reutilizar as migrations de domínio nele.
-4. Implementar os scripts novos `db:read:migrate`, `db:read:show` e `db:read:rebuild` no package.json. Copiar o padrão de encerramento em `run-migrations.ts` e fechar conexões no `finally`.
-5. Se a conexão nomeada for inicializada pelo Nest no startup, sua indisponibilidade impede esse startup quando habilitada. Documentar isso; iniciar com `CQRS_MAPA_ENABLED=false` permite continuar pelo principal. Fallback em execução não elimina essa dependência de inicialização. Inicialização tardia exige implementação adicional explícita.
-
-Depois de criar os scripts:
+Dentro de `backend`, com a API parada:
 
 ```text
+npm ci
+npm run db:migrate
+npm run db:read:verify
 npm run db:read:migrate
-npm run db:read:show
 npm run db:read:rebuild
 ```
 
-Não editar migrations já aplicadas. Registrar cada nova migration nos arrays explícitos do datasource correspondente. Não habilitar `synchronize` para pular essa etapa.
+Após preparar os bancos, mudar `CQRS_MAPA_ENABLED=true` e iniciar a API. O padrão compartilhado permanece false. O banco principal precisa da migration mesmo com a leitura otimizada desligada.
 
-## 5. Reconstruir sem gravar versões antigas
+Os scripts implementados são `db:read:verify`, `db:read:migrate` e `db:read:rebuild`. Não há `db:read:show` nem comando de reversão de leitura nesta entrega. Não editar migrations já aplicadas; criar novas se a estrutura mudar.
 
-`ProjecaoMapaService.reconstruir(trilhaId)` executa:
+`BancoLeituraService` conecta sob demanda, com limites de conexão/consulta de dois segundos. A indisponibilidade do banco de leitura não exige conectar a ele no startup; a consulta usa fallback. Falha do banco principal não é coberta por esse fallback.
 
-1. Abrir transação **somente de leitura**, isolamento `REPEATABLE READ`, no principal. Ler revisão, status da trilha e suas etapas com obras publicadas usando o mesmo `manager`. Montar o snapshot completo com seleção explícita dos campos de `ItemMapaDto`.
-2. Encerrar a leitura do principal. Guardar a revisão capturada junto com o snapshot; não buscar revisão nova depois e atribuí-la a dados antigos.
-3. Em uma transação separada no banco de leitura, fazer upsert atômico que aceite só revisão maior que a persistida. Os dois bancos não participam de uma transação distribuída.
-4. Se a trilha estiver arquivada/em rascunho, gravar `publicada=false`, itens vazios e revisão atual. Preservar esse tombstone para uma tarefa atrasada não ressuscitar conteúdo antigo.
-5. Para remoção física futura, enviar também o ID removido à reconstrução/outbox e manter o mesmo tombstone. A estratégia padrão de percorrer trilhas existentes não encontra um ID que já foi apagado.
+## 4. Reconstrução e consistência
 
-Esboço SQL do controle de versão, com parâmetros preparados:
+`ProjecaoMapaService.reconstruir(trilhaId)`:
 
-```sql
-INSERT INTO mapas_leitura (trilha_id, versao, publicada, itens, atualizado_em)
-VALUES ($1, $2::bigint, $3, $4::jsonb, now())
-ON CONFLICT (trilha_id) DO UPDATE
-SET versao = EXCLUDED.versao,
-    publicada = EXCLUDED.publicada,
-    itens = EXCLUDED.itens,
-    atualizado_em = EXCLUDED.atualizado_em
-WHERE mapas_leitura.versao < EXCLUDED.versao;
-```
+1. Abre transação de leitura `REPEATABLE READ` no principal e captura revisão, publicação e etapas pelo mesmo manager.
+2. Seleciona somente os campos de `ItemMapaDto`, com obras publicadas, ordenando por posição e ID.
+3. Finaliza o snapshot do principal e faz um único upsert atômico no segundo banco. Não há transação distribuída.
+4. Grava `publicada=false` e itens vazios para trilhas não públicas ou inexistentes.
+5. Só substitui uma projeção se a versão recebida for maior; repetir a mesma versão não duplica o mapa.
 
-O job carrega uma revisão para rastreabilidade; o reconstrutor lê a situação atual. Se um job antigo rodar depois de um novo, não deve reproduzir os dados antigos do payload. Repetir a reconstrução da mesma revisão é inofensivo. Revisões e conteúdo só mudam juntos no principal.
+A tabela contém `trilha_id`, `versao`, `publicada`, `itens` e `atualizado_em`, sem chave estrangeira entre bancos. Armazena a coleção completa, nunca apenas uma página.
 
-## 6. Consultar com segurança enquanto a fila está atrasada
+A consulta verifica publicação e revisão no principal, aceita somente projeção pública com versão igual, filtra antes de contar/paginar e mantém o DTO sem versão interna ou spoilers. A verificação é por snapshot; não promete linearização absoluta com escritas simultâneas.
 
-1. Validar existência/publicação da trilha e ler a revisão atual no principal, em um snapshot coerente. A projeção não autoriza expor algo arquivado.
-2. Buscar `mapas_leitura` e aceitar somente `publicada=true` e revisão igual ao snapshot atual. Revisão menor ou maior não deve ser tratada como igual.
-3. Se estiver ausente, atrasada, banco de leitura falhar ou flag estiver desligada, executar a consulta original no principal. Nunca responder uma projeção velha apenas porque a fila ainda não rodou.
-4. Na projeção válida, aplicar prioridade/obraId antes de contar e paginar; ordenar por posição e ID, preservando a ordem do service atual. Recalcular `total`/`totalPaginas` com os filtros aplicados.
-5. Não devolver versão, timestamp ou campos internos dentro do DTO público. Se outro bônus precisar da revisão, passá-la internamente.
+## 5. O que ainda precisa ser integrado
 
-O fallback pode reutilizar o mesmo manager/snapshot da checagem; se for abrir uma consulta nova, repetir as checagens de publicação. Uma alteração concorrente após a leitura é tratada como uma leitura de snapshot, não como promessa de consistência instantânea entre dois bancos.
+- **Obras:** alterações de campos usados no mapa e de publicação precisam usar `CatalogoRevisaoService` na mesma transação. Primeiro `bloquear(manager)`, depois consultas/locks/gravações pelo manager e, por fim, `registrarAlteracao(manager)` antes do commit. Não salvar domínio em uma transação e revisão em outra.
+- **Séries:** alterações que modifiquem obras ou sua visibilidade precisam manter as mesmas garantias e regras de dependência.
+- **Filas:** relay encaminha `mapa_outbox`; worker chama `reconstruir(trilhaId)`. Este serviço não depende de Redis/BullMQ.
+- **Cache:** usa a revisão do principal na chave; não espera a fila para invalidar dados antigos.
+- **Seeds/SQL manual:** devem participar da revisão em um procedimento de manutenção. Rebuild da mesma versão não sobrescreve o snapshot; mudar dados por fora sem avançar revisão é incompatível com essa garantia.
 
-## 7. Entrega inicial sem depender da fila pronta
+Até integrar as filas, a atualização das projeções é manual por `npm run db:read:rebuild`. Esse comando não marca eventos como enfileirados. Uma reconstrução não significa entrega ao Redis; pendências na outbox são esperadas.
 
-O script `db:read:rebuild` permite criar/testar a projeção inicialmente. Enquanto não existir atualização automática, manter a flag desligada por padrão; o leitor sempre tem a consulta original como alternativa.
+Para uma remoção física futura de trilha, o evento deve preservar também o ID removido: percorrer apenas trilhas existentes não gera esse tombstone.
 
-A fila será conectada **somente** ao método público `reconstruir(trilhaId)`. Não colocar código BullMQ neste serviço nem obrigar o worker a conhecer controller, JWT ou filtros HTTP. Isso permite desenvolver CQRS e fila em paralelo.
+## 6. Evidências e validações restantes
 
-## 8. Validação
+Na entrega da PR #24: build aprovado; lint com zero erros e três avisos no módulo de comentários; 89 testes automatizados existentes passaram. Essas suítes existentes não são testes automatizados específicos do CQRS.
 
-| Cenário | Resultado |
-| --- | --- |
-| Projeção criada em segundo banco | Mesmos dados, filtros e paginação da consulta original |
-| Reordenação pelo CommandBus | Mesmas regras, resposta e rollback existentes |
-| Alteração principal, worker parado | GET usa principal; não retorna mapa antigo |
-| Dois snapshots gravados fora de ordem | Upsert mantém a versão mais nova |
-| Trilhas/obras não publicadas | Conteúdo oculto, mesmo com projeção antiga |
-| Leitura indisponível após startup | Fallback mantém resposta pelo principal |
-| Reconstrução repetida | Não duplica mapas ou etapas |
-| Entrada inválida / ausência de autorização | Mantém 400/401/403 das rotas atuais |
+Validações manuais relatadas: consulta original e projeção; filtros e paginação; reordenação pelo CommandBus; fallback com projeção antiga; reconstrução após alteração; trilha arquivada retornando 404; rejeição de reordenação inválida sem avançar revisão/outbox; resposta preservada com banco de leitura indisponível e configuração restaurada.
 
-Build, lint e testes passam; migration funciona em banco vazio e na segunda execução. Comparar respostas reais da rota, não só a existência das tabelas.
+Para integração final, acrescentar testes automatizados dos handlers, dos hooks de obras e do fallback; validar worker/retry com Redis real e snapshots concorrentes fora de ordem. Esses cenários não estão comprovados apenas pelos 89 testes existentes.
 
 ## Fontes oficiais
 
-- [Nest CQRS](https://docs.nestjs.com/recipes/cqrs): buses, comandos, consultas e handlers.
-- [Nest: banco de dados](https://docs.nestjs.com/techniques/database): configuração/injeção de conexões.
-- [TypeORM: múltiplos datasources](https://typeorm.io/docs/data-source/multiple-data-sources/): isolamento das conexões.
+- [Nest CQRS](https://docs.nestjs.com/recipes/cqrs): buses e handlers.
+- [TypeORM: transações](https://typeorm.io/docs/transactions/): manager transacional da versão do projeto.
 - [PostgreSQL 16: isolamento](https://www.postgresql.org/docs/16/transaction-iso.html): snapshot coerente.
-- [PostgreSQL 16: INSERT/ON CONFLICT](https://www.postgresql.org/docs/16/sql-insert.html): upsert com condição atômica.
+- [PostgreSQL 16: INSERT/ON CONFLICT](https://www.postgresql.org/docs/16/sql-insert.html): upsert condicional.
 
-Dois bancos, projeção JSONB, escopo inicial de um comando e fallback são escolhas deste projeto, alinhadas ao material da aula e ao código existente.
+O escopo com dois bancos, JSONB, revisão global e fallback é uma decisão do projeto alinhada ao exemplo da aula; não é imposto pela definição universal de CQRS.
