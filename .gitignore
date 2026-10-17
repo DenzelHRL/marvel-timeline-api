@@ -4,5 +4,5 @@ backend/coverage/
 backend/.env
 backend/*.tsbuildinfo
 backend/logs/
+/logs/
 *.log
-logs/
