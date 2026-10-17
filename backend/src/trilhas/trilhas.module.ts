@@ -1,14 +1,23 @@
 import { Module } from '@nestjs/common';
-import { TrilhasController } from './trilhas.controller';
-import { TrilhasService } from './trilhas.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Trilha } from '../database/entities/catalog.entities';
+import { AuthModule } from '../auth/auth.module';
+import { AcessoModule } from '../acesso/acesso.module';
+import {
+  Trilha,
+  EtapaTrilha,
+} from '../database/entities/catalog.entities';
+import { TrilhasController } from './trilhas.controller';
+import { ExplorarController } from './explorar.controller';
+import { TrilhasService } from './trilhas.service';
+import { EtapasTrilhaService } from './etapas-trilha.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Trilha])],
-  controllers: [TrilhasController],
-  providers: [TrilhasService]
+  imports: [
+    TypeOrmModule.forFeature([Trilha, EtapaTrilha]),
+    AuthModule,
+    AcessoModule,
+  ],
+  controllers: [TrilhasController, ExplorarController],
+  providers: [TrilhasService, EtapasTrilhaService],
 })
 export class TrilhasModule {}
-
-

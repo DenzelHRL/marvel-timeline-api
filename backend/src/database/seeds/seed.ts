@@ -114,13 +114,13 @@ async function seedCatalog(runner: QueryRunner): Promise<Map<string, string>> {
     [
       'curta',
       'Rumo a Doutor Destino — trilha curta',
-      'Seleção iniciada em Guerra Infinita.',
+      'Seleção reduzida em ordem dos acontecimentos, a partir de Homem-Formiga e a Vespa e Guerra Infinita, com blocos de outras linhas do tempo.',
       ETAPAS_CURTA,
     ],
     [
       'longa',
       'Rumo a Doutor Destino — trilha longa',
-      'Seleção que começa com o primeiro Capitão América.',
+      'Seleção ampliada em ordem dos acontecimentos, desde o primeiro Capitão América, com blocos de outras linhas do tempo.',
       ETAPAS_LONGA,
     ],
   ] as const) {
@@ -337,7 +337,7 @@ async function main(): Promise<void> {
         await seedDemo(runner, workIds);
         await runner.commitTransaction();
         console.log(
-          `Seed concluído: 2 perfis, ${PERMISSOES.length} permissões, 34 obras, 2 trilhas e 55 etapas.`,
+          `Seed concluído: 2 perfis, ${PERMISSOES.length} permissões, 34 obras, 2 trilhas e 54 etapas.`,
         );
       } catch (error) {
         await runner.rollbackTransaction();
@@ -355,3 +355,4 @@ void main().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;
 });
+

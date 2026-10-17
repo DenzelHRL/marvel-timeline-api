@@ -42,7 +42,7 @@ O JSON ilustra o contrato **proposto**: nenhum controller o entrega ainda. Uma l
 | `acontecimentos` (`Acontecimento`) | `id`, `obra_id`, `titulo`, `descricao`, `categoria`, `posicao`, `contem_spoiler` | Eventos ordenados dentro da obra. |
 | `acontecimento_personagens` (`AcontecimentoPersonagem`) | `acontecimento_id`, `personagem_id` | Quais personagens participam de um acontecimento. |
 | `usuarios` (`Usuario`) | `id`, `nome`, `email`, `senha_hash`, `ativo` | Conta local; `senha_hash` pode ser nulo para conta Google. Nunca retornar o hash. |
-| `identidades_externas` (`IdentidadeExterna`) | `id`, `usuario_id`, `provedor`, `id_no_provedor` | Reserva o vínculo estável do login Google à conta; a integração OAuth ainda falta. |
+| `identidades_externas` (`IdentidadeExterna`) | `id`, `usuario_id`, `provedor`, `id_no_provedor` | Armazena o vínculo estável da conta com a identidade Google usada no login OAuth opcional. |
 | `perfis` (`Perfil`) | `id`, `codigo`, `descricao` | Perfis iniciais `LEITOR` e `ADMIN`. |
 | `permissoes` (`Permissao`) | `id`, `codigo`, `descricao` | 26 ações iniciais; códigos no seed. |
 | `usuario_perfis` (`UsuarioPerfil`) | `usuario_id`, `perfil_id` | Perfis atribuídos a cada usuário. |
@@ -57,12 +57,13 @@ As colunas exatas, tipos e restrições estão em [`backend/src/database/entitie
 1. `db:migrate` cria tabelas, chaves estrangeiras, índices e verificações de integridade no PostgreSQL.
 2. `db:seed` insere, de forma repetível, dois perfis, 26 permissões, 3 séries, 34 obras (4 temporadas), duas trilhas com 55 etapas, e uma amostra de personagens e acontecimentos para **quatro** obras. As outras obras têm título/resumo para o fluxo inicial, mas ainda não têm a mesma riqueza narrativa.
 3. Opcionalmente, em ambiente de desenvolvimento, `SEED_DEMO_USERS=true` com duas senhas de demonstração cria ADMIN/LEITOR, comentários e progresso de exemplo. Sem essa opção, o banco não contém contas de teste. A opção é bloqueada em produção.
-4. Os controllers Nest ainda precisarão usar essas entidades; o seed não torna uma rota acessível automaticamente. Cada módulo liga controller → serviço (regras) → repositório TypeORM → banco.
+4. O seed não torna uma rota acessível automaticamente: cada módulo Nest precisa ligar controller → serviço (regras) → repositório TypeORM → banco. Essa integração já existe nos módulos implementados; os módulos restantes ainda precisam ser conectados.
 
 ## Segurança: o que o esquema permite e o que ainda falta
 
 - **Já modelado:** hash opcional para cadastro local/Google, unicidade de e-mail, vínculo com identidade externa, perfis, permissões e relacionamentos; o seed dá a `ADMIN` as ações de gestão e a `LEITOR` ações próprias de conta, progresso e comentários.
-- **Ainda não implementado:** cadastro/login, verificação de senha, emissão/validação JWT, OAuth Google, guards de perfil/permissão, autorização por proprietário, DTOs, exclusão de spoilers, moderação em serviços e testes de acesso. A existência das tabelas **não protege** nenhum endpoint por si só.
+- **Autenticação:** cadastro/login local, emissão JWT e login OAuth Google opcional estão implementados. OAuth Google exige credenciais locais do cliente no ambiente; sem elas, a API continua iniciando e as rotas Google ficam indisponíveis.
+- **Ainda não implementado:** guards de perfil/permissão, autorização por proprietário, DTOs, exclusão de spoilers, moderação em serviços e testes de acesso. A existência das tabelas **não protege** nenhum endpoint por si só.
 - O seed é dado de desenvolvimento, não mecanismo para criar administradores em produção. Segundo fator exigiria decisões de fluxo e persistência adicionais; não está preparado pelas 16 tabelas.
 - Não exponha `DATABASE_URL` nem senhas no GitHub, no Swagger, em mensagens do grupo ou no frontend. A API é a responsável por acessar o banco.
 
