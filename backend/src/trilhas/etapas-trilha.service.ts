@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThan, Repository } from 'typeorm';
+import { CatalogoRevisaoService } from '../catalogo-revisao/catalogo-revisao.service';
 import {
   EtapaTrilha,
   Obra,
@@ -18,8 +19,10 @@ export class EtapasTrilhaService {
   constructor(
     @InjectRepository(Trilha)
     private readonly trilhasRepository: Repository<Trilha>,
+    private readonly revisao: CatalogoRevisaoService,
   ) {}
 
+  // Edita prioridade e justificativa sem modificar a ordem.
   async atualizar(
     trilhaId: string,
     etapaId: string,
@@ -36,6 +39,9 @@ export class EtapasTrilhaService {
 
     return this.trilhasRepository.manager.transaction(
       async (manager) => {
+        // Mantém a mesma ordem de locks entre as escritas do catálogo.
+        await this.revisao.bloquear(manager);
+
         const trilhasRepository = manager.getRepository(Trilha);
         const etapasRepository = manager.getRepository(EtapaTrilha);
 
@@ -70,17 +76,25 @@ export class EtapasTrilhaService {
           etapa.justificativa = dto.justificativa;
         }
 
-        return etapasRepository.save(etapa);
+        const atualizada = await etapasRepository.save(etapa);
+
+        // Alteração, revisão e pendências são confirmadas juntas.
+        await this.revisao.registrarAlteracao(manager);
+
+        return atualizada;
       },
     );
   }
 
+  // Remove uma etapa e fecha o espaço deixado na sequência.
   async remover(
     trilhaId: string,
     etapaId: string,
   ): Promise<void> {
     await this.trilhasRepository.manager.transaction(
       async (manager) => {
+        await this.revisao.bloquear(manager);
+
         const trilhasRepository = manager.getRepository(Trilha);
         const etapasRepository = manager.getRepository(EtapaTrilha);
 
@@ -107,6 +121,7 @@ export class EtapasTrilhaService {
           );
         }
 
+        // Uma trilha publicada deve manter ao menos uma etapa pública.
         if (trilha.status === 'PUBLICADA') {
           const etapasValidasRestantes = await etapasRepository
             .createQueryBuilder('etapa')
@@ -148,6 +163,7 @@ export class EtapasTrilhaService {
           },
         });
 
+        // Ajusta em ordem crescente para preservar a unicidade das posições.
         for (const etapaSeguinte of etapasSeguintes) {
           await etapasRepository.update(
             {
@@ -159,16 +175,21 @@ export class EtapasTrilhaService {
             },
           );
         }
+
+        await this.revisao.registrarAlteracao(manager);
       },
     );
   }
 
+  // Reordena todas as etapas sem perder vínculos ou repetir posições.
   async reordenar(
     trilhaId: string,
     dto: ReordenarEtapasDto,
   ): Promise<EtapaTrilha[]> {
     return this.trilhasRepository.manager.transaction(
       async (manager) => {
+        await this.revisao.bloquear(manager);
+
         const trilhasRepository = manager.getRepository(Trilha);
         const etapasRepository = manager.getRepository(EtapaTrilha);
 
@@ -205,6 +226,7 @@ export class EtapasTrilhaService {
           etapas.map((etapa) => etapa.id.toLowerCase()),
         );
 
+        // Exige todas as etapas da trilha, exatamente uma vez.
         const listaCompleta =
           etapaIds.length === etapas.length &&
           idsRecebidos.size === etapas.length &&
@@ -229,8 +251,7 @@ export class EtapasTrilhaService {
           );
         }
 
-        // Primeira fase: move todas as etapas para posições
-        // temporárias acima da maior posição existente.
+        // Libera as posições atuais usando uma faixa temporária.
         for (let indice = 0; indice < etapas.length; indice++) {
           await etapasRepository.update(
             {
@@ -243,8 +264,7 @@ export class EtapasTrilhaService {
           );
         }
 
-        // Segunda fase: aplica a ordem solicitada,
-        // com posições consecutivas a partir de 1.
+        // Aplica a nova ordem com posições consecutivas.
         for (let indice = 0; indice < etapaIds.length; indice++) {
           await etapasRepository.update(
             {
@@ -256,6 +276,8 @@ export class EtapasTrilhaService {
             },
           );
         }
+
+        await this.revisao.registrarAlteracao(manager);
 
         return etapasRepository.find({
           where: { trilhaId },
