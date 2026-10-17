@@ -104,4 +104,17 @@ Coordenar mudanças nas dependências e no ambiente. Se houver novas tabelas, cr
 | Cache | A definir | Planejado |
 | CQRS | A definir | Planejado |
 | Filas | A definir | Planejado |
-| Logs e auditoria | A definir | Planejado |
+| Logs e auditoria | Guilherme Peclat | Concluído |
+
+### Evidências e Instruções de Execução do Bônus de Logs e Auditoria
+
+- **Branch da entrega:** `feat/logs-auditoria`
+- **Módulo e Serviços:**
+  - `LoggerService` (`src/logs/logger.service.ts`): Logging estruturado JSON via Winston para console e arquivos rotativos locais (`logs/app.log`, `logs/error.log` e `logs/audit.log`) com limite de 5 MB e retenção de até 5 arquivos.
+  - `RequestContextMiddleware` (`src/logs/request-context.middleware.ts`): Geração do header `X-Request-Id` (UUID), rastreamento de duração com relógio monotônico (`performance.now()`), sanitização de rotas sem query params e registro de acessos HTTP normais ou desconexões prematuras do cliente (código 499).
+  - Decorator `@Auditar` (`src/logs/auditoria.decorator.ts`) e `AuditoriaInterceptor` (`src/logs/auditoria.interceptor.ts`): Captura de ações administrativas confirmando `concluido` após sucesso no banco, `rejeitado` para validações/regras de negócio 4xx e `falhou` para erros internos 5xx.
+  - Sanitização automática de dados confidenciais (`senha`, `password`, `token`, `secret`, `authorization`, etc.).
+- **Como executar os testes:**
+  ```bash
+  npm run test -- logs.spec.ts
+  ```
