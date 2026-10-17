@@ -1,6 +1,6 @@
 import {ConflictException, Injectable, NotFoundException} from "@nestjs/common";
 import {InjectDataSource} from "@nestjs/typeorm";
-import {DataSource} from "typeorm";
+import {DataSource, QueryFailedError} from "typeorm";
 import{Perfil, Permissao, Usuario, UsuarioPerfil} from "../database/entities";
 import{
     AtualizarMinhaContaDTO,
@@ -63,25 +63,33 @@ export class UsuariosService{
         }
 
         //Filtro Regra de Negócio: verifica se email usuário já está em outra conta antes de aterar.
-        if(dto.email && dto.email !== usuario.email){
+        const emailNormalizado = dto.email?.trim().toLowerCase();
+        if(emailNormalizado && emailNormalizado !== usuario.email){
             const emailEmUso = await usuarioRepo
                 .createQueryBuilder("u")
-                .where("u.email = :email", {email: dto.email})
+                .where("LOWER(u.email) = :email", {email: emailNormalizado})
                 .andWhere("u.id != :usuarioId", {usuarioId})
                 .getOne();
 
             if(emailEmUso){
-                throw new ConflictException("Já exsite uma conta cadastrada com esse email.");
+                throw new ConflictException("Já existe uma conta cadastrada com esse e-mail.");
             }
 
-            usuario.email = dto.email;
+            usuario.email = emailNormalizado;
         }
 
-        if(dto.nome){
+        if(dto.nome !== undefined){
             usuario.nome = dto.nome.trim();
         }
 
-        await usuarioRepo.save(usuario);
+        try {
+            await usuarioRepo.save(usuario);
+        } catch (error) {
+            if (this.isEmailUniqueViolation(error)) {
+                throw new ConflictException("Já existe uma conta cadastrada com esse e-mail.");
+            }
+            throw error;
+        }
 
         return this.consultarMinhaConta(usuarioId);
     }
@@ -132,5 +140,21 @@ export class UsuariosService{
                 totalPaginas: Math.ceil(total/limite)
             }
         };
+    }
+
+    private isEmailUniqueViolation(error: unknown): boolean {
+        if (!(error instanceof QueryFailedError)) {
+            return false;
+        }
+
+        const driverError: unknown = error.driverError;
+        return (
+            typeof driverError === "object" &&
+            driverError !== null &&
+            "code" in driverError &&
+            driverError.code === "23505" &&
+            "constraint" in driverError &&
+            driverError.constraint === "uq_usuarios_email_ci"
+        );
     }
 }

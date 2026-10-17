@@ -35,12 +35,24 @@ export class PermissaoItemDTO{
     descricao: string;
 }
 
+export class MetaMinhasPermissoesDTO {
+    @ApiProperty({example: 1, minimum: 1})
+    pagina: number;
+
+    @ApiProperty({example: 20, minimum: 1, maximum: 50})
+    limite: number;
+
+    @ApiProperty({example: 12, minimum: 0})
+    total: number;
+
+    @ApiProperty({example: 1, minimum: 0})
+    totalPaginas: number;
+}
+
 export class ListaMinhasPermissoesRespostaDTO{
-    @ApiProperty({example: {pagina:1, limite:20, total:12, totalPaginas:1}})
-    meta:{
-        pagina: number;
-        limite: number;
-        total: number;
-        totalPaginas: number;
-    };
+    @ApiProperty({type: [PermissaoItemDTO]})
+    dados: PermissaoItemDTO[];
+
+    @ApiProperty({type: () => MetaMinhasPermissoesDTO})
+    meta: MetaMinhasPermissoesDTO;
 }

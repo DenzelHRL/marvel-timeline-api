@@ -11,3 +11,4 @@ export { PermissaoAdminRespostaDto } from './permissao-admin-resposta.dto';
 export { PerfilAdminRespostaDto } from './perfil-admin-resposta.dto';
 export { PerfilPermissaoRespostaDto } from './perfil-permissao-resposta.dto';
 export { UsuarioAdminRespostaDto } from './usuario-admin-resposta.dto';
+export { EditarUsuarioAdminDto } from './editar-usuario-admin.dto';

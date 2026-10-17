@@ -60,7 +60,7 @@ export class UsuariosController{
         summary: "Consultar permissoes da conta",
         description: "Retorna a lista de permissões entre os perfis."
     })
-    @ApiResponse({status: 200, type: MinhaContaRespostaDTO})
+    @ApiResponse({status: 200, type: ListaMinhasPermissoesRespostaDTO})
     @ApiResponse({status: 404, description: "Obra não encontrada ou não publicada"})
     async consultarMinhasPermissoes(
         @CurrentUser("id") usuarioId: string,
