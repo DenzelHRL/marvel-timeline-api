@@ -10,14 +10,18 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Authorize } from '../acesso/autorizacao.decorators';
 import { ObrasService } from './obras.service';
 import { ListarObrasDto } from './dto/listar-obras.dto';
 import { ConsultarObraDto } from './dto/consultar-obra.dto';
@@ -75,6 +79,11 @@ export class ObrasController {
   }
 
   @Post()
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['obras:criar'],
+  })
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Cadastrar nova obra',
     description:
@@ -90,11 +99,18 @@ export class ObrasController {
   @ApiBadRequestResponse({
     description: 'Dados invalidos ou incoerentes entre tipo e serie/temporada.',
   })
+  @ApiUnauthorizedResponse({ description: 'Token ausente, invalido ou expirado.' })
+  @ApiForbiddenResponse({ description: 'Requer perfil ADMIN e permissao obras:criar.' })
   criar(@Body() dto: CriarObraDto) {
     return this.obrasService.criar(dto);
   }
 
   @Patch(':id')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['obras:editar'],
+  })
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Editar dados de uma obra',
     description: 'Atualiza dados de uma obra existente pelo id (Regra R04).',
@@ -117,6 +133,8 @@ export class ObrasController {
   @ApiBadRequestResponse({
     description: 'Dados invalidos.',
   })
+  @ApiUnauthorizedResponse({ description: 'Token ausente, invalido ou expirado.' })
+  @ApiForbiddenResponse({ description: 'Requer perfil ADMIN e permissao obras:editar.' })
   atualizar(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AtualizarObraDto,
@@ -125,6 +143,11 @@ export class ObrasController {
   }
 
   @Patch(':id/status')
+  @Authorize({
+    roles: ['ADMIN'],
+    permissions: ['obras:editar'],
+  })
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Alterar status de uma obra',
     description:
@@ -146,6 +169,8 @@ export class ObrasController {
     description:
       'Transicao invalida (serie nao publicada ou pertencente a trilha publicada).',
   })
+  @ApiUnauthorizedResponse({ description: 'Token ausente, invalido ou expirado.' })
+  @ApiForbiddenResponse({ description: 'Requer perfil ADMIN e permissao obras:editar.' })
   alterarStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AlterarStatusObraDto,
