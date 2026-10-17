@@ -1,5 +1,4 @@
 import {BadRequestException, ConflictException, Injectable, NotFoundException} from "@nestjs/common";
-import {ConflictException, Injectable, NotFoundException} from "@nestjs/common";
 import {InjectDataSource} from "@nestjs/typeorm";
 import {DataSource, QueryFailedError} from "typeorm";
 import{Perfil, Permissao, Usuario, UsuarioPerfil} from "../database/entities";
