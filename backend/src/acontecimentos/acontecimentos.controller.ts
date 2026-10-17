@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, DefaultValuePipe, Delete, Get, HttpCode, HttpStatus, Param, ParseBoolPipe, ParseUUIDPipe, Patch, Post, Query, ValidationPipe } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { ListarEventosEmObrasDto } from "./dto/acontecimentos.listar-eventos.dto";
 import { AcontecimentosService } from "./acontecimentos.service";
@@ -28,8 +28,16 @@ export class AcontecimentosController{
     }
 
     @Get('acontecimentos/:id')
-    async buscarEvento(@Param('id', new ParseUUIDPipe()) id: string){
-        return await this.service.buscarEvento(id);
+    async buscarEvento(
+        @Param('id', new ParseUUIDPipe()) id: string,
+        @Query(
+            'incluirSpoilers',
+            new DefaultValuePipe(false),
+            new ParseBoolPipe(),
+        )
+        incluirSpoilers: boolean
+    ){
+        return await this.service.buscarEvento(id, incluirSpoilers);
     }
     
     @Post('obras/:obraId/acontecimentos')
@@ -58,7 +66,7 @@ export class AcontecimentosController{
         permissions: ['acontecimentos:editar'],
     })
     async editarEvento(
-        @Param('obraId', new ParseUUIDPipe()) obraId: string,
+        @Param('id', new ParseUUIDPipe()) id: string,
         @Body(
             new ValidationPipe({
                 transform: true,
@@ -68,7 +76,7 @@ export class AcontecimentosController{
         )
         dados: AtualizarEventoDto
     ){
-        return await this.service.editarEvento(obraId, dados);
+        return await this.service.editarEvento(id, dados);
     }
 
     @Delete('acontecimentos/:id')
@@ -84,9 +92,7 @@ export class AcontecimentosController{
     @Get('acontecimentos/:id/personagens')
     async buscarPersonagens(
         @Param('id', new ParseUUIDPipe()) id: string,
-        @Body(
-            new ParseUUIDPipe()
-        )
+        @Query(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
         consulta: BuscarPersonagensEmEventosDto
     ){
         return await this.service.buscarPersonagensAssociados(id, consulta);
@@ -99,7 +105,7 @@ export class AcontecimentosController{
     })
     async associarPersonagens(
         @Param('id', new ParseUUIDPipe()) id: string,
-        @Body(new ParseUUIDPipe()) personagemId: string
+        @Body('personagemId', new ParseUUIDPipe()) personagemId: string
     ){
         return await this.service.associar(id, personagemId);
     }

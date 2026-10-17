@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsOptional, IsString, Matches, MaxLength } from "class-validator";
+import { IsBoolean, IsInt, IsOptional, IsString, Matches, MaxLength, Min } from "class-validator";
 
 export class CriarEventoDto{
     @IsString()
@@ -6,17 +6,17 @@ export class CriarEventoDto{
     @Matches(/\S/, {message: 'O título não pode estar vazio'})
     titulo: string; 
 
-    @IsOptional()
     @IsString()
-    descricao?: string | null;
+    @Matches(/\S/, {message: 'A descrição não pode estar vazia'})
+    descricao: string;
     
-    @IsOptional()
     @IsString()
     @MaxLength(40)
-    categoria?: string;
+    @Matches(/\S/, {message: 'A categoria não pode estar vazia'})
+    categoria: string;
 
-    @IsOptional()
     @IsInt()
+    @Min(1)
     posicao: number;
 
     @IsBoolean()

@@ -1,24 +1,26 @@
-import { IsInt, IsBoolean, IsOptional, IsString, Matches, MaxLength } from "class-validator";
+import { IsInt, IsBoolean, IsOptional, IsString, Matches, MaxLength, ValidateIf, Min } from "class-validator";
 
 export class AtualizarEventoDto{    
-    @IsOptional()
+    @ValidateIf((_objeto, valor) => valor !== undefined)
     @IsInt()
-    posicao: number | null;;
+    @Min(1)
+    posicao?: number;
 
     @IsString()
     @MaxLength(200)
     @Matches(/\S/, {message: 'O título não pode estar vazio'})
-    titulo: string | null;; 
+    titulo: string; 
 
-    @IsOptional()
+    @ValidateIf((_objeto, valor) => valor !== undefined)
     @IsString()
-    descricao?: string | null;
+    descricao?: string;
     
-    @IsOptional()
+    @ValidateIf((_objeto, valor) => valor !== undefined)
     @IsString()
     @MaxLength(40)
-    categoria?: string | null;;
+    categoria?: string;
 
+    @ValidateIf((_objeto, valor) => valor !== undefined)
     @IsBoolean()
-    spoiler= false ;
+    spoiler?: boolean ;
 }

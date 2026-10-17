@@ -34,4 +34,16 @@ export class ListarEventosEmObrasDto{
     })
     @IsBoolean()
     contemSpoiler?: boolean;
+
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return value;
+    })
+    @IsBoolean()
+    @ApiPropertyOptional({
+        description: 'Autoriza revelar acontecimentos com spoilers.',
+    })
+    incluirSpoilers?: boolean;
 }
