@@ -3,3 +3,6 @@ backend/dist/
 backend/coverage/
 backend/.env
 backend/*.tsbuildinfo
+backend/logs/
+*.log
+logs/
