@@ -51,8 +51,9 @@ Cada integrante deverá ter commits que comprovem sua participação e gravar um
 
 ## Bônus planejados
 
-O [plano de implementação dos bônus](docs/plano-bonus.md) mapeia cache, CQRS, filas e logs estruturados com auditoria: endpoints envolvidos, integração entre blocos, ordem de trabalho e critérios de demonstração. As quatro implementações ainda estão planejadas; os requisitos obrigatórios da P1 têm prioridade.
+O [índice dos guias de implementação dos bônus](docs/plano-bonus.md) reúne um guia por bônus, com etapas, arquivos, fontes oficiais e validação: [logs e auditoria](docs/bonus/01-logs-e-auditoria.md), [cache Redis](docs/bonus/02-cache-redis.md), [CQRS do mapa](docs/bonus/03-cqrs-mapa.md) e [filas BullMQ](docs/bonus/04-filas-bullmq.md). Antes de programar, ler a [base de configuração e contratos compartilhados](docs/bonus/00-base-e-integracao.md). As quatro implementações continuam planejadas; esta documentação não as implementa. Os requisitos obrigatórios da P1 têm prioridade.
 
 ## Equipe
 
 Denzel, Daniel, Matheus, Pedro e Guilherme.
+

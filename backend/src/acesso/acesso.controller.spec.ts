@@ -12,6 +12,7 @@ describe('AcessoController', () => {
     AcessoService,
     | 'listarUsuarios'
     | 'buscarUsuarioPorId'
+    | 'editarUsuario'
     | 'alterarStatusUsuario'
     | 'atribuirPerfil'
     | 'revogarPerfil'
@@ -43,6 +44,11 @@ describe('AcessoController', () => {
         totalPaginas: 1,
       }),
       buscarUsuarioPorId: jest.fn().mockResolvedValue(respostaUsuario),
+      editarUsuario: jest.fn().mockResolvedValue({
+        ...respostaUsuario,
+        nome: 'Novo nome',
+        email: 'novo@exemplo.test',
+      }),
       alterarStatusUsuario: jest
         .fn()
         .mockResolvedValue({ ...respostaUsuario, ativo: false }),
@@ -188,6 +194,49 @@ describe('AcessoController', () => {
     await request(app.getHttpServer())
       .get(`/admin/usuarios/${respostaUsuario.id}`)
       .expect(404);
+  });
+
+  it('edita nome e e-mail pelo endpoint administrativo', async () => {
+    await request(app.getHttpServer())
+      .patch(`/admin/usuarios/${respostaUsuario.id}`)
+      .send({ nome: '  Novo nome  ', email: '  novo@exemplo.test  ' })
+      .expect(200)
+      .expect({
+        ...respostaUsuario,
+        nome: 'Novo nome',
+        email: 'novo@exemplo.test',
+      });
+
+    expect(acessoService.editarUsuario).toHaveBeenCalledWith(
+      respostaUsuario.id,
+      { nome: 'Novo nome', email: 'novo@exemplo.test' },
+    );
+  });
+
+  it('rejeita e-mail inválido sem chamar o serviço', async () => {
+    await request(app.getHttpServer())
+      .patch(`/admin/usuarios/${respostaUsuario.id}`)
+      .send({ email: 'email-invalido' })
+      .expect(400);
+
+    expect(acessoService.editarUsuario).not.toHaveBeenCalled();
+  });
+
+  it('não encaminha campos fora do DTO editável', async () => {
+    await request(app.getHttpServer())
+      .patch(`/admin/usuarios/${respostaUsuario.id}`)
+      .send({
+        nome: 'Novo nome',
+        senha: 'senha-nao-permitida',
+        perfil: 'ADMIN',
+        ativo: false,
+      })
+      .expect(200);
+
+    expect(acessoService.editarUsuario).toHaveBeenCalledWith(
+      respostaUsuario.id,
+      { nome: 'Novo nome' },
+    );
   });
 
   it('altera o status da conta', async () => {

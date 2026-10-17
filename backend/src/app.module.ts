@@ -10,6 +10,7 @@ import { TrilhasModule } from './trilhas/trilhas.module';
 import { ComentariosModule } from './comentarios/comentarios.module';
 import { ParticipacaoModule } from './participacoes/participacao.module';
 import { AcontecimentosModule } from './acontecimentos/acontecimentos.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AcontecimentosModule } from './acontecimentos/acontecimentos.module';
     AcessoModule,
     ComentariosModule,
     TrilhasModule,
+    UsuariosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
