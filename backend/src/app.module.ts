@@ -9,10 +9,12 @@ import { ComentariosModule } from './comentarios/comentarios.module';
 import { TrilhasModule } from './trilhas/trilhas.module';
 import { SeriesModule } from './series/series.module';
 import { ObrasModule } from './obras/obras.module';
+import { LogsModule } from './logs/logs.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(databaseOptions()),
+    LogsModule,
     AuthModule,
     AcessoModule,
     ComentariosModule,

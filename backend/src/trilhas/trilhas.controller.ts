@@ -27,6 +27,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Authorize } from '../acesso/autorizacao.decorators';
+import { Auditar } from '../logs/auditoria.decorator';
 import { TrilhasService } from './trilhas.service';
 import { EtapasTrilhaService } from './etapas-trilha.service';
 import { CriarTrilhaDto } from './dto/criar-trilha.dto';
@@ -194,6 +195,7 @@ export class TrilhasController {
   }
 
   @Patch(':id/status')
+  @Auditar({ acao: 'trilhas.alterar_status', recurso: 'trilha', idParam: 'id' })
   @Authorize({
     roles: ['ADMIN'],
     permissions: ['trilhas:editar'],
@@ -369,6 +371,7 @@ export class TrilhasController {
   }
 
   @Put(':id/ordem')
+  @Auditar({ acao: 'trilhas.reordenar', recurso: 'trilha', idParam: 'id' })
   @Authorize({
     roles: ['ADMIN'],
     permissions: ['etapas:editar'],

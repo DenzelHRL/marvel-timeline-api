@@ -22,6 +22,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Authorize } from '../acesso/autorizacao.decorators';
+import { Auditar } from '../logs/auditoria.decorator';
 import { SeriesService } from './series.service';
 import { ListarSeriesDto } from './dto/listar-series.dto';
 import { ListarSeriesRespostaDto, SerieRespostaDto } from './dto/serie-resposta.dto';
@@ -104,6 +105,7 @@ export class SeriesController {
   }
 
   @Post()
+  @Auditar({ acao: 'series.criar', recurso: 'serie' })
   @Authorize({
     roles: ['ADMIN'],
     permissions: ['series:criar'],
@@ -127,6 +129,7 @@ export class SeriesController {
   }
 
   @Patch(':id')
+  @Auditar({ acao: 'series.editar', recurso: 'serie', idParam: 'id' })
   @Authorize({
     roles: ['ADMIN'],
     permissions: ['series:editar'],
@@ -161,6 +164,7 @@ export class SeriesController {
   }
 
   @Patch(':id/status')
+  @Auditar({ acao: 'series.alterar_status', recurso: 'serie', idParam: 'id' })
   @Authorize({
     roles: ['ADMIN'],
     permissions: ['series:editar'],

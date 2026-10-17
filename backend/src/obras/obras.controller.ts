@@ -22,6 +22,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Authorize } from '../acesso/autorizacao.decorators';
+import { Auditar } from '../logs/auditoria.decorator';
 import { ObrasService } from './obras.service';
 import { ListarObrasDto } from './dto/listar-obras.dto';
 import { ConsultarObraDto } from './dto/consultar-obra.dto';
@@ -79,6 +80,7 @@ export class ObrasController {
   }
 
   @Post()
+  @Auditar({ acao: 'obras.criar', recurso: 'obra' })
   @Authorize({
     roles: ['ADMIN'],
     permissions: ['obras:criar'],
@@ -106,6 +108,7 @@ export class ObrasController {
   }
 
   @Patch(':id')
+  @Auditar({ acao: 'obras.editar', recurso: 'obra', idParam: 'id' })
   @Authorize({
     roles: ['ADMIN'],
     permissions: ['obras:editar'],
@@ -143,6 +146,7 @@ export class ObrasController {
   }
 
   @Patch(':id/status')
+  @Auditar({ acao: 'obras.alterar_status', recurso: 'obra', idParam: 'id' })
   @Authorize({
     roles: ['ADMIN'],
     permissions: ['obras:editar'],
