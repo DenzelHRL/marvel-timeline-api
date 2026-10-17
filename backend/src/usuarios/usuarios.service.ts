@@ -1,4 +1,4 @@
-import {ConflictException, Injectable, NotFoundException} from "@nestjs/common";
+import {BadRequestException, ConflictException, Injectable, NotFoundException} from "@nestjs/common";
 import {InjectDataSource} from "@nestjs/typeorm";
 import {DataSource, QueryFailedError} from "typeorm";
 import{Perfil, Permissao, Usuario, UsuarioPerfil} from "../database/entities";
@@ -79,6 +79,12 @@ export class UsuariosService{
         }
 
         if(dto.nome !== undefined){
+            const nomeTemp= dto.nome?.trim();
+            if( !nomeTemp || nomeTemp.length < 2){
+                throw new BadRequestException("nome não pode ser vazio ou menor que 2 caracteres");
+            }
+
+            usuario.nome = nomeTemp;
             usuario.nome = dto.nome.trim();
         }
 
