@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { databaseOptions } from './database/data-source';
 import { ComentariosModule } from './comentarios/comentarios.module';
 import { TrilhasModule } from './trilhas/trilhas.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { TrilhasModule } from './trilhas/trilhas.module';
     AcessoModule,
     ComentariosModule,
     TrilhasModule,
+    UsuariosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

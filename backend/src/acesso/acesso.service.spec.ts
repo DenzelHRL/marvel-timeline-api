@@ -1,5 +1,14 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  DataSource,
+  EntityManager,
+  QueryFailedError,
+  Repository,
+} from 'typeorm';
 import {
   Perfil,
   PerfilPermissao,
@@ -7,13 +16,18 @@ import {
   Usuario,
   UsuarioPerfil,
 } from '../database/entities';
-import { ListarPerfisDto, ListarPermissoesDto, ListarUsuariosDto } from './dto';
+import {
+  EditarUsuarioAdminDto,
+  ListarPerfisDto,
+  ListarPermissoesDto,
+  ListarUsuariosDto,
+} from './dto';
 import { AcessoService } from './acesso.service';
 
 describe('AcessoService', () => {
   let service: AcessoService;
   let usuariosRepository: jest.Mocked<
-    Pick<Repository<Usuario>, 'findAndCount' | 'findOne'>
+    Pick<Repository<Usuario>, 'findAndCount' | 'findOne' | 'update'>
   >;
   let perfisRepository: jest.Mocked<
     Pick<Repository<Perfil>, 'findAndCount' | 'findOne'>
@@ -73,6 +87,7 @@ describe('AcessoService', () => {
     usuariosRepository = {
       findAndCount: jest.fn(),
       findOne: jest.fn(),
+      update: jest.fn(),
     };
     perfisRepository = {
       findAndCount: jest.fn(),
@@ -215,6 +230,103 @@ describe('AcessoService', () => {
     usuariosRepository.findOne.mockResolvedValue(null);
 
     await expect(service.buscarUsuarioPorId(usuario.id)).resolves.toBeNull();
+  });
+
+  it('edita nome e e-mail, normaliza os valores e não retorna o hash', async () => {
+    usuariosRepository.update.mockResolvedValue({
+      affected: 1,
+      raw: [],
+      generatedMaps: [],
+    });
+    usuariosRepository.findOne.mockResolvedValue({
+      ...usuario,
+      nome: 'Pedro Silva',
+      email: 'pedro@exemplo.test',
+    });
+    const dados = Object.assign(new EditarUsuarioAdminDto(), {
+      nome: '  Pedro Silva  ',
+      email: '  Pedro@Exemplo.Test ',
+    });
+
+    const resposta = await service.editarUsuario(usuario.id, dados);
+
+    expect(resposta).toEqual({
+      id: usuario.id,
+      nome: 'Pedro Silva',
+      email: 'pedro@exemplo.test',
+      ativo: true,
+      criadoEm: '2026-10-13T12:00:00.000Z',
+      atualizadoEm: '2026-10-13T13:00:00.000Z',
+    });
+    expect(resposta).not.toHaveProperty('senhaHash');
+    expect(usuariosRepository.update).toHaveBeenCalledWith(
+      { id: usuario.id },
+      { nome: 'Pedro Silva', email: 'pedro@exemplo.test' },
+    );
+  });
+
+  it('edita somente os campos informados', async () => {
+    usuariosRepository.update.mockResolvedValue({
+      affected: 1,
+      raw: [],
+      generatedMaps: [],
+    });
+    usuariosRepository.findOne.mockResolvedValue({
+      ...usuario,
+      nome: 'Novo nome',
+    });
+    const dados = Object.assign(new EditarUsuarioAdminDto(), {
+      nome: 'Novo nome',
+    });
+
+    await service.editarUsuario(usuario.id, dados);
+
+    expect(usuariosRepository.update).toHaveBeenCalledWith(
+      { id: usuario.id },
+      { nome: 'Novo nome' },
+    );
+  });
+
+  it('rejeita a edição sem campos permitidos', async () => {
+    await expect(
+      service.editarUsuario(usuario.id, new EditarUsuarioAdminDto()),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(usuariosRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('retorna 404 quando a conta a editar não existe', async () => {
+    usuariosRepository.update.mockResolvedValue({
+      affected: 0,
+      raw: [],
+      generatedMaps: [],
+    });
+
+    await expect(
+      service.editarUsuario(
+        usuario.id,
+        Object.assign(new EditarUsuarioAdminDto(), { nome: 'Novo nome' }),
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(usuariosRepository.findOne).not.toHaveBeenCalled();
+  });
+
+  it('converte conflito de e-mail único em HTTP 409', async () => {
+    const erroPostgres = Object.assign(new Error('duplicate key'), {
+      code: '23505',
+      constraint: 'uq_usuarios_email_ci',
+    });
+    usuariosRepository.update.mockRejectedValue(
+      new QueryFailedError('UPDATE usuarios', [], erroPostgres),
+    );
+
+    await expect(
+      service.editarUsuario(
+        usuario.id,
+        Object.assign(new EditarUsuarioAdminDto(), {
+          email: 'outro@exemplo.test',
+        }),
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('consulta um perfil pelo ID selecionando apenas seus campos públicos', async () => {
