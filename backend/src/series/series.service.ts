@@ -99,12 +99,18 @@ export class SeriesService {
       where.anoLancamento = query.anoLancamento;
     }
 
-    const [dados, total] = await this.obrasRepo.findAndCount({
+    const [obras, total] = await this.obrasRepo.findAndCount({
       where,
       order: { numeroTemporada: 'ASC' },
       take: query.limite,
       skip: (query.pagina - 1) * query.limite,
     });
+
+    // Regra R03: listagem publica de temporadas nao exibe resumo com spoiler por padrao
+    const dados = obras.map((obra) => ({
+      ...obra,
+      resumoComSpoiler: null,
+    }));
 
     return {
       dados,
@@ -179,8 +185,8 @@ export class SeriesService {
       throw new NotFoundException('Série não encontrada.');
     }
 
-    // Regra R02: se for arquivar a serie, nao pode ter temporadas publicadas
-    if (dto.status === 'ARQUIVADA') {
+    // Regra R02: nao e possivel arquivar ou rebaixar para rascunho serie com temporadas publicadas
+    if (dto.status === 'ARQUIVADA' || dto.status === 'RASCUNHO') {
       const temporadasAtivas = await this.obrasRepo.count({
         where: {
           serieId: id,
@@ -190,8 +196,9 @@ export class SeriesService {
       });
 
       if (temporadasAtivas > 0) {
+        const acao = dto.status === 'ARQUIVADA' ? 'arquivar' : 'rebaixar para rascunho';
         throw new BadRequestException(
-          'Nao e possivel arquivar uma serie com temporadas publicadas.',
+          `Nao e possivel ${acao} uma serie com temporadas publicadas.`,
         );
       }
     }

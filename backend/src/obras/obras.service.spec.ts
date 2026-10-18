@@ -378,6 +378,18 @@ describe('ObrasService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('deve bloquear rebaixamento para RASCUNHO se a obra pertencer a trilha PUBLICADA (Regra R02)', async () => {
+      mockRepository.findOne.mockResolvedValue(mockObra);
+      mockEtapasRepo.find.mockResolvedValue([
+        { trilhaId: mockTrilha.id, obraId: mockObra.id },
+      ]);
+      mockTrilhasRepo.findOne.mockResolvedValue(mockTrilha);
+
+      await expect(
+        service.alterarStatus(mockObra.id, { status: 'RASCUNHO' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('deve permitir arquivar obra se nao pertencer a trilhas publicadas (Regra R02)', async () => {
       const obra = { ...mockObra, status: 'PUBLICADA' as const };
       mockRepository.findOne.mockResolvedValue(obra);
@@ -452,4 +464,99 @@ describe('ObrasService', () => {
       );
     });
   });
+
+  describe('Controle de Revisão e Outbox', () => {
+    it('deve bloquear e registrar alteração na transação ao criar obra quando revisão estiver ativa', async () => {
+      const mockRevisao = {
+        bloquear: jest.fn().mockResolvedValue(undefined),
+        registrarAlteracao: jest.fn().mockResolvedValue('2'),
+      };
+
+      const managerObrasRepo = {
+        findOne: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockReturnValue(mockObra),
+        save: jest.fn().mockResolvedValue(mockObra),
+      };
+
+      const mockManager = {
+        getRepository: jest.fn().mockImplementation((entity) => {
+          if (entity === Obra) return managerObrasRepo;
+          return mockSeriesRepo;
+        }),
+      };
+
+      const serviceComRevisao = new ObrasService(
+        {
+          ...mockRepository,
+          manager: {
+            transaction: jest.fn().mockImplementation(async (callback) => {
+              return callback(mockManager);
+            }),
+          },
+        } as any,
+        mockSeriesRepo as any,
+        mockTrilhasRepo as any,
+        mockEtapasRepo as any,
+        mockRevisao as any,
+      );
+
+      const resultado = await serviceComRevisao.criar({
+        titulo: 'Vingadores: Guerra Infinita',
+        slug: 'vingadores-guerra-infinita',
+        tipo: 'FILME',
+        anoLancamento: 2018,
+        resumoSemSpoiler: 'Os Vingadores enfrentam Thanos.',
+      });
+
+      expect(mockRevisao.bloquear).toHaveBeenCalledWith(mockManager);
+      expect(mockRevisao.registrarAlteracao).toHaveBeenCalledWith(mockManager);
+      expect(resultado).toBe(mockObra);
+    });
+
+    it('deve bloquear e registrar alteração na transação ao alterar status quando revisão estiver ativa', async () => {
+      const mockRevisao = {
+        bloquear: jest.fn().mockResolvedValue(undefined),
+        registrarAlteracao: jest.fn().mockResolvedValue('3'),
+      };
+
+      const obraExistente = { ...mockObra, status: 'RASCUNHO' as const };
+      const managerObrasRepo = {
+        findOne: jest.fn().mockResolvedValue(obraExistente),
+        save: jest.fn().mockResolvedValue({ ...obraExistente, status: 'PUBLICADA' }),
+      };
+
+      const mockManager = {
+        getRepository: jest.fn().mockImplementation((entity) => {
+          if (entity === Obra) return managerObrasRepo;
+          if (entity === EtapaTrilha) return mockEtapasRepo;
+          if (entity === Trilha) return mockTrilhasRepo;
+          return mockSeriesRepo;
+        }),
+      };
+
+      const serviceComRevisao = new ObrasService(
+        {
+          ...mockRepository,
+          manager: {
+            transaction: jest.fn().mockImplementation(async (callback) => {
+              return callback(mockManager);
+            }),
+          },
+        } as any,
+        mockSeriesRepo as any,
+        mockTrilhasRepo as any,
+        mockEtapasRepo as any,
+        mockRevisao as any,
+      );
+
+      const resultado = await serviceComRevisao.alterarStatus(mockObra.id, {
+        status: 'PUBLICADA',
+      });
+
+      expect(mockRevisao.bloquear).toHaveBeenCalledWith(mockManager);
+      expect(mockRevisao.registrarAlteracao).toHaveBeenCalledWith(mockManager);
+      expect(resultado.status).toBe('PUBLICADA');
+    });
+  });
 });
+

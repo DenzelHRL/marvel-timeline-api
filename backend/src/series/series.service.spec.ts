@@ -166,6 +166,22 @@ describe('SeriesService', () => {
       });
     });
 
+    it('deve ocultar resumoComSpoiler nas temporadas listadas (Regra R03)', async () => {
+      mockRepository.findOne.mockResolvedValue(mockSerie);
+      const temporadaComSpoiler = {
+        ...mockTemporada,
+        resumoComSpoiler: 'Spoiler pesado sobre Kang.',
+      };
+      mockObrasRepo.findAndCount.mockResolvedValue([[temporadaComSpoiler], 1]);
+
+      const resultado = await service.listarTemporadas('loki', {
+        pagina: 1,
+        limite: 20,
+      });
+
+      expect(resultado.dados[0].resumoComSpoiler).toBeNull();
+    });
+
     it('deve aplicar filtros de numero da temporada e ano de lancamento', async () => {
       mockRepository.findOne.mockResolvedValue(mockSerie);
       mockObrasRepo.findAndCount.mockResolvedValue([[mockTemporada], 1]);
@@ -286,6 +302,15 @@ describe('SeriesService', () => {
 
       await expect(
         service.alterarStatus(mockSerie.id, { status: 'ARQUIVADA' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('deve bloquear rebaixamento para RASCUNHO se houver temporadas publicadas (Regra R02)', async () => {
+      mockRepository.findOne.mockResolvedValue(mockSerie);
+      mockObrasRepo.count.mockResolvedValue(2);
+
+      await expect(
+        service.alterarStatus(mockSerie.id, { status: 'RASCUNHO' }),
       ).rejects.toThrow(BadRequestException);
     });
 

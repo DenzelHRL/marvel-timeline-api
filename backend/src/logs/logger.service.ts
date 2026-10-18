@@ -90,7 +90,12 @@ export class LoggerService implements NestLoggerService {
     });
 
     const apenasAuditoria = winston.format((info) => {
-      return info.tipo === 'auditoria' ? info : false;
+      const ehAuditoria =
+        info.tipo === 'auditoria' ||
+        (typeof info.message === 'object' &&
+          info.message !== null &&
+          (info.message as Record<string, unknown>).tipo === 'auditoria');
+      return ehAuditoria ? info : false;
     });
 
     const consoleTransport = new winston.transports.Console({

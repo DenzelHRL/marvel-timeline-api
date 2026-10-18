@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module';
 import { AcessoModule } from '../acesso/acesso.module';
+import { CatalogoRevisaoModule } from '../catalogo-revisao/catalogo-revisao.module';
 import {
   EtapaTrilha,
   Obra,
@@ -17,6 +18,7 @@ import { ObrasService } from './obras.service';
     TypeOrmModule.forFeature([Obra, Serie, Trilha, EtapaTrilha]),
     AuthModule,
     AcessoModule,
+    CatalogoRevisaoModule,
   ],
   controllers: [ObrasController, AdminObrasController],
   providers: [ObrasService],

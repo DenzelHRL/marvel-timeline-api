@@ -6,6 +6,7 @@ import { InitialSchema20260929000000 } from "./migrations/20260929000000-Initial
 import { AddComments20260929180000 } from "./migrations/20260929180000-AddComments";
 
 import { ChronologicalTrails20261014060000 } from "./migrations/20261014060000-ChronologicalTrails";
+import { PrepararAtualizacaoMapas1792237200000 } from "./migrations/1792237200000-PrepararAtualizacaoMapas";
 
 loadEnv();
 
@@ -17,6 +18,7 @@ export function databaseOptions(): DataSourceOptions {
       InitialSchema20260929000000,
       AddComments20260929180000,
       ChronologicalTrails20261014060000,
+      PrepararAtualizacaoMapas1792237200000,
     ],
     synchronize: false,
     migrationsRun: false,

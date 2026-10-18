@@ -3,9 +3,11 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, In, Repository } from 'typeorm';
+import { EntityManager, FindOptionsWhere, In, Repository } from 'typeorm';
+import { CatalogoRevisaoService } from '../catalogo-revisao/catalogo-revisao.service';
 import {
   EtapaTrilha,
   Obra,
@@ -32,6 +34,8 @@ export class ObrasService {
     private readonly trilhasRepo: Repository<Trilha>,
     @InjectRepository(EtapaTrilha)
     private readonly etapasRepo: Repository<EtapaTrilha>,
+    @Optional()
+    private readonly revisao?: CatalogoRevisaoService,
   ) {}
 
   async listarPublicadas(filtros: ListarObrasDto): Promise<ListarObrasRespostaDto> {
@@ -98,6 +102,8 @@ export class ObrasService {
     serieId?: string | null,
     numeroTemporada?: number | null,
     obraIdIgnorar?: string,
+    seriesRepo: Repository<Serie> = this.seriesRepo,
+    obrasRepo: Repository<Obra> = this.obrasRepo,
   ): Promise<void> {
     if (tipo === 'FILME') {
       if (serieId) {
@@ -114,12 +120,12 @@ export class ObrasService {
         throw new BadRequestException('Temporada precisa ter o numero da temporada.');
       }
 
-      const serie = await this.seriesRepo.findOne({ where: { id: serieId } });
+      const serie = await seriesRepo.findOne({ where: { id: serieId } });
       if (!serie) {
         throw new NotFoundException('Serie informada nao foi encontrada.');
       }
 
-      const temporadaExistente = await this.obrasRepo.findOne({
+      const temporadaExistente = await obrasRepo.findOne({
         where: { serieId, numeroTemporada },
       });
 
@@ -132,106 +138,167 @@ export class ObrasService {
   }
 
   async criar(dto: CriarObraDto): Promise<Obra> {
-    const slugExiste = await this.obrasRepo.findOne({ where: { slug: dto.slug } });
-    if (slugExiste) {
-      throw new ConflictException('Ja existe uma obra com esse slug.');
+    const executar = async (manager?: EntityManager): Promise<Obra> => {
+      const obrasRepo = manager ? manager.getRepository(Obra) : this.obrasRepo;
+      const seriesRepo = manager ? manager.getRepository(Serie) : this.seriesRepo;
+
+      const slugExiste = await obrasRepo.findOne({ where: { slug: dto.slug } });
+      if (slugExiste) {
+        throw new ConflictException('Ja existe uma obra com esse slug.');
+      }
+
+      // Valida Regra R04
+      await this.validarCoerenciaObra(
+        dto.tipo,
+        dto.serieId,
+        dto.numeroTemporada,
+        undefined,
+        seriesRepo,
+        obrasRepo,
+      );
+
+      const obra = obrasRepo.create({
+        titulo: dto.titulo,
+        slug: dto.slug,
+        tipo: dto.tipo,
+        anoLancamento: dto.anoLancamento,
+        serieId: dto.tipo === 'TEMPORADA' ? dto.serieId : null,
+        numeroTemporada: dto.tipo === 'TEMPORADA' ? dto.numeroTemporada : null,
+        resumoSemSpoiler: dto.resumoSemSpoiler,
+        resumoComSpoiler: dto.resumoComSpoiler ?? null,
+        imagemUrl: dto.imagemUrl ?? null,
+        status: 'RASCUNHO',
+      });
+
+      return obrasRepo.save(obra);
+    };
+
+    if (this.revisao && this.obrasRepo.manager?.transaction) {
+      return this.obrasRepo.manager.transaction(async (manager) => {
+        await this.revisao!.bloquear(manager);
+        const obra = await executar(manager);
+        await this.revisao!.registrarAlteracao(manager);
+        return obra;
+      });
     }
 
-    // Valida Regra R04
-    await this.validarCoerenciaObra(
-      dto.tipo,
-      dto.serieId,
-      dto.numeroTemporada,
-    );
-
-    const obra = this.obrasRepo.create({
-      titulo: dto.titulo,
-      slug: dto.slug,
-      tipo: dto.tipo,
-      anoLancamento: dto.anoLancamento,
-      serieId: dto.tipo === 'TEMPORADA' ? dto.serieId : null,
-      numeroTemporada: dto.tipo === 'TEMPORADA' ? dto.numeroTemporada : null,
-      resumoSemSpoiler: dto.resumoSemSpoiler,
-      resumoComSpoiler: dto.resumoComSpoiler ?? null,
-      imagemUrl: dto.imagemUrl ?? null,
-      status: 'RASCUNHO',
-    });
-
-    return this.obrasRepo.save(obra);
+    return executar();
   }
 
   async atualizar(id: string, dto: AtualizarObraDto): Promise<Obra> {
-    const obra = await this.obrasRepo.findOne({ where: { id } });
-    if (!obra) {
-      throw new NotFoundException('Obra não encontrada.');
-    }
+    const executar = async (manager?: EntityManager): Promise<Obra> => {
+      const obrasRepo = manager ? manager.getRepository(Obra) : this.obrasRepo;
+      const seriesRepo = manager ? manager.getRepository(Serie) : this.seriesRepo;
 
-    if (dto.slug && dto.slug !== obra.slug) {
-      const slugEmUso = await this.obrasRepo.findOne({ where: { slug: dto.slug } });
-      if (slugEmUso) {
-        throw new ConflictException('Slug já está em uso por outra obra.');
+      const obra = await obrasRepo.findOne({ where: { id } });
+      if (!obra) {
+        throw new NotFoundException('Obra não encontrada.');
       }
-      obra.slug = dto.slug;
+
+      if (dto.slug && dto.slug !== obra.slug) {
+        const slugEmUso = await obrasRepo.findOne({ where: { slug: dto.slug } });
+        if (slugEmUso) {
+          throw new ConflictException('Slug já está em uso por outra obra.');
+        }
+        obra.slug = dto.slug;
+      }
+
+      const novoTipo = dto.tipo ?? obra.tipo;
+      const novoSerieId =
+        dto.serieId !== undefined ? dto.serieId : obra.serieId;
+      const novoNumero =
+        dto.numeroTemporada !== undefined ? dto.numeroTemporada : obra.numeroTemporada;
+
+      // Valida Regra R04
+      await this.validarCoerenciaObra(
+        novoTipo,
+        novoSerieId,
+        novoNumero,
+        id,
+        seriesRepo,
+        obrasRepo,
+      );
+
+      if (dto.titulo !== undefined) obra.titulo = dto.titulo;
+      if (dto.tipo !== undefined) obra.tipo = dto.tipo;
+      if (dto.anoLancamento !== undefined) obra.anoLancamento = dto.anoLancamento;
+      if (dto.serieId !== undefined) obra.serieId = dto.serieId;
+      if (dto.numeroTemporada !== undefined) obra.numeroTemporada = dto.numeroTemporada;
+      if (dto.resumoSemSpoiler !== undefined) obra.resumoSemSpoiler = dto.resumoSemSpoiler;
+      if (dto.resumoComSpoiler !== undefined) obra.resumoComSpoiler = dto.resumoComSpoiler;
+      if (dto.imagemUrl !== undefined) obra.imagemUrl = dto.imagemUrl;
+
+      return obrasRepo.save(obra);
+    };
+
+    if (this.revisao && this.obrasRepo.manager?.transaction) {
+      return this.obrasRepo.manager.transaction(async (manager) => {
+        await this.revisao!.bloquear(manager);
+        const obra = await executar(manager);
+        await this.revisao!.registrarAlteracao(manager);
+        return obra;
+      });
     }
 
-    const novoTipo = dto.tipo ?? obra.tipo;
-    const novoSerieId =
-      dto.serieId !== undefined ? dto.serieId : obra.serieId;
-    const novoNumero =
-      dto.numeroTemporada !== undefined ? dto.numeroTemporada : obra.numeroTemporada;
-
-    // Valida Regra R04
-    await this.validarCoerenciaObra(novoTipo, novoSerieId, novoNumero, id);
-
-    if (dto.titulo !== undefined) obra.titulo = dto.titulo;
-    if (dto.tipo !== undefined) obra.tipo = dto.tipo;
-    if (dto.anoLancamento !== undefined) obra.anoLancamento = dto.anoLancamento;
-    if (dto.serieId !== undefined) obra.serieId = dto.serieId;
-    if (dto.numeroTemporada !== undefined) obra.numeroTemporada = dto.numeroTemporada;
-    if (dto.resumoSemSpoiler !== undefined) obra.resumoSemSpoiler = dto.resumoSemSpoiler;
-    if (dto.resumoComSpoiler !== undefined) obra.resumoComSpoiler = dto.resumoComSpoiler;
-    if (dto.imagemUrl !== undefined) obra.imagemUrl = dto.imagemUrl;
-
-    return this.obrasRepo.save(obra);
+    return executar();
   }
 
   async alterarStatus(id: string, dto: AlterarStatusObraDto): Promise<Obra> {
-    const obra = await this.obrasRepo.findOne({ where: { id } });
-    if (!obra) {
-      throw new NotFoundException('Obra não encontrada.');
-    }
+    const executar = async (manager?: EntityManager): Promise<Obra> => {
+      const obrasRepo = manager ? manager.getRepository(Obra) : this.obrasRepo;
+      const seriesRepo = manager ? manager.getRepository(Serie) : this.seriesRepo;
+      const etapasRepo = manager ? manager.getRepository(EtapaTrilha) : this.etapasRepo;
+      const trilhasRepo = manager ? manager.getRepository(Trilha) : this.trilhasRepo;
 
-    // Regra R02: para publicar uma temporada, a serie precisa estar PUBLICADA
-    if (dto.status === 'PUBLICADA' && obra.tipo === 'TEMPORADA' && obra.serieId) {
-      const serie = await this.seriesRepo.findOne({ where: { id: obra.serieId } });
-      if (!serie || serie.status !== 'PUBLICADA') {
-        throw new BadRequestException(
-          'Nao e possivel publicar temporada de uma serie que nao esta publicada.',
-        );
+      const obra = await obrasRepo.findOne({ where: { id } });
+      if (!obra) {
+        throw new NotFoundException('Obra não encontrada.');
       }
-    }
 
-    // Regra R02: para arquivar uma obra, ela nao pode estar em trilhas publicadas
-    if (dto.status === 'ARQUIVADA') {
-      const etapas = await this.etapasRepo.find({ where: { obraId: id } });
-      if (etapas.length > 0) {
-        const trilhaIds = etapas.map((e) => e.trilhaId);
-        const trilhaPublicada = await this.trilhasRepo.findOne({
-          where: {
-            id: In(trilhaIds),
-            status: 'PUBLICADA',
-          },
-        });
-        if (trilhaPublicada) {
+      // Regra R02: para publicar uma temporada, a serie precisa estar PUBLICADA
+      if (dto.status === 'PUBLICADA' && obra.tipo === 'TEMPORADA' && obra.serieId) {
+        const serie = await seriesRepo.findOne({ where: { id: obra.serieId } });
+        if (!serie || serie.status !== 'PUBLICADA') {
           throw new BadRequestException(
-            'Nao e possivel arquivar obra que pertence a uma trilha publicada.',
+            'Nao e possivel publicar temporada de uma serie que nao esta publicada.',
           );
         }
       }
+
+      // Regra R02: para arquivar ou rebaixar para rascunho uma obra, ela nao pode estar em trilhas publicadas
+      if (dto.status === 'ARQUIVADA' || dto.status === 'RASCUNHO') {
+        const etapas = await etapasRepo.find({ where: { obraId: id } });
+        if (etapas.length > 0) {
+          const trilhaIds = etapas.map((e) => e.trilhaId);
+          const trilhaPublicada = await trilhasRepo.findOne({
+            where: {
+              id: In(trilhaIds),
+              status: 'PUBLICADA',
+            },
+          });
+          if (trilhaPublicada) {
+            const acao = dto.status === 'ARQUIVADA' ? 'arquivar' : 'rebaixar para rascunho';
+            throw new BadRequestException(
+              `Nao e possivel ${acao} obra que pertence a uma trilha publicada.`,
+            );
+          }
+        }
+      }
+
+      obra.status = dto.status;
+      return obrasRepo.save(obra);
+    };
+
+    if (this.revisao && this.obrasRepo.manager?.transaction) {
+      return this.obrasRepo.manager.transaction(async (manager) => {
+        await this.revisao!.bloquear(manager);
+        const obra = await executar(manager);
+        await this.revisao!.registrarAlteracao(manager);
+        return obra;
+      });
     }
 
-    obra.status = dto.status;
-    return this.obrasRepo.save(obra);
+    return executar();
   }
 
   // Endpoints administrativos (#76 e #77)
