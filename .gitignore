@@ -1,5 +1,7 @@
-backend/node_modules/
+*node_modules/
 backend/dist/
 backend/coverage/
 backend/.env
 backend/*.tsbuildinfo
+
+*Exemplo-Codex-obras
