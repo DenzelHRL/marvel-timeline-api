@@ -29,7 +29,6 @@ export class AuditoriaInterceptor implements NestInterceptor {
       context.getHandler(),
     );
 
-    // Se a rota nao possui o decorator @Auditar, segue o fluxo normal
     if (!opcoes) {
       return next.handle();
     }
@@ -42,7 +41,6 @@ export class AuditoriaInterceptor implements NestInterceptor {
     const usuario = req.user as AuthenticatedUser | undefined;
     const usuarioId = usuario?.id || null;
 
-    // Obtem o id do recurso via parametro de rota, caso especificado
     let recursoId: string | null = null;
     if (opcoes.idParam && req.params?.[opcoes.idParam]) {
       recursoId = String(req.params[opcoes.idParam]);
@@ -50,8 +48,6 @@ export class AuditoriaInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap((resultadoDados) => {
-        // Sucesso: operacao confirmada no banco
-        // Se for criacao e nao havia param de rota, extrai o id do objeto retornado
         const idFinal =
           recursoId ||
           (resultadoDados && typeof resultadoDados === 'object' && 'id' in resultadoDados
@@ -77,13 +73,11 @@ export class AuditoriaInterceptor implements NestInterceptor {
 
         if (err instanceof HttpException) {
           statusHttp = err.getStatus();
-          // Erros 4xx sao rejeicoes de regra de negocio ou validacao
           if (statusHttp >= 400 && statusHttp < 500) {
             resultado = 'rejeitado';
           }
         }
 
-        // Registra evento de auditoria com status de rejeicao ou falha
         this.logger.auditoria({
           tipo: 'auditoria',
           requestId,
@@ -95,7 +89,6 @@ export class AuditoriaInterceptor implements NestInterceptor {
           statusHttp,
         });
 
-        // Se for falha inesperada (5xx), registra tambem no log de erro estruturado sem expor dados sensiveis
         if (resultado === 'falhou') {
           const erroNome = err instanceof Error ? err.name : 'UnknownError';
           this.logger.erro({
@@ -109,7 +102,6 @@ export class AuditoriaInterceptor implements NestInterceptor {
           });
         }
 
-        // Preserva rigorosamente o erro e status originais da aplicacao
         return throwError(() => err);
       }),
     );

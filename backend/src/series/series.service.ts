@@ -106,7 +106,6 @@ export class SeriesService {
       skip: (query.pagina - 1) * query.limite,
     });
 
-    // Regra R03: listagem publica de temporadas nao exibe resumo com spoiler por padrao
     const dados = obras.map((obra) => ({
       ...obra,
       resumoComSpoiler: null,
@@ -185,7 +184,6 @@ export class SeriesService {
       throw new NotFoundException('Série não encontrada.');
     }
 
-    // Regra R02: nao e possivel arquivar ou rebaixar para rascunho serie com temporadas publicadas
     if (dto.status === 'ARQUIVADA' || dto.status === 'RASCUNHO') {
       const temporadasAtivas = await this.obrasRepo.count({
         where: {

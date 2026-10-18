@@ -19,7 +19,6 @@ export class RequestContextMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction): void {
     const inicio = performance.now();
 
-    // 1. Gera ou preserva o requestId recebido via header
     const headerId = req.headers['x-request-id'];
     const requestId =
       typeof headerId === 'string' && headerId.trim()
@@ -37,7 +36,6 @@ export class RequestContextMiddleware implements NestMiddleware {
 
       const duracaoMs = Math.round((performance.now() - inicio) * 100) / 100;
 
-      // 4. Usa template de rota quando disponivel e remove query string (evita vazar code OAuth / tokens)
       let rota = req.originalUrl ? req.originalUrl.split('?')[0] : req.url;
       if (req.baseUrl && req.route?.path) {
         rota = `${req.baseUrl}${req.route.path}`;
@@ -45,7 +43,6 @@ export class RequestContextMiddleware implements NestMiddleware {
         rota = req.route.path;
       }
 
-      // 3. Obtem usuario autenticado com seguranca a partir de req.user
       const usuario = req.user as AuthenticatedUser | undefined;
       const usuarioId = usuario?.id || null;
 
@@ -61,12 +58,10 @@ export class RequestContextMiddleware implements NestMiddleware {
       });
     };
 
-    // 2. Registra no termino normal da resposta
     res.on('finish', () => {
       registrarAcesso(res.statusCode);
     });
 
-    // 2. Registra desconexao precoce caso o cliente feche a conexao antes do termino
     res.on('close', () => {
       if (!res.writableEnded) {
         registrarAcesso(499);

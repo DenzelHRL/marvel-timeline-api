@@ -81,9 +81,7 @@ export class LoggerService implements NestLoggerService {
       if (!fs.existsSync(logsDir)) {
         fs.mkdirSync(logsDir, { recursive: true });
       }
-    } catch (err: unknown) {
-      // Ignora falha de criacao de diretorio para permitir console em ambiente read-only
-    }
+    } catch (err: unknown) {}
 
     const formatoSanitizado = winston.format((info) => {
       return sanitizarObjeto(info) as winston.Logform.TransformableInfo;
@@ -108,8 +106,8 @@ export class LoggerService implements NestLoggerService {
 
     const fileAppTransport = new winston.transports.File({
       filename: path.join(logsDir, 'app.log'),
-      maxsize: 5 * 1024 * 1024, // 5 MB por arquivo
-      maxFiles: 5, // ate 5 arquivos mantidos
+      maxsize: 5 * 1024 * 1024,
+      maxFiles: 5,
       tailable: true,
       format: winston.format.combine(
         winston.format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ss.SSSZ' }),
@@ -144,7 +142,6 @@ export class LoggerService implements NestLoggerService {
       ),
     });
 
-    // Tratamento de erro dos transports sem recursao no proprio logger
     const transports = [
       consoleTransport,
       fileAppTransport,
@@ -165,34 +162,24 @@ export class LoggerService implements NestLoggerService {
     });
   }
 
-  // Metodo tipado para registrar acesso HTTP (medido pelo middleware)
   acesso(dados: EventoAcesso): void {
     try {
       this.winstonLogger.info(dados);
-    } catch {
-      // Nao interrompe a requisicao HTTP se o logger falhar
-    }
+    } catch {}
   }
 
-  // Metodo tipado para registrar acao administrativa (capturado pelo interceptor)
   auditoria(dados: EventoAuditoria): void {
     try {
       this.winstonLogger.info(dados);
-    } catch {
-      // Nao interrompe a requisicao HTTP se o logger falhar
-    }
+    } catch {}
   }
 
-  // Metodo tipado para registrar erro estruturado
   erro(dados: EventoErro): void {
     try {
       this.winstonLogger.error(dados);
-    } catch {
-      // Nao interrompe a requisicao HTTP se o logger falhar
-    }
+    } catch {}
   }
 
-  // Metodos padrao da interface NestLoggerService
   log(message: string, context?: string): void {
     try {
       this.winstonLogger.info({ mensagem: message, contexto: context });

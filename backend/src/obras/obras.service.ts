@@ -58,7 +58,6 @@ export class ObrasService {
       skip: (filtros.pagina - 1) * filtros.limite,
     });
 
-    // Regra R03: leitura publica padrao nao exibe resumo com spoiler
     const dados = obras.map((obra) => ({
       ...obra,
       resumoComSpoiler: null,
@@ -88,7 +87,6 @@ export class ObrasService {
       throw new NotFoundException('Obra não encontrada.');
     }
 
-    // Regra R03: só exibe resumo com spoiler se explicitamente solicitado
     if (!query?.incluirSpoilers) {
       obra.resumoComSpoiler = null;
     }
@@ -96,7 +94,6 @@ export class ObrasService {
     return obra;
   }
 
-  // Regra R04: valida coerencia de tipo e serie/temporada
   private async validarCoerenciaObra(
     tipo: TipoObra,
     serieId?: string | null,
@@ -147,7 +144,6 @@ export class ObrasService {
         throw new ConflictException('Ja existe uma obra com esse slug.');
       }
 
-      // Valida Regra R04
       await this.validarCoerenciaObra(
         dto.tipo,
         dto.serieId,
@@ -209,7 +205,6 @@ export class ObrasService {
       const novoNumero =
         dto.numeroTemporada !== undefined ? dto.numeroTemporada : obra.numeroTemporada;
 
-      // Valida Regra R04
       await this.validarCoerenciaObra(
         novoTipo,
         novoSerieId,
@@ -255,7 +250,6 @@ export class ObrasService {
         throw new NotFoundException('Obra não encontrada.');
       }
 
-      // Regra R02: para publicar uma temporada, a serie precisa estar PUBLICADA
       if (dto.status === 'PUBLICADA' && obra.tipo === 'TEMPORADA' && obra.serieId) {
         const serie = await seriesRepo.findOne({ where: { id: obra.serieId } });
         if (!serie || serie.status !== 'PUBLICADA') {
@@ -265,7 +259,6 @@ export class ObrasService {
         }
       }
 
-      // Regra R02: para arquivar ou rebaixar para rascunho uma obra, ela nao pode estar em trilhas publicadas
       if (dto.status === 'ARQUIVADA' || dto.status === 'RASCUNHO') {
         const etapas = await etapasRepo.find({ where: { obraId: id } });
         if (etapas.length > 0) {
@@ -301,7 +294,6 @@ export class ObrasService {
     return executar();
   }
 
-  // Endpoints administrativos (#76 e #77)
   async listarAdmin(
     filtros: ListarObrasAdminDto,
   ): Promise<ListarObrasRespostaDto> {
@@ -322,7 +314,6 @@ export class ObrasService {
       skip: (filtros.pagina - 1) * filtros.limite,
     });
 
-    // Rota administrativa: inclui todos os campos sem ocultar spoiler para permitir edicao
     return {
       dados: obras,
       total,

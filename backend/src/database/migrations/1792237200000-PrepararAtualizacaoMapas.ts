@@ -4,7 +4,6 @@ export class PrepararAtualizacaoMapas1792237200000
   implements MigrationInterface
 {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Identifica a versão atual dos dados usados pelo mapa.
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS catalogo_revisao (
         id smallint PRIMARY KEY CHECK (id = 1),
@@ -18,8 +17,6 @@ export class PrepararAtualizacaoMapas1792237200000
       ON CONFLICT (id) DO NOTHING
     `);
 
-    // Preserva tarefas de atualização junto das alterações do domínio.
-    // A fila poderá encaminhar esses registros ao Redis posteriormente.
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS mapa_outbox (
         event_id uuid PRIMARY KEY,
@@ -32,7 +29,6 @@ export class PrepararAtualizacaoMapas1792237200000
       )
     `);
 
-    // Facilita encontrar tarefas que ainda precisam ser encaminhadas.
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS idx_mapa_outbox_pendentes
       ON mapa_outbox (criado_em)
