@@ -43,7 +43,8 @@ export class TrilhasService {
 
   // Lista somente trilhas publicadas, com filtros e paginação.
   async listarPublicadas(filtros: ListarTrilhasDto) {
-    const chaveCache = this.cacheService.gerarChave("trilhas:publicadas", filtros);
+    const versao = await this.revisao.atual();
+    const chaveCache = this.cacheService.gerarChave(`trilhas:v${versao}:publicadas`, filtros);
     const emCache = await this.cacheService.obter(chaveCache);
     if(emCache) return emCache;
 
@@ -96,7 +97,8 @@ export class TrilhasService {
 
   // Consulta etapas vinculadas a obras publicadas, na ordem da trilha.
   async listarEtapas(slug: string, filtros: ListarEtapasDto) {
-    const chaveCache = this.cacheService.gerarChave(`trilhas:${slug}:etapas`, filtros);
+    const versao = await this.revisao.atual();
+    const chaveCache = this.cacheService.gerarChave(`trilhas:v${versao}:${slug}:etapas`, filtros);
     const emCache = await this.cacheService.obter(chaveCache);
     if(emCache) return emCache;
 
@@ -149,7 +151,8 @@ export class TrilhasService {
     slug: string,
     filtros: ListarEtapasDto,
   ): Promise<MapaTrilhaRespostaDto> {
-    const chaveCache = this.cacheService.gerarChave(`trilhas:${slug}:mapa`, filtros);
+    const versao = await this.revisao.atual();
+    const chaveCache = this.cacheService.gerarChave(`trilhas:v${versao}:${slug}:mapa`, filtros);
     const emCache = await this.cacheService.obter<MapaTrilhaRespostaDto>(chaveCache);
     if (emCache) return emCache;
 
@@ -300,7 +303,6 @@ export class TrilhasService {
 
           // Inclui a trilha recém-criada entre as pendências de projeção.
           await this.revisao.registrarAlteracao(manager);
-          await this.cacheService.invalidarPorPadrao('trilhas:*');
           
           return criada;
         },
@@ -357,7 +359,6 @@ export class TrilhasService {
           const atualizada = await trilhasRepository.save(trilha);
 
           await this.revisao.registrarAlteracao(manager);
-          await this.cacheService.invalidarPorPadrao('trilhas:*');
 
           return atualizada;
         },
@@ -413,7 +414,6 @@ export class TrilhasService {
         // A nova revisão impede reutilizar um mapa da publicação anterior.
         await this.revisao.registrarAlteracao(manager);
 
-        await this.cacheService.invalidarPorPadrao('trilhas:*');
         return atualizada;
       },
     );
@@ -509,10 +509,6 @@ export class TrilhasService {
         });
         const criada = await etapasRepository.save(novaEtapa);
         await this.revisao.registrarAlteracao(manager);
-        
-        await this.cacheService.invalidarPorPadrao('trilhas:*');
-
-        await this.cacheService.invalidarPorPadrao('trilhas:*');
 
         return criada;
       },

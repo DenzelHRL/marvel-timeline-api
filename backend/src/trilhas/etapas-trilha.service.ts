@@ -82,8 +82,6 @@ export class EtapasTrilhaService {
         
         // Alteração, revisão e pendências são confirmadas juntas.
         await this.revisao.registrarAlteracao(manager);
-
-        await this.cacheService.invalidarPorPadrao("trilhas:*");
         return etapaAtualizada; 
       },
     );
@@ -182,8 +180,6 @@ export class EtapasTrilhaService {
         await this.revisao.registrarAlteracao(manager);
       },
     );
-
-    await this.cacheService.invalidarPorPadrao("trilhas:*");
   }
 
   // Reordena todas as etapas sem perder vínculos ou repetir posições.
@@ -290,8 +286,7 @@ export class EtapasTrilhaService {
             posicao: 'ASC',
           },
         });
-          
-        await this.cacheService.invalidarPorPadrao("trilhas:*");
+      
         return etapasOrdenadas;
       },
     );

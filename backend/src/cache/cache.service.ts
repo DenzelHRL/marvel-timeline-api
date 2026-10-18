@@ -93,17 +93,24 @@ export class CacheService implements OnModuleInit, OnModuleDestroy{
         }
 
         try{
-            const stream = this.redisClient.scanStream({
-                match: padrao,
-                count: 100,
-            });
+            await new Promise<void>((resolve, reject) =>{
+                const stream = this.redisClient!.scanStream({
+                    match: padrao,
+                    count: 100,
+                });
 
-            stream.on("data", async (chaves: string[]) => {
-                if(chaves.length > 0){
-                    const pipeline = this.redisClient?.pipeline();
-                    chaves.forEach((k) => pipeline?.del(k));
-                    await pipeline?.exec();
-                }
+                stream.on("data", async (chaves: string[]) => {
+                    if(chaves.length > 0){
+                        stream.pause();
+                        const pipeline = this.redisClient?.pipeline();
+                        chaves.forEach((k) => pipeline?.del(k));
+                        await pipeline?.exec();
+                        stream.resume();
+                    }
+                });
+
+                stream.on('end', () => resolve());
+                stream.on('error', (err) => reject(err));
             });
         }catch(err: unknown){
             this.logger.warn(`Erro ao invalidar padrão "${padrao}": ${(err as Error).message}`);
