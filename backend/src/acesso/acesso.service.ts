@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -10,6 +11,7 @@ import {
   EntityManager,
   FindOptionsWhere,
   ILike,
+  QueryFailedError,
   Repository,
 } from 'typeorm';
 import {
@@ -21,6 +23,7 @@ import {
 } from '../database/entities';
 import {
   AtribuirPerfilRespostaDto,
+  EditarUsuarioAdminDto,
   ListarPerfisDto,
   ListarPerfisRespostaDto,
   ListarPermissoesDto,
@@ -111,6 +114,48 @@ export class AcessoService {
     });
 
     return usuario ? this.toResposta(usuario) : null;
+  }
+
+  async editarUsuario(
+    id: string,
+    dados: EditarUsuarioAdminDto,
+  ): Promise<UsuarioAdminRespostaDto> {
+    const atualizacoes: Partial<Usuario> = {};
+    if (dados.nome !== undefined) {
+      atualizacoes.nome = dados.nome.trim();
+    }
+    if (dados.email !== undefined) {
+      atualizacoes.email = dados.email.trim().toLowerCase();
+    }
+
+    if (Object.keys(atualizacoes).length === 0) {
+      throw new BadRequestException(
+        'Informe ao menos o nome ou o e-mail para atualizar.',
+      );
+    }
+
+    try {
+      const resultado = await this.usuariosRepository.update(
+        { id },
+        atualizacoes,
+      );
+      if (resultado.affected === 0) {
+        throw new NotFoundException('Usuário não encontrado.');
+      }
+    } catch (error) {
+      if (this.isEmailUniqueViolation(error)) {
+        throw new ConflictException('Já existe uma conta com esse e-mail.');
+      }
+      throw error;
+    }
+
+    const usuarioAtualizado = await this.buscarUsuarioPorId(id);
+    if (!usuarioAtualizado) {
+      throw new InternalServerErrorException(
+        'Não foi possível recuperar a conta após a atualização.',
+      );
+    }
+    return usuarioAtualizado;
   }
 
   async buscarPerfilPorId(id: string): Promise<PerfilAdminRespostaDto | null> {
@@ -503,6 +548,22 @@ export class AcessoService {
   private ultimoAdministradorException(): ConflictException {
     return new ConflictException(
       'A operação deixaria o sistema sem um administrador ativo capaz de recuperar o acesso.',
+    );
+  }
+
+  private isEmailUniqueViolation(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+
+    const driverError: unknown = error.driverError;
+    return (
+      typeof driverError === 'object' &&
+      driverError !== null &&
+      'code' in driverError &&
+      driverError.code === '23505' &&
+      'constraint' in driverError &&
+      driverError.constraint === 'uq_usuarios_email_ci'
     );
   }
 

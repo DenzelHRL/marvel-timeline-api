@@ -1,4 +1,4 @@
-backend/node_modules/
+*node_modules/
 backend/dist/
 backend/coverage/
 backend/.env
@@ -6,3 +6,5 @@ backend/*.tsbuildinfo
 backend/logs/
 /logs/
 *.log
+
+*Exemplo-Codex-obras
