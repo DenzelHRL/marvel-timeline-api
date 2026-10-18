@@ -15,8 +15,7 @@ import { ProgressoModule } from './progresso/progresso.module';
 import { CacheModule } from './cache/cache.module';
 
 @Module({
-  imports: [
-    
+  imports: [   
     TypeOrmModule.forRoot(databaseOptions()),
     CacheModule,
     PersonagensModule,
