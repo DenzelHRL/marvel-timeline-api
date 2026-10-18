@@ -85,6 +85,7 @@ export class UsuariosService{
             }
 
             usuario.nome = nomeTemp;
+            usuario.nome = dto.nome.trim();
         }
 
         try {

@@ -12,6 +12,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -29,6 +30,7 @@ import {
 import { Authorize } from '../acesso/autorizacao.decorators';
 import { TrilhasService } from './trilhas.service';
 import { EtapasTrilhaService } from './etapas-trilha.service';
+import { ReordenarEtapasCommand } from './commands/reordenar-etapas.command';
 import { CriarTrilhaDto } from './dto/criar-trilha.dto';
 import { AtualizarTrilhaDto } from './dto/atualizar-trilha.dto';
 import { AlterarStatusTrilhaDto } from './dto/alterar-status-trilha.dto';
@@ -53,8 +55,10 @@ export class TrilhasController {
   constructor(
     private readonly trilhasService: TrilhasService,
     private readonly etapasTrilhaService: EtapasTrilhaService,
+    private readonly commandBus: CommandBus,
   ) {}
 
+  // Consulta pública de trilhas, com filtros e paginação.
   @Get()
   @ApiOperation({
     summary: 'Listar trilhas publicadas',
@@ -73,6 +77,7 @@ export class TrilhasController {
     return this.trilhasService.listarPublicadas(filtros);
   }
 
+  // Localiza uma trilha publicada pelo slug exato.
   @Get(':slug')
   @ApiOperation({
     summary: 'Buscar uma trilha publicada pelo slug',
@@ -93,6 +98,7 @@ export class TrilhasController {
     return this.trilhasService.buscarPublicadaPorSlug(slug);
   }
 
+  // Consulta etapas públicas na ordem definida pela trilha.
   @Get(':slug/etapas')
   @ApiOperation({
     summary: 'Listar etapas de uma trilha publicada',
@@ -120,6 +126,7 @@ export class TrilhasController {
     return this.trilhasService.listarEtapas(slug, filtros);
   }
 
+  // Criação administrativa com status inicial RASCUNHO.
   @Post()
   @Authorize({
     roles: ['ADMIN'],
@@ -151,6 +158,7 @@ export class TrilhasController {
     return this.trilhasService.criar(dto);
   }
 
+  // Edita os metadados sem alterar status ou etapas.
   @Patch(':id')
   @Authorize({
     roles: ['ADMIN'],
@@ -193,6 +201,7 @@ export class TrilhasController {
     return this.trilhasService.atualizar(id, dto);
   }
 
+  // Altera a publicação, respeitando as regras do domínio.
   @Patch(':id/status')
   @Authorize({
     roles: ['ADMIN'],
@@ -233,6 +242,7 @@ export class TrilhasController {
     return this.trilhasService.alterarStatus(id, dto);
   }
 
+  // Vincula uma obra e ajusta as posições seguintes.
   @Post(':id/etapas')
   @Authorize({
     roles: ['ADMIN'],
@@ -276,6 +286,7 @@ export class TrilhasController {
     return this.trilhasService.criarEtapa(id, dto);
   }
 
+  // Edita prioridade e justificativa de uma etapa.
   @Patch(':id/etapas/:etapaId')
   @Authorize({
     roles: ['ADMIN'],
@@ -319,9 +330,14 @@ export class TrilhasController {
     @Param('etapaId', ParseUUIDPipe) etapaId: string,
     @Body() dto: AtualizarEtapaDto,
   ) {
-    return this.etapasTrilhaService.atualizar(id, etapaId, dto);
+    return this.etapasTrilhaService.atualizar(
+      id,
+      etapaId,
+      dto,
+    );
   }
 
+  // Remove o vínculo e mantém posições consecutivas.
   @Delete(':id/etapas/:etapaId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Authorize({
@@ -368,6 +384,7 @@ export class TrilhasController {
     return this.etapasTrilhaService.remover(id, etapaId);
   }
 
+  // Encaminha a reordenação ao CommandBus após validar o acesso.
   @Put(':id/ordem')
   @Authorize({
     roles: ['ADMIN'],
@@ -406,7 +423,10 @@ export class TrilhasController {
   reordenarEtapas(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReordenarEtapasDto,
-  ) {
-    return this.etapasTrilhaService.reordenar(id, dto);
+  ): Promise<EtapaRespostaDto[]> {
+    return this.commandBus.execute<
+      ReordenarEtapasCommand,
+      EtapaRespostaDto[]
+    >(new ReordenarEtapasCommand(id, dto));
   }
 }
