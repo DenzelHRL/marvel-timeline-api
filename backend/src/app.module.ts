@@ -5,7 +5,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { databaseOptions } from './database/data-source';
+import { PersonagensModule } from './personagens/personagens.module';
 import { ComentariosModule } from './comentarios/comentarios.module';
+import { ParticipacaoModule } from './participacoes/participacao.module';
+import { AcontecimentosModule } from './acontecimentos/acontecimentos.module';
 import { TrilhasModule } from './trilhas/trilhas.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ProgressoModule } from './progresso/progresso.module';
@@ -14,6 +17,9 @@ import { FilasModule } from './filas/filas.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot(databaseOptions()),
+    PersonagensModule,
+    ParticipacaoModule,
+    AcontecimentosModule,
     AuthModule,
     AcessoModule,
     ComentariosModule,

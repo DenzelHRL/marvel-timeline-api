@@ -75,7 +75,7 @@ describe('filas do mapa', () => {
     const dataSource = {
       transaction: jest.fn(
         async (callback: (manager: { query: jest.Mock }) => Promise<unknown>) =>
-          callback({ query: jest.fn().mockResolvedValueOnce([evento]) }),
+          callback({ query: jest.fn().mockResolvedValueOnce([[evento], 1]) }),
       ),
       query: jest.fn().mockResolvedValue([]),
     };
@@ -103,7 +103,7 @@ describe('filas do mapa', () => {
     const dataSource = {
       transaction: jest.fn(
         async (callback: (manager: { query: jest.Mock }) => Promise<unknown>) =>
-          callback({ query: jest.fn().mockResolvedValueOnce([evento]) }),
+          callback({ query: jest.fn().mockResolvedValueOnce([[evento], 1]) }),
       ),
       query: jest.fn().mockResolvedValue([]),
     };

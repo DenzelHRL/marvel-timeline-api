@@ -41,8 +41,8 @@ export class OutboxRelayService implements OnModuleInit, OnModuleDestroy {
 
   async processarLote(): Promise<number> {
     const claimToken = randomUUID();
-    const pendencias = await this.dataSource.transaction((manager) =>
-      manager.query<ReconstruirMapaJob[]>(
+    const [pendencias] = await this.dataSource.transaction((manager) =>
+      manager.query<[ReconstruirMapaJob[], number]>(
         `
           WITH selecionados AS (
             SELECT event_id
