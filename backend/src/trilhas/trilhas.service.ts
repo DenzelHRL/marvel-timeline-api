@@ -355,7 +355,9 @@ export class TrilhasService {
           }
 
           const atualizada = await trilhasRepository.save(trilha);
+
           await this.revisao.registrarAlteracao(manager);
+          await this.cacheService.invalidarPorPadrao('trilhas:*');
 
           return atualizada;
         },
@@ -412,7 +414,6 @@ export class TrilhasService {
         await this.revisao.registrarAlteracao(manager);
 
         await this.cacheService.invalidarPorPadrao('trilhas:*');
-
         return atualizada;
       },
     );
@@ -506,9 +507,10 @@ export class TrilhasService {
           prioridade: dto.prioridade,
           justificativa: dto.justificativa ?? null,
         });
-
         const criada = await etapasRepository.save(novaEtapa);
         await this.revisao.registrarAlteracao(manager);
+        
+        await this.cacheService.invalidarPorPadrao('trilhas:*');
 
         await this.cacheService.invalidarPorPadrao('trilhas:*');
 
