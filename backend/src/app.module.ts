@@ -9,6 +9,7 @@ import { ComentariosModule } from './comentarios/comentarios.module';
 import { TrilhasModule } from './trilhas/trilhas.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ProgressoModule } from './progresso/progresso.module';
+import { FilasModule } from './filas/filas.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ProgressoModule } from './progresso/progresso.module';
     TrilhasModule,
     UsuariosModule,
     ProgressoModule,
+    FilasModule.register(),
   ],
   controllers: [AppController],
   providers: [AppService],
