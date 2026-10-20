@@ -5,6 +5,14 @@ carregarEnv();
 
 export const PREFIXO_FILAS = 'mt-filas';
 
+function estrategiaReconexao(maxRetriesPerRequest: number | null) {
+  if (maxRetriesPerRequest !== null) {
+    return false;
+  }
+
+  return (tentativas: number) => Math.min(tentativas * 250, 1_000);
+}
+
 export function opcoesConexaoRedis(
   maxRetriesPerRequest: number | null,
 ): ReturnType<typeof createClient> {
@@ -14,10 +22,7 @@ export function opcoesConexaoRedis(
       host: process.env.REDIS_HOST ?? 'localhost',
       port: Number(process.env.REDIS_PORT ?? 6379),
       connectTimeout: 1_000,
-      reconnectStrategy:
-        maxRetriesPerRequest === null
-          ? (tentativas: number) => Math.min(tentativas * 250, 1_000)
-          : false,
+      reconnectStrategy: estrategiaReconexao(maxRetriesPerRequest),
     },
   });
 

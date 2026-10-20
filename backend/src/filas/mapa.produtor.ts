@@ -7,6 +7,13 @@ import {
   ReconstruirMapaJob,
 } from '../bonus/contratos';
 
+const OPCOES_JOB = {
+  attempts: 5,
+  backoff: { type: 'exponential' as const, delay: 1_000 },
+  removeOnComplete: { count: 1_000 },
+  removeOnFail: { count: 1_000 },
+};
+
 @Injectable()
 export class MapaProdutor {
   private readonly logger = new Logger(MapaProdutor.name);
@@ -19,10 +26,7 @@ export class MapaProdutor {
   async enfileirar(evento: ReconstruirMapaJob): Promise<void> {
     await this.fila.add(JOB_RECONSTRUIR_MAPA, evento, {
       jobId: evento.eventId,
-      attempts: 5,
-      backoff: { type: 'exponential', delay: 1_000 },
-      removeOnComplete: { count: 1_000 },
-      removeOnFail: { count: 1_000 },
+      ...OPCOES_JOB,
     });
 
     this.logger.log(

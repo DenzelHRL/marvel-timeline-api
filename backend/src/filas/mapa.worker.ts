@@ -16,6 +16,18 @@ import { opcoesConexaoRedis, PREFIXO_FILAS } from './redis-filas.config';
 const UUID_CANONICO = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const VERSAO_DECIMAL_POSITIVA = /^[1-9][0-9]*$/;
 
+function payloadValido(evento: ReconstruirMapaJob | undefined): evento is ReconstruirMapaJob {
+  return Boolean(
+    evento &&
+      typeof evento.eventId === 'string' &&
+      typeof evento.trilhaId === 'string' &&
+      typeof evento.versao === 'string' &&
+      UUID_CANONICO.test(evento.eventId) &&
+      UUID_CANONICO.test(evento.trilhaId) &&
+      VERSAO_DECIMAL_POSITIVA.test(evento.versao),
+  );
+}
+
 @Injectable()
 @Processor(FILA_MAPA, {
   connection: opcoesConexaoRedis(null),
@@ -35,15 +47,7 @@ export class MapaWorker extends WorkerHost {
     }
 
     const evento = job.data;
-    if (
-      !evento ||
-      typeof evento.eventId !== 'string' ||
-      typeof evento.trilhaId !== 'string' ||
-      typeof evento.versao !== 'string' ||
-      !UUID_CANONICO.test(evento.eventId) ||
-      !UUID_CANONICO.test(evento.trilhaId) ||
-      !VERSAO_DECIMAL_POSITIVA.test(evento.versao)
-    ) {
+    if (!payloadValido(evento)) {
       throw new UnrecoverableError('Payload inválido para reconstrução do mapa.');
     }
 

@@ -15,6 +15,33 @@ const INTERVALO_POLL_MS = 5_000;
 const PRAZO_ENQUEUE_MS = 5_000;
 const DURACAO_CLAIM_SEGUNDOS = 300;
 
+const CONSULTAR_PENDENCIAS = `
+  WITH selecionados AS (
+    SELECT event_id FROM mapa_outbox
+    WHERE enfileirado_em IS NULL
+      AND (relay_claim_expira_em IS NULL OR relay_claim_expira_em <= now())
+    ORDER BY criado_em ASC, event_id ASC
+    LIMIT $1 FOR UPDATE SKIP LOCKED
+  )
+  UPDATE mapa_outbox AS evento
+  SET relay_claim_token = $2::uuid,
+      relay_claim_expira_em = now() + ($3 * interval '1 second')
+  FROM selecionados
+  WHERE evento.event_id = selecionados.event_id
+  RETURNING evento.event_id::text AS "eventId",
+    evento.trilha_id::text AS "trilhaId", evento.versao::text AS versao
+`;
+const MARCAR_ENFILEIRADO = `
+  UPDATE mapa_outbox SET enfileirado_em = now(), relay_claim_token = NULL,
+    relay_claim_expira_em = NULL
+  WHERE event_id = $1::uuid AND relay_claim_token = $2::uuid
+    AND enfileirado_em IS NULL
+`;
+const LIBERAR_CLAIMS = `
+  UPDATE mapa_outbox SET relay_claim_token = NULL, relay_claim_expira_em = NULL
+  WHERE relay_claim_token = $1::uuid AND enfileirado_em IS NULL
+`;
+
 @Injectable()
 export class OutboxRelayService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OutboxRelayService.name);
@@ -43,29 +70,7 @@ export class OutboxRelayService implements OnModuleInit, OnModuleDestroy {
     const claimToken = randomUUID();
     const [pendencias] = await this.dataSource.transaction((manager) =>
       manager.query<[ReconstruirMapaJob[], number]>(
-        `
-          WITH selecionados AS (
-            SELECT event_id
-            FROM mapa_outbox
-            WHERE enfileirado_em IS NULL
-              AND (
-                relay_claim_expira_em IS NULL
-                OR relay_claim_expira_em <= now()
-              )
-            ORDER BY criado_em ASC, event_id ASC
-            LIMIT $1
-            FOR UPDATE SKIP LOCKED
-          )
-          UPDATE mapa_outbox AS evento
-          SET relay_claim_token = $2::uuid,
-              relay_claim_expira_em = now() + ($3 * interval '1 second')
-          FROM selecionados
-          WHERE evento.event_id = selecionados.event_id
-          RETURNING
-            evento.event_id::text AS "eventId",
-            evento.trilha_id::text AS "trilhaId",
-            evento.versao::text AS versao
-        `,
+        CONSULTAR_PENDENCIAS,
         [TAMANHO_LOTE, claimToken, DURACAO_CLAIM_SEGUNDOS],
       ),
     );
@@ -75,18 +80,7 @@ export class OutboxRelayService implements OnModuleInit, OnModuleDestroy {
       for (const evento of pendencias) {
         try {
           await this.enfileirarComPrazo(evento);
-          await this.dataSource.query(
-            `
-              UPDATE mapa_outbox
-              SET enfileirado_em = now(),
-                  relay_claim_token = NULL,
-                  relay_claim_expira_em = NULL
-              WHERE event_id = $1::uuid
-                AND relay_claim_token = $2::uuid
-                AND enfileirado_em IS NULL
-            `,
-            [evento.eventId, claimToken],
-          );
+          await this.dataSource.query(MARCAR_ENFILEIRADO, [evento.eventId, claimToken]);
           enfileirados += 1;
         } catch (erro) {
           this.logger.warn(
@@ -96,16 +90,7 @@ export class OutboxRelayService implements OnModuleInit, OnModuleDestroy {
         }
       }
     } finally {
-      await this.dataSource.query(
-        `
-          UPDATE mapa_outbox
-          SET relay_claim_token = NULL,
-              relay_claim_expira_em = NULL
-          WHERE relay_claim_token = $1::uuid
-            AND enfileirado_em IS NULL
-        `,
-        [claimToken],
-      );
+      await this.dataSource.query(LIBERAR_CLAIMS, [claimToken]);
     }
 
     return enfileirados;
