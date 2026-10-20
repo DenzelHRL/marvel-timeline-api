@@ -7,6 +7,9 @@ import { AuthModule } from './auth/auth.module';
 import { databaseOptions } from './database/data-source';
 import { PersonagensModule } from './personagens/personagens.module';
 import { TrilhasModule } from './trilhas/trilhas.module';
+import { SeriesModule } from './series/series.module';
+import { ObrasModule } from './obras/obras.module';
+import { LogsModule } from './logs/logs.module';
 import { ComentariosModule } from './comentarios/comentarios.module';
 import { ParticipacaoModule } from './participacoes/participacao.module';
 import { AcontecimentosModule } from './acontecimentos/acontecimentos.module';
@@ -17,6 +20,7 @@ import { CacheModule } from './cache/cache.module';
 @Module({
   imports: [   
     TypeOrmModule.forRoot(databaseOptions()),
+    LogsModule,
     CacheModule,
     PersonagensModule,
     ParticipacaoModule,
@@ -25,6 +29,8 @@ import { CacheModule } from './cache/cache.module';
     AcessoModule,
     ComentariosModule,
     TrilhasModule,
+    SeriesModule,
+    ObrasModule,
     UsuariosModule,
     ProgressoModule,
   ],

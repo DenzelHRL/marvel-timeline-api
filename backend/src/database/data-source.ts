@@ -9,13 +9,11 @@ import { PrepararAtualizacaoMapas1792237200000 } from './migrations/179223720000
 
 loadEnv();
 
-// Configuração compartilhada entre o Nest e os comandos do banco principal.
 export function databaseOptions(): DataSourceOptions {
   const shared = {
     type: 'postgres' as const,
     entities: ENTITIES,
 
-    // Mantém as migrations existentes e acrescenta o controle dos mapas.
     migrations: [
       InitialSchema20260929000000,
       AddComments20260929180000,
@@ -27,7 +25,6 @@ export function databaseOptions(): DataSourceOptions {
     migrationsRun: false,
   };
 
-  // Permite usar uma conexão hospedada por URL.
   if (process.env.DATABASE_URL) {
     return {
       ...shared,
@@ -44,7 +41,6 @@ export function databaseOptions(): DataSourceOptions {
     );
   }
 
-  // Conexão local com os valores individuais do arquivo .env.
   return {
     ...shared,
     host: process.env.DB_HOST ?? 'localhost',
