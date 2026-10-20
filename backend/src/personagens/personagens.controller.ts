@@ -18,9 +18,8 @@ export class PersonagensController{
 
     @Get(PERSONAGENS_ROUTES.listar)
     @ApiOperation({
-        summary: 'Listar personagens',
-        description: 'Consulta pública paginada, com filtros por parte do nome e do slug. Página padrão 1 e limite padrão 20, com máximo de 50 itens',
-    })
+        summary: 'Listar personagens', 
+        description: 'Consulta pública paginada, com filtros por parte do nome e do slug. Página padrão 1 e limite padrão 20, com máximo de 50 itens'})
     @ApiOkResponse({
         description: 'Consulta concluída com itens e metadados de paginação',
         schema: {
@@ -58,11 +57,9 @@ export class PersonagensController{
 
     @Get(PERSONAGENS_ROUTES.buscarPorSlug)
     @ApiOperation({
-        summary: 'Consultar personagem pelo slug',
-        description: 'Retorna os dados públicos de um personagem pelo identificador textual',
-    })
-    @ApiParam({ name: 'slug', description: 'Slug do personagem', type: String })
-    @ApiOkResponse({ description: 'Personagem encontrado', type: PersonagemRespostaDto })
+        summary: 'Consultar personagem pelo slug', 
+        description: 'Retorna os dados públicos de um personagem pelo identificador textual'})
+    @ApiOkResponse({ description: 'Personagem encontrado'})
     @ApiBadRequestResponse({ description: 'Slug inválido' })
     @ApiNotFoundResponse({ description: 'Personagem não encontrado' })
     async buscar(@Param(new ValidationPipe()) params: BuscarPersonagemParamsDto): Promise<PersonagemRespostaDto>{
@@ -70,14 +67,10 @@ export class PersonagensController{
     }
 
     @Post()
-    @ApiOperation({
-        summary: 'Cadastrar personagem',
-        description: 'Cria um personagem com slug único. Exige perfil ADMIN e permissão personagens:criar',
-    })
-    @ApiBearerAuth()
+    @ApiOperation({summary: 'Cadastrar personagem', description: 'Cria um personagem com slug único. Exige perfil ADMIN'})
     @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado; ou conta inativa' })
-    @ApiForbiddenResponse({ description: 'Exige perfil ADMIN e permissão personagens:criar' })
-    @ApiCreatedResponse({ description: 'Personagem criado', type: PersonagemRespostaDto })
+    @ApiForbiddenResponse({ description: 'Exige perfil ADMIN' })
+    @ApiCreatedResponse({ description: 'Personagem criado'})
     @ApiBadRequestResponse({ description: 'Dados do personagem inválidos' })
     @ApiConflictResponse({ description: 'Já existe um personagem com esse slug' })
     @ApiInternalServerErrorResponse({ description: 'Erro ao persistir o personagem' })
@@ -98,13 +91,11 @@ export class PersonagensController{
     @Patch(PERSONAGENS_ROUTES.atualizar)
     @ApiOperation({
         summary: 'Atualizar personagem',
-        description: 'Atualiza os campos enviados, preservando a unicidade do slug. Exige perfil ADMIN e permissão personagens:editar',
+        description: 'Atualiza os campos enviados, preservando a unicidade do slug. Exige perfil ADMIN',
     })
-    @ApiBearerAuth()
     @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado; ou conta inativa' })
-    @ApiForbiddenResponse({ description: 'Exige perfil ADMIN e permissão personagens:editar' })
-    @ApiParam({ name: 'id', description: 'Identificador do personagem', format: 'uuid' })
-    @ApiOkResponse({ description: 'Personagem atualizado', type: PersonagemRespostaDto })
+    @ApiForbiddenResponse({ description: 'Exige perfil ADMIN' })
+    @ApiOkResponse({ description: 'Personagem atualizado'})
     @ApiBadRequestResponse({ description: 'Identificador ou dados do personagem inválidos' })
     @ApiNotFoundResponse({ description: 'Personagem não encontrado' })
     @ApiConflictResponse({ description: 'O slug informado já está em uso' })
@@ -132,13 +123,11 @@ export class PersonagensAdminController{
     @Get('/:id')
     @ApiOperation({
         summary: 'Consultar personagem por identificador',
-        description: 'Consulta administrativa por UUID. Exige perfil ADMIN e permissão personagens:editar',
+        description: 'Consulta administrativa por UUID. Exige perfil ADMIN',
     })
-    @ApiBearerAuth()
     @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado; ou conta inativa' })
-    @ApiForbiddenResponse({ description: 'Exige perfil ADMIN e permissão personagens:editar' })
-    @ApiParam({ name: 'id', description: 'Identificador do personagem', format: 'uuid' })
-    @ApiOkResponse({ description: 'Personagem encontrado', type: PersonagemRespostaDto })
+    @ApiForbiddenResponse({ description: 'Exige perfil ADMIN' })
+    @ApiOkResponse({ description: 'Personagem encontrado'})
     @ApiBadRequestResponse({ description: 'Identificador inválido' })
     @ApiNotFoundResponse({ description: 'Personagem não encontrado' })
     @Authorize({
