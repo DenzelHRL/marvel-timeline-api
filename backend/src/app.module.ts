@@ -15,24 +15,26 @@ import { ParticipacaoModule } from './participacoes/participacao.module';
 import { AcontecimentosModule } from './acontecimentos/acontecimentos.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ProgressoModule } from './progresso/progresso.module';
+import { CacheModule } from './cache/cache.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forRoot(databaseOptions()),
+  imports: [   
+    TypeOrmModule.forRoot(databaseOptions()),
     LogsModule,
-    PersonagensModule,
-    ParticipacaoModule,
-    AcontecimentosModule,
-    AuthModule,
-    AcessoModule,
-    ComentariosModule,
-    TrilhasModule,
+    CacheModule,
+    PersonagensModule,
+    ParticipacaoModule,
+    AcontecimentosModule,
+    AuthModule,
+    AcessoModule,
+    ComentariosModule,
+    TrilhasModule,
     SeriesModule,
     ObrasModule,
-    UsuariosModule,
-    ProgressoModule,
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+    UsuariosModule,
+    ProgressoModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
