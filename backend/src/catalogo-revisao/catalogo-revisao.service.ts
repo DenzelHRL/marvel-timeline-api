@@ -18,7 +18,6 @@ export class CatalogoRevisaoService {
     private readonly dataSource: DataSource,
   ) {}
 
-  // Consulta a versão oficial dos dados no banco principal.
   async atual(
     manager: EntityManager = this.dataSource.manager,
   ): Promise<string> {
@@ -31,8 +30,6 @@ export class CatalogoRevisaoService {
     return this.extrairVersao(registros);
   }
 
-  // Deve ser chamado antes dos demais locks da alteração.
-  // Serializa as escritas que modificam os dados do mapa.
   async bloquear(manager: EntityManager): Promise<void> {
     this.exigirTransacao(manager);
 
@@ -46,8 +43,6 @@ export class CatalogoRevisaoService {
     this.extrairVersao(registros);
   }
 
-  // Após salvar o domínio, avança a revisão e registra as pendências.
-  // Tudo participa da mesma transação: um rollback desfaz as três partes.
   async registrarAlteracao(
     manager: EntityManager,
   ): Promise<string> {
@@ -66,8 +61,6 @@ export class CatalogoRevisaoService {
 
     const versao = this.extrairVersao(registros);
 
-    // Uma obra pode aparecer em várias trilhas.
-    // Neste catálogo pequeno, reconstruímos todas para cobrir dependências.
     const trilhas = await manager.query<TrilhaRegistro[]>(`
       SELECT id
       FROM trilhas
@@ -91,7 +84,6 @@ export class CatalogoRevisaoService {
     return versao;
   }
 
-  // Evita registrar uma revisão fora da transação da escrita.
   private exigirTransacao(manager: EntityManager): void {
     if (!manager.queryRunner?.isTransactionActive) {
       throw new Error(
@@ -109,7 +101,6 @@ export class CatalogoRevisaoService {
       );
     }
 
-    // Mantém bigint como string para preservar precisão e permitir JSON.
     return registros[0].versao;
   }
 }
