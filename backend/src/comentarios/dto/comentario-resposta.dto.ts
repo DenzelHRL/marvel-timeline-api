@@ -17,7 +17,7 @@ export class ComentarioItemDTO {
     texto: string;
 
     @ApiProperty({example:false})
-    contemSpoilers: boolean;
+    contemSpoiler: boolean;
 
     @ApiProperty({example:"2026-09-30T20:00:00Z"})
     criadoEm: Date;
