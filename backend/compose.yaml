@@ -13,33 +13,19 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-marvel} -d ${DB_NAME:-marvel_timeline}"]
       interval: 5s
       retries: 10
+
   redis:
     image: redis:7.4
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-    command:
-      - sh
-      - -c
-      - |
-        if [ -n "$$REDIS_PASSWORD" ]; then
-          exec redis-server --appendonly yes --maxmemory-policy noeviction --requirepass "$$REDIS_PASSWORD"
-        fi
-        exec redis-server --appendonly yes --maxmemory-policy noeviction
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - marvel_redis_data:/data
     healthcheck:
-      test:
-        - CMD-SHELL
-        - >-
-          if [ -n "$$REDIS_PASSWORD" ]; then
-            redis-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping;
-          else
-            redis-cli ping;
-          fi
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       retries: 10
+
 volumes:
   marvel_postgres_data:
   marvel_redis_data:

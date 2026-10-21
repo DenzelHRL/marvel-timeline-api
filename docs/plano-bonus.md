@@ -40,3 +40,16 @@ Referências internas: [matriz de endpoints](matriz-endpoints.md), [ambiente da 
 Material da disciplina: [repositório do professor](https://github.com/profdiegocbcastro/programacao-web/tree/main/Backend), [exemplo de logs/auditoria](https://github.com/profdiegocbcastro/programacao-web/tree/main/Backend/Logs_e_Auditoria) e aula de NestJS disponibilizada ao grupo. A transcrição consultada descreve cache em interceptor e o exemplo de CQRS com banco de escrita e banco de leitura. Ela não está versionada neste repositório; não há link interno inventado para esse arquivo.
 
 Dois bancos são a escolha deste guia para acompanhar o exemplo da aula, não uma exigência universal da definição de CQRS. Não é possível garantir pontuação apenas por adotar uma biblioteca. As fontes oficiais e sua aplicação estão em cada guia.
+
+### Evidências e Instruções de Execução do Bônus de Logs e Auditoria
+
+- **Branch da entrega:** `feat/logs-auditoria`
+- **Módulo e Serviços:**
+  - `LoggerService` (`src/logs/logger.service.ts`): Logging estruturado JSON via Winston para console e arquivos rotativos locais (`logs/app.log`, `logs/error.log` e `logs/audit.log`) com limite de 5 MB e retenção de até 5 arquivos.
+  - `RequestContextMiddleware` (`src/logs/request-context.middleware.ts`): Geração do header `X-Request-Id` (UUID), rastreamento de duração com relógio monotônico (`performance.now()`), sanitização de rotas sem query params e registro de acessos HTTP normais ou desconexões prematuras do cliente (código 499).
+  - Decorator `@Auditar` (`src/logs/auditoria.decorator.ts`) e `AuditoriaInterceptor` (`src/logs/auditoria.interceptor.ts`): Captura de ações administrativas confirmando `concluido` após sucesso no banco, `rejeitado` para validações/regras de negócio 4xx e `falhou` para erros internos 5xx.
+  - Sanitização automática de dados confidenciais (`senha`, `password`, `token`, `secret`, `authorization`, etc.).
+- **Como executar os testes:**
+  ```bash
+  npm run test -- logs.spec.ts
+  ```

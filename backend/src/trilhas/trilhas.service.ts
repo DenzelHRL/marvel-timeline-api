@@ -23,6 +23,7 @@ import { AlterarStatusTrilhaDto } from './dto/alterar-status-trilha.dto';
 import { CriarEtapaDto } from './dto/criar-etapa.dto';
 import { ListarTrilhasDto } from './dto/listar-trilhas.dto';
 import { ListarEtapasDto } from './dto/listar-etapas.dto';
+import {CacheService} from '../cache/cache.service';
 import {
   ItemMapaDto,
   MapaTrilhaRespostaDto,
@@ -36,12 +37,17 @@ export class TrilhasService {
 
     @InjectRepository(EtapaTrilha)
     private readonly etapasRepository: Repository<EtapaTrilha>,
-
+    private readonly cacheService: CacheService,
     private readonly revisao: CatalogoRevisaoService,
   ) {}
 
   // Lista somente trilhas publicadas, com filtros e paginação.
   async listarPublicadas(filtros: ListarTrilhasDto) {
+    const versao = await this.revisao.atual();
+    const chaveCache = this.cacheService.gerarChave(`trilhas:v${versao}:publicadas`, filtros);
+    const emCache = await this.cacheService.obter(chaveCache);
+    if(emCache) return emCache;
+
     const where: FindOptionsWhere<Trilha> = {
       status: 'PUBLICADA',
     };
@@ -61,13 +67,16 @@ export class TrilhasService {
       skip: (filtros.pagina - 1) * filtros.limite,
     });
 
-    return {
+    const resposta = {
       dados,
       total,
       pagina: filtros.pagina,
       limite: filtros.limite,
       totalPaginas: Math.ceil(total / filtros.limite),
-    };
+    }
+
+    await this.cacheService.salvar(chaveCache, resposta);
+    return resposta;
   }
 
   // Impede a consulta pública de trilhas em rascunho ou arquivadas.
@@ -88,6 +97,11 @@ export class TrilhasService {
 
   // Consulta etapas vinculadas a obras publicadas, na ordem da trilha.
   async listarEtapas(slug: string, filtros: ListarEtapasDto) {
+    const versao = await this.revisao.atual();
+    const chaveCache = this.cacheService.gerarChave(`trilhas:v${versao}:${slug}:etapas`, filtros);
+    const emCache = await this.cacheService.obter(chaveCache);
+    if(emCache) return emCache;
+
     const trilha = await this.buscarPublicadaPorSlug(slug);
 
     const consulta = this.etapasRepository
@@ -119,13 +133,17 @@ export class TrilhasService {
       .take(filtros.limite)
       .getManyAndCount();
 
-    return {
+
+    const resposta = {
       dados,
       total,
       pagina: filtros.pagina,
       limite: filtros.limite,
       totalPaginas: Math.ceil(total / filtros.limite),
-    };
+    }
+
+    await this.cacheService.salvar(chaveCache, resposta);
+    return resposta;
   }
 
   // Consulta original do mapa: também atende ao fallback do CQRS.
@@ -133,6 +151,11 @@ export class TrilhasService {
     slug: string,
     filtros: ListarEtapasDto,
   ): Promise<MapaTrilhaRespostaDto> {
+    const versao = await this.revisao.atual();
+    const chaveCache = this.cacheService.gerarChave(`trilhas:v${versao}:${slug}:mapa`, filtros);
+    const emCache = await this.cacheService.obter<MapaTrilhaRespostaDto>(chaveCache);
+    if (emCache) return emCache;
+
     const trilha = await this.buscarPublicadaPorSlug(slug);
 
     const consulta = this.etapasRepository
@@ -176,13 +199,17 @@ export class TrilhasService {
       .limit(filtros.limite)
       .getRawMany<ItemMapaDto>();
 
-    return {
+
+    const resposta = {
       dados,
       total,
       pagina: filtros.pagina,
       limite: filtros.limite,
       totalPaginas: Math.ceil(total / filtros.limite),
-    };
+    }
+
+    await this.cacheService.salvar(chaveCache, resposta);
+    return resposta;
   }
 
   // Encontra a obra atual e suas vizinhas públicas dentro da mesma trilha.
@@ -276,7 +303,7 @@ export class TrilhasService {
 
           // Inclui a trilha recém-criada entre as pendências de projeção.
           await this.revisao.registrarAlteracao(manager);
-
+          
           return criada;
         },
       );
@@ -330,6 +357,7 @@ export class TrilhasService {
           }
 
           const atualizada = await trilhasRepository.save(trilha);
+
           await this.revisao.registrarAlteracao(manager);
 
           return atualizada;
@@ -479,7 +507,6 @@ export class TrilhasService {
           prioridade: dto.prioridade,
           justificativa: dto.justificativa ?? null,
         });
-
         const criada = await etapasRepository.save(novaEtapa);
         await this.revisao.registrarAlteracao(manager);
 

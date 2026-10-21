@@ -28,6 +28,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Authorize } from '../acesso/autorizacao.decorators';
+import { Auditar } from '../logs/auditoria.decorator';
 import { TrilhasService } from './trilhas.service';
 import { EtapasTrilhaService } from './etapas-trilha.service';
 import { ReordenarEtapasCommand } from './commands/reordenar-etapas.command';
@@ -203,6 +204,7 @@ export class TrilhasController {
 
   // Altera a publicação, respeitando as regras do domínio.
   @Patch(':id/status')
+  @Auditar({ acao: 'trilhas.alterar_status', recurso: 'trilha', idParam: 'id' })
   @Authorize({
     roles: ['ADMIN'],
     permissions: ['trilhas:editar'],
@@ -386,6 +388,7 @@ export class TrilhasController {
 
   // Encaminha a reordenação ao CommandBus após validar o acesso.
   @Put(':id/ordem')
+  @Auditar({ acao: 'trilhas.reordenar', recurso: 'trilha', idParam: 'id' })
   @Authorize({
     roles: ['ADMIN'],
     permissions: ['etapas:editar'],
