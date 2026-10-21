@@ -19,9 +19,7 @@ export function getGoogleOAuthConfiguration():
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
   const jwtSecret = process.env.JWT_SECRET;
-  const callbackUrl =
-    process.env.GOOGLE_CALLBACK_URL?.trim() ||
-    'http://localhost:3000/auth/google/callback';
+  const callbackUrl = process.env.GOOGLE_CALLBACK_URL?.trim() || 'http://localhost:3000/auth/google/callback';
 
   if (
     !clientId ||
@@ -30,14 +28,6 @@ export function getGoogleOAuthConfiguration():
     Buffer.byteLength(jwtSecret, 'utf8') < JWT_SECRET_MIN_BYTES ||
     !URL.canParse(callbackUrl)
   ) {
-    return undefined;
-  }
-
-  const callback = new URL(callbackUrl);
-  const isLocalHttp =
-    callback.protocol === 'http:' &&
-    ['localhost', '127.0.0.1', '[::1]'].includes(callback.hostname);
-  if (callback.protocol !== 'https:' && !isLocalHttp) {
     return undefined;
   }
 

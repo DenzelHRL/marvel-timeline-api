@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Usuario, Perfil, UsuarioPerfil } from '../database/entities';
 import { AuthController } from './auth.controller';
 import { JWT_EXPIRATION_SECONDS, JWT_SECRET_MIN_BYTES } from './auth.constants';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt/jwt-auth.guard';
 import { JwtStrategy } from './jwt/jwt.strategy';
+import { GoogleAuthGuard } from './google/google-auth.guard';
 import { getGoogleOAuthConfiguration } from './google/google-oauth.config';
 import { GoogleStrategy } from './google/google.strategy';
 
@@ -18,7 +17,6 @@ const googleOAuthProviders = getGoogleOAuthConfiguration()
 @Module({
   imports: [
     PassportModule.register({ session: false }),
-    TypeOrmModule.forFeature([Usuario, Perfil, UsuarioPerfil]),
     JwtModule.registerAsync({
       useFactory: () => {
         const secret = process.env.JWT_SECRET;
@@ -43,7 +41,13 @@ const googleOAuthProviders = getGoogleOAuthConfiguration()
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, ...googleOAuthProviders],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    JwtAuthGuard,
+    GoogleAuthGuard,
+    ...googleOAuthProviders,
+  ],
   exports: [JwtModule, PassportModule, JwtAuthGuard],
 })
 export class AuthModule {}
