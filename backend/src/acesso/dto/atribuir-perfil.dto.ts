@@ -3,7 +3,7 @@ import { IsUUID } from 'class-validator';
 
 export class AtribuirPerfilDto {
   @ApiProperty({
-    description: 'UUID do perfil a atribuir.',
+    description: 'UUID do perfil.',
     format: 'uuid',
   })
   @IsUUID()
