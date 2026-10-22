@@ -2,7 +2,9 @@
 
 [Índice](../plano-bonus.md) · [Contrato compartilhado](00-base-e-integracao.md)
 
-**Primeira ação:** ler o exemplo do professor e criar um serviço Winston que escreva um objeto JSON no console. Esta é a parte com menor dependência dos demais bônus. Não precisa de Redis ou outro banco.
+**Estado atual:** logs e auditoria estão integrados na `main` pela [PR #28](https://github.com/DenzelHRL/marvel-timeline-api/pull/28). As etapas abaixo registram o plano de implementação; para a estrutura efetiva, consulte `backend/src/logs/`.
+
+**Etapa do plano inicial:** partir de um serviço Winston que registre JSON no console, sem depender de Redis ou do banco de leitura.
 
 ## 1. Escopo e referência existente
 
