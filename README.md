@@ -6,9 +6,9 @@ Este repositório contém o backend do Trabalho P1 de Programação Web. A entre
 
 ## Estado da main
 
-A API tem rotas de autenticação, administração de usuários, catálogo, comentários, progresso, trilhas e exploração. O Swagger está em `http://localhost:3000/api`. Os módulos de logs/auditoria, cache Redis e CQRS do mapa já estão integrados. A integração automática da outbox com BullMQ está em desenvolvimento na [PR #27](https://github.com/DenzelHRL/marvel-timeline-api/pull/27).
+A API tem rotas de autenticação, administração de usuários, catálogo, comentários, progresso, trilhas e exploração. O Swagger está em `http://localhost:3000/api`. Os módulos de logs/auditoria, cache Redis e CQRS do mapa estão integrados. A [PR #27](https://github.com/DenzelHRL/marvel-timeline-api/pull/27) também integrou o relay da outbox, a fila BullMQ e o worker de reconstrução do mapa.
 
-As escritas de trilhas usam o banco PostgreSQL principal. A consulta do mapa pode usar a projeção em um segundo banco quando `CQRS_MAPA_ENABLED=true` e a versão está atual; caso contrário, consulta o banco principal. Até integrar a fila, execute a reconstrução manual após alterações para atualizar a projeção.
+As escritas de trilhas usam o PostgreSQL principal e registram eventos na outbox. Com Redis e banco de leitura preparados e `FILAS_ENABLED=true`, o relay encaminha esses eventos para o worker atualizar a projeção. A consulta do mapa usa a projeção quando `CQRS_MAPA_ENABLED=true` e a versão está atual; caso contrário, consulta o banco principal. Com a fila desabilitada, use `npm run db:read:rebuild` para atualizar a projeção manualmente.
 
 ## Preparar o ambiente
 
@@ -25,14 +25,14 @@ npm run build
 npm run start:dev
 ```
 
-Para usar a projeção do CQRS, crie o banco `marvel_timeline_leitura` e siga o [guia do mapa](docs/bonus/03-cqrs-mapa.md): `npm run db:read:verify`, `npm run db:read:migrate` e `npm run db:read:rebuild`. Só então habilite `CQRS_MAPA_ENABLED=true`. Redis e fila requerem suas próprias configurações, descritas nos [guias dos bônus](docs/plano-bonus.md).
+Para usar a projeção do CQRS, crie o banco `marvel_timeline_leitura` e siga o [guia do mapa](docs/bonus/03-cqrs-mapa.md): `npm run db:read:verify`, `npm run db:read:migrate` e `npm run db:read:rebuild`. Só então habilite `CQRS_MAPA_ENABLED=true`. Para a atualização automática, inicie o Redis e habilite `FILAS_ENABLED=true` no `.env` local; veja os [guias dos bônus](docs/plano-bonus.md).
 
 A Action [Banco PostgreSQL](.github/workflows/database-ci.yml) executa instalação, build, lint, testes, migrations, seed duas vezes e verificação do esquema. Ela não comprova, sozinha, o comportamento de Redis, banco de leitura ou worker BullMQ em execução.
 
 ## Documentação
 
 - [Guia do Swagger e dos testes](docs/guia-swagger.md)
-- [Modelo do banco](docs/modelo-banco.md) e [diagrama lógico](docs/modelo-logico.svg)
+- [Guia do banco](docs/modelo-banco.md) e [diagrama lógico do esquema inicial](docs/modelo-logico.svg)
 - [Matriz de endpoints](docs/matriz-endpoints.md) — planejamento original; confira as rotas implementadas no Swagger
 - [Regras de ordenação das trilhas](docs/ordem-das-trilhas.md)
 - [Guias de logs, cache, CQRS e filas](docs/plano-bonus.md)
