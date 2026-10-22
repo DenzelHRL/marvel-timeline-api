@@ -2,7 +2,7 @@
 
 Este é o índice dos guias de implementação. Cada bônus tem um arquivo próprio, com etapas, arquivos a criar, pontos reais de integração e validações. Não há atribuição de pessoas: qualquer integrante pode assumir um bônus seguindo o respectivo guia.
 
-**Estado em 17/10/2026:** CQRS, banco de leitura, revisão/outbox e reconstrução manual integrados pela [PR #24](https://github.com/DenzelHRL/marvel-timeline-api/pull/24). Logs/auditoria, cache e filas continuam como guias de implementação. Hooks de obras e validação integrada permanecem pendentes. Exemplos propostos não substituem arquivos existentes.
+**Estado da main em 22/10/2026:** CQRS e reconstrução manual integrados pela [PR #24](https://github.com/DenzelHRL/marvel-timeline-api/pull/24); cache Redis pela [PR #26](https://github.com/DenzelHRL/marvel-timeline-api/pull/26); logs e auditoria pela [PR #28](https://github.com/DenzelHRL/marvel-timeline-api/pull/28). A integração das filas BullMQ continua em [PR #27](https://github.com/DenzelHRL/marvel-timeline-api/pull/27). A validação integrada dos bônus permanece necessária. Os exemplos dos guias não substituem os arquivos implementados.
 
 ## 1. Escolher uma parte
 

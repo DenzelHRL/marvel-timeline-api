@@ -74,7 +74,7 @@ Os scripts implementados são `db:read:verify`, `db:read:migrate` e `db:read:reb
 2. Seleciona somente os campos de `ItemMapaDto`, com obras publicadas, ordenando por posição e ID.
 3. Finaliza o snapshot do principal e faz um único upsert atômico no segundo banco. Não há transação distribuída.
 4. Grava `publicada=false` e itens vazios para trilhas não públicas ou inexistentes.
-5. Só substitui uma projeção se a versão recebida for maior; repetir a mesma versão não duplica o mapa.
+5. Rejeita snapshots de versões antigas. Reconstruir a mesma versão substitui o mapa, inclusive para corrigir uma projeção danificada, sem duplicar registros.
 
 A tabela contém `trilha_id`, `versao`, `publicada`, `itens` e `atualizado_em`, sem chave estrangeira entre bancos. Armazena a coleção completa, nunca apenas uma página.
 
@@ -86,7 +86,7 @@ A consulta verifica publicação e revisão no principal, aceita somente projeç
 - **Séries:** alterações que modifiquem obras ou sua visibilidade precisam manter as mesmas garantias e regras de dependência.
 - **Filas:** relay encaminha `mapa_outbox`; worker chama `reconstruir(trilhaId)`. Este serviço não depende de Redis/BullMQ.
 - **Cache:** usa a revisão do principal na chave; não espera a fila para invalidar dados antigos.
-- **Seeds/SQL manual:** devem participar da revisão em um procedimento de manutenção. Rebuild da mesma versão não sobrescreve o snapshot; mudar dados por fora sem avançar revisão é incompatível com essa garantia.
+- **Seeds/SQL manual:** devem participar da revisão em um procedimento de manutenção. Um rebuild da mesma versão corrige o registro de leitura, mas mudar dados oficiais por fora sem avançar revisão deixa cache e outbox inconsistentes.
 
 Até integrar as filas, a atualização das projeções é manual por `npm run db:read:rebuild`. Esse comando não marca eventos como enfileirados. Uma reconstrução não significa entrega ao Redis; pendências na outbox são esperadas.
 

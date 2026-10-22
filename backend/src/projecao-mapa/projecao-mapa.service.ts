@@ -91,7 +91,7 @@ export class ProjecaoMapaService {
     const leitura = await this.bancoLeitura.obterConexao();
 
     // Grava o mapa completo no segundo banco.
-    // Uma tarefa antiga não pode sobrescrever uma versão mais recente.
+    // Uma tarefa antiga não sobrescreve versão mais recente; a mesma versão pode ser refeita.
     await leitura.query(
       `
         INSERT INTO mapas_leitura (
@@ -107,7 +107,7 @@ export class ProjecaoMapaService {
             publicada = EXCLUDED.publicada,
             itens = EXCLUDED.itens,
             atualizado_em = EXCLUDED.atualizado_em
-        WHERE mapas_leitura.versao < EXCLUDED.versao
+        WHERE mapas_leitura.versao <= EXCLUDED.versao
       `,
       [
         trilhaId,
