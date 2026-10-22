@@ -1,5 +1,7 @@
 # Escopo inicial — Marvel Timeline API
 
+> Registro do planejamento inicial. Para o estado atual da implementação, consulte o [README](../README.md) e o Swagger da versão em execução.
+
 Entrega P1: backend NestJS + PostgreSQL/TypeORM até 16/10/2026. A **trilha curta**, iniciada em *Guerra Infinita*, será a experiência principal. A trilha longa continua cadastrada; ambas usam as mesmas obras. A interface visual fica para a entrega posterior.
 
 ## O que já existe no PR de banco
