@@ -23,6 +23,7 @@ import { AlterarStatusTrilhaDto } from './dto/alterar-status-trilha.dto';
 import { CriarEtapaDto } from './dto/criar-etapa.dto';
 import { ListarTrilhasDto } from './dto/listar-trilhas.dto';
 import { ListarEtapasDto } from './dto/listar-etapas.dto';
+import {CacheService} from '../cache/cache.service';
 import {
   ItemMapaDto,
   MapaTrilhaRespostaDto,
@@ -36,12 +37,16 @@ export class TrilhasService {
 
     @InjectRepository(EtapaTrilha)
     private readonly etapasRepository: Repository<EtapaTrilha>,
-
+    private readonly cacheService: CacheService,
     private readonly revisao: CatalogoRevisaoService,
   ) {}
 
-  // Lista somente trilhas publicadas, com filtros e paginação.
   async listarPublicadas(filtros: ListarTrilhasDto) {
+    const versao = await this.revisao.atual();
+    const chaveCache = this.cacheService.gerarChave(`trilhas:v${versao}:publicadas`, filtros);
+    const emCache = await this.cacheService.obter(chaveCache);
+    if(emCache) return emCache;
+
     const where: FindOptionsWhere<Trilha> = {
       status: 'PUBLICADA',
     };
@@ -61,16 +66,18 @@ export class TrilhasService {
       skip: (filtros.pagina - 1) * filtros.limite,
     });
 
-    return {
+    const resposta = {
       dados,
       total,
       pagina: filtros.pagina,
       limite: filtros.limite,
       totalPaginas: Math.ceil(total / filtros.limite),
-    };
+    }
+
+    await this.cacheService.salvar(chaveCache, resposta);
+    return resposta;
   }
 
-  // Impede a consulta pública de trilhas em rascunho ou arquivadas.
   async buscarPublicadaPorSlug(slug: string) {
     const trilha = await this.trilhasRepository.findOne({
       where: {
@@ -86,8 +93,12 @@ export class TrilhasService {
     return trilha;
   }
 
-  // Consulta etapas vinculadas a obras publicadas, na ordem da trilha.
   async listarEtapas(slug: string, filtros: ListarEtapasDto) {
+    const versao = await this.revisao.atual();
+    const chaveCache = this.cacheService.gerarChave(`trilhas:v${versao}:${slug}:etapas`, filtros);
+    const emCache = await this.cacheService.obter(chaveCache);
+    if(emCache) return emCache;
+
     const trilha = await this.buscarPublicadaPorSlug(slug);
 
     const consulta = this.etapasRepository
@@ -119,20 +130,27 @@ export class TrilhasService {
       .take(filtros.limite)
       .getManyAndCount();
 
-    return {
+    const resposta = {
       dados,
       total,
       pagina: filtros.pagina,
       limite: filtros.limite,
       totalPaginas: Math.ceil(total / filtros.limite),
-    };
+    }
+
+    await this.cacheService.salvar(chaveCache, resposta);
+    return resposta;
   }
 
-  // Consulta original do mapa: também atende ao fallback do CQRS.
   async consultarMapa(
     slug: string,
     filtros: ListarEtapasDto,
   ): Promise<MapaTrilhaRespostaDto> {
+    const versao = await this.revisao.atual();
+    const chaveCache = this.cacheService.gerarChave(`trilhas:v${versao}:${slug}:mapa`, filtros);
+    const emCache = await this.cacheService.obter<MapaTrilhaRespostaDto>(chaveCache);
+    if (emCache) return emCache;
+
     const trilha = await this.buscarPublicadaPorSlug(slug);
 
     const consulta = this.etapasRepository
@@ -176,16 +194,18 @@ export class TrilhasService {
       .limit(filtros.limite)
       .getRawMany<ItemMapaDto>();
 
-    return {
+    const resposta = {
       dados,
       total,
       pagina: filtros.pagina,
       limite: filtros.limite,
       totalPaginas: Math.ceil(total / filtros.limite),
-    };
+    }
+
+    await this.cacheService.salvar(chaveCache, resposta);
+    return resposta;
   }
 
-  // Encontra a obra atual e suas vizinhas públicas dentro da mesma trilha.
   async consultarObraNaTrilha(slug: string, obraSlug: string) {
     const trilha = await this.buscarPublicadaPorSlug(slug);
 
@@ -247,7 +267,6 @@ export class TrilhasService {
     };
   }
 
-  // Cria a trilha em rascunho e registra sua entrada no catálogo.
   async criar(dto: CriarTrilhaDto): Promise<Trilha> {
     try {
       return await this.trilhasRepository.manager.transaction(
@@ -285,7 +304,6 @@ export class TrilhasService {
     }
   }
 
-  // Edita metadados sem alterar status ou etapas.
   async atualizar(
     id: string,
     dto: AtualizarTrilhaDto,
@@ -330,6 +348,7 @@ export class TrilhasService {
           }
 
           const atualizada = await trilhasRepository.save(trilha);
+
           await this.revisao.registrarAlteracao(manager);
 
           return atualizada;
@@ -340,7 +359,6 @@ export class TrilhasService {
     }
   }
 
-  // Publica, arquiva ou retorna a trilha para rascunho.
   async alterarStatus(
     id: string,
     dto: AlterarStatusTrilhaDto,
@@ -391,7 +409,6 @@ export class TrilhasService {
     );
   }
 
-  // Inclui uma obra e desloca as etapas seguintes sem repetir posições.
   async criarEtapa(
     trilhaId: string,
     dto: CriarEtapaDto,
@@ -479,7 +496,6 @@ export class TrilhasService {
           prioridade: dto.prioridade,
           justificativa: dto.justificativa ?? null,
         });
-
         const criada = await etapasRepository.save(novaEtapa);
         await this.revisao.registrarAlteracao(manager);
 
@@ -488,7 +504,6 @@ export class TrilhasService {
     );
   }
 
-  // Traduz a violação de unicidade sem ocultar outros erros.
   private tratarErroSlug(error: unknown): never {
     if (error instanceof QueryFailedError) {
       const driverError = error.driverError as {

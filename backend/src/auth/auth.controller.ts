@@ -22,10 +22,9 @@ import {
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { CadastroDto } from './dto/cadastro.dto';
-import { CadastroRespostaDto } from './dto/cadastro-resposta.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { LoginRespostaDto } from './dto/login-resposta.dto';
+import type { CadastroResposta, LoginResposta } from './auth.types';
 import { GoogleAuthGuard } from './google/google-auth.guard';
 import type { GoogleAuthProfile } from './google/google.strategy';
 
@@ -38,11 +37,10 @@ export class AuthController {
   @ApiOperation({
     summary: 'Cadastrar uma conta local',
     description:
-      'Cria uma conta ativa com o perfil LEITOR. A senha armazenada como hash.',
+      'Cria uma conta ativa com o perfil LEITOR.',
   })
   @ApiCreatedResponse({
     description: 'Conta criada.',
-    type: CadastroRespostaDto,
   })
   @ApiBadRequestResponse({
     description: 'Nome, e-mail ou senha inválidos.',
@@ -51,9 +49,9 @@ export class AuthController {
     description: 'Já existe uma conta com esse e-mail.',
   })
   @ApiUnprocessableEntityResponse({
-    description: 'A senha excede o limite de 72 bytes em UTF-8 do bcrypt.',
+    description: 'A senha excedeu o limite.',
   })
-  cadastrar(@Body() dados: CadastroDto): Promise<CadastroRespostaDto> {
+  cadastrar(@Body() dados: CadastroDto): Promise<CadastroResposta> {
     return this.authService.cadastrar(dados);
   }
 
@@ -66,7 +64,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     description: 'Autenticação concluída.',
-    type: LoginRespostaDto,
   })
   @ApiBadRequestResponse({
     description: 'E-mail ou senha em formato inválido.',
@@ -75,7 +72,7 @@ export class AuthController {
     description:
       'E-mail ou senha incorretos, conta inativa ou conta sem senha local.',
   })
-  login(@Body() dados: LoginDto): Promise<LoginRespostaDto> {
+  login(@Body() dados: LoginDto): Promise<LoginResposta> {
     return this.authService.login(dados);
   }
 
@@ -84,7 +81,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Iniciar autenticação com Google',
     description:
-      'Copie http://localhost:3000/auth/google em uma nova guia do navegador, o Swagger não pode redirecionar para a autorização do Google. Escolha sua conta de google que eu tinha pedido antes (Corretor, passe o email pelo chat do teams de um dos membros que adicionamos você no OAuth). O endpoint de callback é o que vai aparecer depois de escolher a conta, junto dele o token. Cole esse token no authorize e você estará logado com sua',
+      'Copie http://localhost:3000/auth/google em uma nova guia do navegador. Escolha sua conta de google que eu tinha pedido antes (Corretor, passe o email pelo chat do teams de um dos membros que adicionamos você no OAuth). O endpoint de callback é o que vai aparecer depois de escolher a conta, junto dele o token. Cole esse token no authorize e você estará logado com sua conta',
   })
   @ApiFoundResponse({
     description: 'Redirecionamento para a autorização do Google.',
@@ -103,7 +100,6 @@ export class AuthController {
   })
   @ApiOkResponse({
     description: 'Autenticação Google concluída.',
-    type: LoginRespostaDto,
   })
   @ApiConflictResponse({
     description:
@@ -117,7 +113,7 @@ export class AuthController {
   })
   concluirLoginGoogle(
     @Req() request: Request & { user: GoogleAuthProfile },
-  ): Promise<LoginRespostaDto> {
+  ): Promise<LoginResposta> {
     return this.authService.loginGoogle(request.user);
   }
 }

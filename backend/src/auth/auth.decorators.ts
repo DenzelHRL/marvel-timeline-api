@@ -4,12 +4,8 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { AuthenticatedUser } from './auth.types';
+import type { AuthenticatedRequest, AuthenticatedUser } from './auth.types';
 import { JwtAuthGuard } from './jwt/jwt-auth.guard';
-
-interface AuthenticatedRequest {
-  user?: AuthenticatedUser;
-}
 
 export function Authenticated(): MethodDecorator & ClassDecorator {
   return UseGuards(JwtAuthGuard);

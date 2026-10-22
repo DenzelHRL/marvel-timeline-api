@@ -22,7 +22,6 @@ export class EtapasTrilhaService {
     private readonly revisao: CatalogoRevisaoService,
   ) {}
 
-  // Edita prioridade e justificativa sem modificar a ordem.
   async atualizar(
     trilhaId: string,
     etapaId: string,
@@ -75,18 +74,15 @@ export class EtapasTrilhaService {
         if (dto.justificativa !== undefined) {
           etapa.justificativa = dto.justificativa;
         }
-
-        const atualizada = await etapasRepository.save(etapa);
+        const etapaAtualizada = await etapasRepository.save(etapa);
 
         // Alteração, revisão e pendências são confirmadas juntas.
         await this.revisao.registrarAlteracao(manager);
-
-        return atualizada;
+        return etapaAtualizada;
       },
     );
   }
 
-  // Remove uma etapa e fecha o espaço deixado na sequência.
   async remover(
     trilhaId: string,
     etapaId: string,
@@ -181,7 +177,6 @@ export class EtapasTrilhaService {
     );
   }
 
-  // Reordena todas as etapas sem perder vínculos ou repetir posições.
   async reordenar(
     trilhaId: string,
     dto: ReordenarEtapasDto,
@@ -279,12 +274,14 @@ export class EtapasTrilhaService {
 
         await this.revisao.registrarAlteracao(manager);
 
-        return etapasRepository.find({
+        const etapasOrdenadas = await etapasRepository.find({
           where: { trilhaId },
           order: {
             posicao: 'ASC',
           },
         });
+
+        return etapasOrdenadas;
       },
     );
   }

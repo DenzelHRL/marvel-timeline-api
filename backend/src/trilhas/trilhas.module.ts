@@ -18,7 +18,6 @@ import { ReordenarEtapasHandler } from './commands/reordenar-etapas.handler';
 
 @Module({
   imports: [
-    // Buses para encaminhar comandos e consultas.
     CqrsModule.forRoot(),
     TypeOrmModule.forFeature([Trilha, EtapaTrilha]),
     AuthModule,
@@ -34,10 +33,8 @@ import { ReordenarEtapasHandler } from './commands/reordenar-etapas.handler';
     TrilhasService,
     EtapasTrilhaService,
 
-    // Lado de leitura: consulta do mapa.
     ConsultarMapaHandler,
 
-    // Lado de escrita: alteração da ordem das etapas.
     ReordenarEtapasHandler,
   ],
 })

@@ -2,7 +2,7 @@
 
 Este é o índice dos guias de implementação. Cada bônus tem um arquivo próprio, com etapas, arquivos a criar, pontos reais de integração e validações. Não há atribuição de pessoas: qualquer integrante pode assumir um bônus seguindo o respectivo guia.
 
-**Estado em 17/10/2026:** CQRS, banco de leitura, revisão/outbox e reconstrução manual integrados pela [PR #24](https://github.com/DenzelHRL/marvel-timeline-api/pull/24). Logs/auditoria, cache e filas continuam como guias de implementação. Hooks de obras e validação integrada permanecem pendentes. Exemplos propostos não substituem arquivos existentes.
+**Estado da main em 22/10/2026:** CQRS e reconstrução manual integrados pela [PR #24](https://github.com/DenzelHRL/marvel-timeline-api/pull/24); cache Redis pela [PR #26](https://github.com/DenzelHRL/marvel-timeline-api/pull/26); logs e auditoria pela [PR #28](https://github.com/DenzelHRL/marvel-timeline-api/pull/28). A integração das filas BullMQ continua em [PR #27](https://github.com/DenzelHRL/marvel-timeline-api/pull/27). A validação integrada dos bônus permanece necessária. Os exemplos dos guias não substituem os arquivos implementados.
 
 ## 1. Escolher uma parte
 
@@ -40,3 +40,16 @@ Referências internas: [matriz de endpoints](matriz-endpoints.md), [ambiente da 
 Material da disciplina: [repositório do professor](https://github.com/profdiegocbcastro/programacao-web/tree/main/Backend), [exemplo de logs/auditoria](https://github.com/profdiegocbcastro/programacao-web/tree/main/Backend/Logs_e_Auditoria) e aula de NestJS disponibilizada ao grupo. A transcrição consultada descreve cache em interceptor e o exemplo de CQRS com banco de escrita e banco de leitura. Ela não está versionada neste repositório; não há link interno inventado para esse arquivo.
 
 Dois bancos são a escolha deste guia para acompanhar o exemplo da aula, não uma exigência universal da definição de CQRS. Não é possível garantir pontuação apenas por adotar uma biblioteca. As fontes oficiais e sua aplicação estão em cada guia.
+
+### Evidências e Instruções de Execução do Bônus de Logs e Auditoria
+
+- **Branch da entrega:** `feat/logs-auditoria`
+- **Módulo e Serviços:**
+  - `LoggerService` (`src/logs/logger.service.ts`): Logging estruturado JSON via Winston para console e arquivos rotativos locais (`logs/app.log`, `logs/error.log` e `logs/audit.log`) com limite de 5 MB e retenção de até 5 arquivos.
+  - `RequestContextMiddleware` (`src/logs/request-context.middleware.ts`): Geração do header `X-Request-Id` (UUID), rastreamento de duração com relógio monotônico (`performance.now()`), sanitização de rotas sem query params e registro de acessos HTTP normais ou desconexões prematuras do cliente (código 499).
+  - Decorator `@Auditar` (`src/logs/auditoria.decorator.ts`) e `AuditoriaInterceptor` (`src/logs/auditoria.interceptor.ts`): Captura de ações administrativas confirmando `concluido` após sucesso no banco, `rejeitado` para validações/regras de negócio 4xx e `falhou` para erros internos 5xx.
+  - Sanitização automática de dados confidenciais (`senha`, `password`, `token`, `secret`, `authorization`, etc.).
+- **Como executar os testes:**
+  ```bash
+  npm run test -- logs.spec.ts
+  ```

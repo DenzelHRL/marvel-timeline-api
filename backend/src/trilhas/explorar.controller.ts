@@ -22,7 +22,6 @@ export class ExplorarController {
     private readonly queryBus: QueryBus,
   ) {}
 
-  // Consulta pública do mapa: mantém filtros, paginação e dados sem spoilers.
   @Get('trilhas/:slug/mapa')
   @ApiOperation({
     summary: 'Consultar o mapa de uma trilha',
@@ -48,15 +47,12 @@ export class ExplorarController {
     @Param('slug') slug: string,
     @Query() filtros: ListarEtapasDto,
   ): Promise<MapaTrilhaRespostaDto> {
-    // Encaminha a consulta ao handler registrado no CQRS.
-    // Nesta etapa, o handler ainda utiliza o service e o banco principal.
     return this.queryBus.execute<
       ConsultarMapaQuery,
       MapaTrilhaRespostaDto
     >(new ConsultarMapaQuery(slug, filtros));
   }
 
-  // Consulta pública de uma obra e suas vizinhas dentro da mesma trilha.
   @Get('trilhas/:slug/obras/:obraSlug')
   @ApiOperation({
     summary: 'Consultar uma obra dentro da trilha',
@@ -86,7 +82,6 @@ export class ExplorarController {
     @Param('slug') slug: string,
     @Param('obraSlug') obraSlug: string,
   ) {
-    // O service verifica a publicação e encontra a anterior e a próxima.
     return this.trilhasService.consultarObraNaTrilha(
       slug,
       obraSlug,
