@@ -59,7 +59,6 @@ export class TrilhasController {
     private readonly commandBus: CommandBus,
   ) {}
 
-  // Consulta pública de trilhas, com filtros e paginação.
   @Get()
   @ApiOperation({
     summary: 'Listar trilhas publicadas',
@@ -78,7 +77,6 @@ export class TrilhasController {
     return this.trilhasService.listarPublicadas(filtros);
   }
 
-  // Localiza uma trilha publicada pelo slug exato.
   @Get(':slug')
   @ApiOperation({
     summary: 'Buscar uma trilha publicada pelo slug',
@@ -99,7 +97,6 @@ export class TrilhasController {
     return this.trilhasService.buscarPublicadaPorSlug(slug);
   }
 
-  // Consulta etapas públicas na ordem definida pela trilha.
   @Get(':slug/etapas')
   @ApiOperation({
     summary: 'Listar etapas de uma trilha publicada',
@@ -127,7 +124,6 @@ export class TrilhasController {
     return this.trilhasService.listarEtapas(slug, filtros);
   }
 
-  // Criação administrativa com status inicial RASCUNHO.
   @Post()
   @Authorize({
     roles: ['ADMIN'],
@@ -159,7 +155,6 @@ export class TrilhasController {
     return this.trilhasService.criar(dto);
   }
 
-  // Edita os metadados sem alterar status ou etapas.
   @Patch(':id')
   @Authorize({
     roles: ['ADMIN'],
@@ -202,7 +197,6 @@ export class TrilhasController {
     return this.trilhasService.atualizar(id, dto);
   }
 
-  // Altera a publicação, respeitando as regras do domínio.
   @Patch(':id/status')
   @Auditar({ acao: 'trilhas.alterar_status', recurso: 'trilha', idParam: 'id' })
   @Authorize({
@@ -244,7 +238,6 @@ export class TrilhasController {
     return this.trilhasService.alterarStatus(id, dto);
   }
 
-  // Vincula uma obra e ajusta as posições seguintes.
   @Post(':id/etapas')
   @Authorize({
     roles: ['ADMIN'],
@@ -288,7 +281,6 @@ export class TrilhasController {
     return this.trilhasService.criarEtapa(id, dto);
   }
 
-  // Edita prioridade e justificativa de uma etapa.
   @Patch(':id/etapas/:etapaId')
   @Authorize({
     roles: ['ADMIN'],
@@ -339,7 +331,6 @@ export class TrilhasController {
     );
   }
 
-  // Remove o vínculo e mantém posições consecutivas.
   @Delete(':id/etapas/:etapaId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Authorize({
@@ -386,7 +377,6 @@ export class TrilhasController {
     return this.etapasTrilhaService.remover(id, etapaId);
   }
 
-  // Encaminha a reordenação ao CommandBus após validar o acesso.
   @Put(':id/ordem')
   @Auditar({ acao: 'trilhas.reordenar', recurso: 'trilha', idParam: 'id' })
   @Authorize({
