@@ -1,10 +1,10 @@
 import {Injectable, Logger, OnModuleDestroy, OnModuleInit} from "@nestjs/common";
-import Redis, {type Redis as RedisClient} from "ioredis";
+import Redis from "ioredis";
 
 @Injectable()
 export class CacheService implements OnModuleInit, OnModuleDestroy{
     private readonly logger = new Logger(CacheService.name);
-    private redisClient: RedisClient | null = null;
+    private redisClient: Redis | null = null;
     private readonly ttlPadrao = Number(process.env.REDIS_TTL ?? 300);
     
     onModuleInit() {
@@ -24,7 +24,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy{
                 this.logger.log(`Redis conectado em ${host}:${port}`);
             });
 
-            this.redisClient.on("error", (err: Error) => {
+            this.redisClient.on("error", (err) => {
                 this.logger.warn(`Redis indisponível (${err.message}). Consultas usarão a PostgreSQL diretamente.`);
             });
             
@@ -110,7 +110,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy{
                 });
 
                 stream.on('end', () => resolve());
-                stream.on('error', (err: Error) => reject(err));
+                stream.on('error', (err) => reject(err));
             });
         }catch(err: unknown){
             this.logger.warn(`Erro ao invalidar padrão "${padrao}": ${(err as Error).message}`);
