@@ -16,10 +16,11 @@ export class AcontecimentosController{
     constructor(private readonly service: AcontecimentosService){}
 
     @Get('obras/:slug/acontecimentos')
-    @ApiOperation({ summary: 'Listar acontecimentos de uma obra', description: 'Consulta pública em ordem de posição, com paginação e filtros por categoria e contemSpoiler. Exige obra publicada. Spoilers ficam ocultos por padrão.' })
-    @ApiParam({ name: 'slug', description: 'Slug da obra.', type: String })
+    @ApiOperation({ 
+        summary: 'Listar acontecimentos de uma obra', 
+        description: 'Consulta pública em ordem de posição, com paginação e filtros por categoria e contemSpoiler' })
     @ApiOkResponse({
-        description: 'Resultados paginados.',
+        description: 'Resultados paginados',
         schema: {
             type: 'object', required: ['obra', 'itens', 'meta'],
             properties: {
@@ -38,8 +39,8 @@ export class AcontecimentosController{
             },
         },
     })
-    @ApiBadRequestResponse({ description: 'Paginação ou filtros inválidos.' })
-    @ApiNotFoundResponse({ description: 'Obra inexistente ou não publicada.' })
+    @ApiBadRequestResponse({ description: 'Paginação ou filtros inválidos' })
+    @ApiNotFoundResponse({ description: 'Obra inexistente ou não publicada' })
     async listarEventos(
         @Param('slug') slug: string,
         @Query(
@@ -55,12 +56,13 @@ export class AcontecimentosController{
     }
 
     @Get('acontecimentos/:id')
-    @ApiOperation({ summary: 'Consultar acontecimento', description: 'Retorna um acontecimento de obra publicada. Acontecimentos com spoiler exigem incluirSpoilers=true.' })
-    @ApiParam({ name: 'id', description: 'Identificador do acontecimento.', format: 'uuid' })
-    @ApiQuery({ name: 'incluirSpoilers', required: false, type: Boolean, description: 'Autoriza revelar acontecimentos com spoilers. Padrão: false.' })
-    @ApiOkResponse({ description: 'Acontecimento encontrado.', type: AcontecimentoRespostaDto })
-    @ApiBadRequestResponse({ description: 'Identificador inválido.' })
-    @ApiNotFoundResponse({ description: 'Acontecimento inexistente, oculto por spoiler ou obra não publicada.' })
+    @ApiOperation({ 
+        summary: 'Consultar acontecimento', 
+        description: 'Retorna um acontecimento de obra publicada' 
+    })
+    @ApiOkResponse({ description: 'Acontecimento encontrado'})
+    @ApiBadRequestResponse({ description: 'Identificador inválido' })
+    @ApiNotFoundResponse({ description: 'Acontecimento inexistente, oculto por spoiler ou obra não publicada' })
     async buscarEvento(
         @Param('id', new ParseUUIDPipe()) id: string,
         @Query(
@@ -74,17 +76,17 @@ export class AcontecimentosController{
     }
     
     @Post('obras/:obraId/acontecimentos')
-    @ApiOperation({ summary: 'Criar acontecimento', description: 'Cria um acontecimento em posição livre dentro da obra. Exige ADMIN e acontecimentos:criar.' })
-    @ApiBearerAuth()
-    @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado, ou conta inativa.' })
-    @ApiForbiddenResponse({ description: 'Exige ADMIN e permissão acontecimentos:criar.' })
-    @ApiParam({ name: 'obraId', description: 'Identificador da obra.', format: 'uuid' })
-    @ApiBody({ type: CriarEventoDto })
-    @ApiCreatedResponse({ description: 'Acontecimento criado.', type: AcontecimentoRespostaDto })
-    @ApiBadRequestResponse({ description: 'Identificador ou corpo inválido.' })
-    @ApiNotFoundResponse({ description: 'Obra não encontrada.' })
-    @ApiConflictResponse({ description: 'Posição já ocupada nesta obra.' })
-    @ApiInternalServerErrorResponse({ description: 'Falha ao cadastrar acontecimento.' })
+    @ApiOperation({ 
+        summary: 'Criar acontecimento', 
+        description: 'Cria um acontecimento em posição livre dentro da obra. Exige ADMIN' 
+    })
+    @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado, ou conta inativa' })
+    @ApiForbiddenResponse({ description: 'Exige ADMIN e permissão acontecimentos:criar' })
+    @ApiCreatedResponse({ description: 'Acontecimento criado' })
+    @ApiBadRequestResponse({ description: 'Identificador ou corpo inválido' })
+    @ApiNotFoundResponse({ description: 'Obra não encontrada' })
+    @ApiConflictResponse({ description: 'Posição já ocupada nesta obra' })
+    @ApiInternalServerErrorResponse({ description: 'Falha ao cadastrar acontecimento' })
     @HttpCode(HttpStatus.CREATED)
     @Authorize({
         roles: ['ADMIN'],
@@ -105,17 +107,17 @@ export class AcontecimentosController{
     }
 
     @Patch('acontecimentos/:id')
-    @ApiOperation({ summary: 'Atualizar acontecimento', description: 'Atualiza somente os campos enviados. Posição deve estar livre na mesma obra; campos omitidos são preservados. Exige ADMIN e acontecimentos:editar.' })
-    @ApiBearerAuth()
-    @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado, ou conta inativa.' })
-    @ApiForbiddenResponse({ description: 'Exige ADMIN e permissão acontecimentos:editar.' })
-    @ApiParam({ name: 'id', description: 'Identificador do acontecimento.', format: 'uuid' })
-    @ApiBody({ type: AtualizarEventoDto })
-    @ApiOkResponse({ description: 'Acontecimento atualizado.', type: AcontecimentoRespostaDto })
-    @ApiBadRequestResponse({ description: 'Identificador ou corpo inválido.' })
-    @ApiNotFoundResponse({ description: 'Acontecimento não encontrado.' })
-    @ApiConflictResponse({ description: 'Posição já ocupada nesta obra.' })
-    @ApiInternalServerErrorResponse({ description: 'Falha ao atualizar acontecimento.' })
+    @ApiOperation({ 
+        summary: 'Atualizar acontecimento', 
+        description: 'Atualiza somente os campos enviados. Exige ADMIN' 
+    })
+    @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado, ou conta inativa' })
+    @ApiForbiddenResponse({ description: 'Exige ADMIN e permissão acontecimentos:editar' })
+    @ApiOkResponse({ description: 'Acontecimento atualizado'})
+    @ApiBadRequestResponse({ description: 'Identificador ou corpo inválido' })
+    @ApiNotFoundResponse({ description: 'Acontecimento não encontrado' })
+    @ApiConflictResponse({ description: 'Posição já ocupada nesta obra' })
+    @ApiInternalServerErrorResponse({ description: 'Falha ao atualizar acontecimento' })
     @Authorize({
         roles: ['ADMIN'],
         permissions: ['acontecimentos:editar'],
@@ -135,15 +137,16 @@ export class AcontecimentosController{
     }
 
     @Delete('acontecimentos/:id')
-    @ApiOperation({ summary: 'Excluir acontecimento', description: 'Exclui o acontecimento e seus vínculos com personagens na mesma transação. Exige ADMIN e acontecimentos:editar.' })
-    @ApiBearerAuth()
-    @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado, ou conta inativa.' })
-    @ApiForbiddenResponse({ description: 'Exige ADMIN e permissão acontecimentos:editar.' })
-    @ApiParam({ name: 'id', description: 'Identificador do acontecimento.', format: 'uuid' })
-    @ApiNoContentResponse({ description: 'Acontecimento excluído, sem corpo de resposta.' })
-    @ApiBadRequestResponse({ description: 'Identificador inválido.' })
-    @ApiNotFoundResponse({ description: 'Acontecimento não encontrado.' })
-    @ApiInternalServerErrorResponse({ description: 'Falha ao excluir acontecimento.' })
+    @ApiOperation({
+        summary: 'Excluir acontecimento', 
+        description: 'Exclui o acontecimento e seus vínculos com personagens na mesma transação. Exige ADMIN' 
+    })
+    @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado, ou conta inativa' })
+    @ApiForbiddenResponse({ description: 'Exige ADMIN e permissão acontecimentos:editar' })
+    @ApiNoContentResponse({ description: 'Acontecimento excluído, sem corpo de resposta' })
+    @ApiBadRequestResponse({ description: 'Identificador inválido' })
+    @ApiNotFoundResponse({ description: 'Acontecimento não encontrado' })
+    @ApiInternalServerErrorResponse({ description: 'Falha ao excluir acontecimento' })
     @Authorize({
         roles: ['ADMIN'],
         permissions: ['acontecimentos:editar'],
@@ -154,10 +157,12 @@ export class AcontecimentosController{
     }
 
     @Get('acontecimentos/:id/personagens')
-    @ApiOperation({ summary: 'Listar personagens associados', description: 'Lista personagens vinculados com paginação e filtros por nome e slug. Exige obra publicada; acontecimentos com spoiler exigem incluirSpoilers=true.' })
-    @ApiParam({ name: 'id', description: 'Identificador do acontecimento.', format: 'uuid' })
+    @ApiOperation({ 
+        summary: 'Listar personagens associados', 
+        description: 'Lista personagens vinculados com paginação e filtros por nome e slug'
+    })
     @ApiOkResponse({
-        description: 'Resultados paginados.',
+        description: 'Resultados paginados',
         schema: {
             type: 'object', required: ['itens', 'meta'],
             properties: {
@@ -172,8 +177,8 @@ export class AcontecimentosController{
             },
         },
     })
-    @ApiBadRequestResponse({ description: 'Identificador, paginação ou filtros inválidos.' })
-    @ApiNotFoundResponse({ description: 'Acontecimento inexistente, oculto por spoiler ou obra não publicada.' })
+    @ApiBadRequestResponse({ description: 'Identificador, paginação ou filtros inválidos' })
+    @ApiNotFoundResponse({ description: 'Acontecimento inexistente, oculto por spoiler ou obra não publicada' })
     async buscarPersonagens(
         @Param('id', new ParseUUIDPipe()) id: string,
         @Query(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
@@ -183,23 +188,20 @@ export class AcontecimentosController{
     }
 
     @Post('acontecimentos/:id/personagens')
-    @ApiOperation({ summary: 'Associar personagem', description: 'Vincula um personagem existente ao acontecimento, sem duplicar associações. Exige ADMIN e acontecimentos:editar.' })
-    @ApiBearerAuth()
-    @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado, ou conta inativa.' })
-    @ApiForbiddenResponse({ description: 'Exige ADMIN e permissão acontecimentos:editar.' })
-    @ApiParam({ name: 'id', description: 'Identificador do acontecimento.', format: 'uuid' })
-    @ApiBody({ schema: {
-        type: 'object', required: ['personagemId'],
-        properties: { personagemId: { type: 'string', format: 'uuid', description: 'Identificador do personagem existente.' } },
-    } })
-    @ApiCreatedResponse({ description: 'Associação criada.', schema: {
+    @ApiOperation({ 
+        summary: 'Associar personagem', 
+        description: 'Vincula um personagem existente ao acontecimento. Exige ADMIN' 
+    })
+    @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado, ou conta inativa' })
+    @ApiForbiddenResponse({ description: 'Exige ADMIN e permissão acontecimentos:editar' })
+    @ApiCreatedResponse({ description: 'Associação criada', schema: {
         type: 'object', required: ['acontecimentoId', 'personagemId'],
         properties: { acontecimentoId: { type: 'string', format: 'uuid' }, personagemId: { type: 'string', format: 'uuid' } },
     } })
-    @ApiBadRequestResponse({ description: 'Identificador do acontecimento ou personagem inválido.' })
-    @ApiNotFoundResponse({ description: 'Acontecimento ou personagem não encontrado.' })
-    @ApiConflictResponse({ description: 'Personagem já associado ao acontecimento.' })
-    @ApiInternalServerErrorResponse({ description: 'Falha ao criar associação.' })
+    @ApiBadRequestResponse({ description: 'Identificador do acontecimento ou personagem inválido' })
+    @ApiNotFoundResponse({ description: 'Acontecimento ou personagem não encontrado' })
+    @ApiConflictResponse({ description: 'Personagem já associado ao acontecimento' })
+    @ApiInternalServerErrorResponse({ description: 'Falha ao criar associação' })
     @Authorize({
         roles: ['ADMIN'],
         permissions: ['acontecimentos:editar'],
@@ -212,16 +214,15 @@ export class AcontecimentosController{
     }
 
     @Delete('acontecimentos/:id/personagens/:personagemId')
-    @ApiOperation({ summary: 'Retirar associação de personagem', description: 'Remove somente o vínculo, preservando personagem e acontecimento. Exige ADMIN e acontecimentos:editar.' })
-    @ApiBearerAuth()
-    @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado, ou conta inativa.' })
-    @ApiForbiddenResponse({ description: 'Exige ADMIN e permissão acontecimentos:editar.' })
-    @ApiParam({ name: 'id', description: 'Identificador do acontecimento.', format: 'uuid' })
-    @ApiParam({ name: 'personagemId', description: 'Identificador do personagem.', format: 'uuid' })
-    @ApiNoContentResponse({ description: 'Associação removida, sem corpo de resposta.' })
-    @ApiBadRequestResponse({ description: 'Identificadores inválidos.' })
-    @ApiNotFoundResponse({ description: 'Acontecimento, personagem ou associação não encontrado.' })
-    @ApiInternalServerErrorResponse({ description: 'Falha ao retirar associação.' })
+    @ApiOperation({ 
+        summary: 'Retirar associação de personagem', 
+        description: 'Remove somente o vínculo, preservando personagem e acontecimento. Exige ADMIN' })
+    @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado, ou conta inativa' })
+    @ApiForbiddenResponse({ description: 'Exige ADMIN e permissão acontecimentos:editar' })
+    @ApiNoContentResponse({ description: 'Associação removida, sem corpo de resposta' })
+    @ApiBadRequestResponse({ description: 'Identificadores inválidos' })
+    @ApiNotFoundResponse({ description: 'Acontecimento, personagem ou associação não encontrado' })
+    @ApiInternalServerErrorResponse({ description: 'Falha ao retirar associação' })
     @Authorize({
         roles: ['ADMIN'],
         permissions: ['acontecimentos:editar'],
