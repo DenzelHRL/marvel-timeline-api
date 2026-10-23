@@ -11,7 +11,6 @@ import {
   EntityManager,
   FindOptionsWhere,
   ILike,
-  QueryFailedError,
   Repository,
 } from 'typeorm';
 import {
@@ -134,28 +133,30 @@ export class AcessoService {
       );
     }
 
-    try {
-      const resultado = await this.usuariosRepository.update(
-        { id },
-        atualizacoes,
-      );
-      if (resultado.affected === 0) {
-        throw new NotFoundException('Usuário não encontrado.');
-      }
-    } catch (error) {
-      if (this.isEmailUniqueViolation(error)) {
+    if (atualizacoes.email !== undefined) {
+      const usuarioComEmail = await this.usuariosRepository.findOneBy({
+        email: atualizacoes.email,
+      });
+      if (usuarioComEmail && usuarioComEmail.id !== id) {
         throw new ConflictException('Já existe uma conta com esse e-mail.');
       }
-      throw error;
     }
 
-    const usuarioAtualizado = await this.buscarUsuarioPorId(id);
-    if (!usuarioAtualizado) {
+    const resultado = await this.usuariosRepository.update(
+      { id },
+      atualizacoes,
+    );
+    if (resultado.affected === 0) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    const usuarioAtt = await this.buscarUsuarioPorId(id);
+    if (!usuarioAtt) {
       throw new InternalServerErrorException(
         'Não foi possível recuperar a conta após a atualização.',
       );
     }
-    return usuarioAtualizado;
+    return usuarioAtt;
   }
 
   async buscarPerfilPorId(id: string): Promise<PerfilAdminRespostaDto | null> {
@@ -220,22 +221,22 @@ export class AcessoService {
     perfilId: string,
     permissaoId: string,
   ): Promise<PerfilPermissaoRespostaDto> {
-    return this.dataSource.transaction(async (manager) => {
-      await this.bloquearPerfilAdmin(manager);
+    return this.dataSource.transaction(async (trx) => {
+      await this.bloquearPerfilAdmin(trx);
 
-      const perfil = await manager.findOne(Perfil, { where: { id: perfilId } });
+      const perfil = await trx.findOne(Perfil, { where: { id: perfilId } });
       if (!perfil) {
         throw new NotFoundException('Perfil não encontrado.');
       }
 
-      const permissao = await manager.findOne(Permissao, {
+      const permissao = await trx.findOne(Permissao, {
         where: { id: permissaoId },
       });
       if (!permissao) {
         throw new NotFoundException('Permissão não encontrada.');
       }
 
-      const vinculoExistente = await manager.findOne(PerfilPermissao, {
+      const vinculoExistente = await trx.findOne(PerfilPermissao, {
         where: { perfilId, permissaoId },
       });
       if (vinculoExistente) {
@@ -244,7 +245,7 @@ export class AcessoService {
         );
       }
 
-      await manager.insert(PerfilPermissao, { perfilId, permissaoId });
+      await trx.insert(PerfilPermissao, { perfilId, permissaoId });
       return { perfilId, permissaoId, codigo: permissao.codigo };
     });
   }
@@ -253,22 +254,22 @@ export class AcessoService {
     perfilId: string,
     permissaoId: string,
   ): Promise<void> {
-    await this.dataSource.transaction(async (manager) => {
-      await this.bloquearPerfilAdmin(manager);
+    await this.dataSource.transaction(async (trx) => {
+      await this.bloquearPerfilAdmin(trx);
 
-      const perfil = await manager.findOne(Perfil, { where: { id: perfilId } });
+      const perfil = await trx.findOne(Perfil, { where: { id: perfilId } });
       if (!perfil) {
         throw new NotFoundException('Perfil não encontrado.');
       }
 
-      const permissao = await manager.findOne(Permissao, {
+      const permissao = await trx.findOne(Permissao, {
         where: { id: permissaoId },
       });
       if (!permissao) {
         throw new NotFoundException('Permissão não encontrada.');
       }
 
-      const vinculo = await manager.findOne(PerfilPermissao, {
+      const vinculo = await trx.findOne(PerfilPermissao, {
         where: { perfilId, permissaoId },
       });
       if (!vinculo) {
@@ -279,20 +280,19 @@ export class AcessoService {
 
       if (
         PERMISSOES_RECUPERACAO_ACESSO.includes(permissao.codigo) &&
-        !(await this.existeAdministradorRecuperavel(manager, {
+        !(await this.existeAdministradorRecuperavel(trx, {
           vinculoPerfilPermissao: { perfilId, codigo: permissao.codigo },
         }))
       ) {
         throw this.ultimoAdministradorException();
       }
 
-      await manager.delete(PerfilPermissao, { perfilId, permissaoId });
+      await trx.delete(PerfilPermissao, { perfilId, permissaoId });
     });
   }
 
-  async listarPerfis(
-    filtros: ListarPerfisDto,
-  ): Promise<ListarPerfisRespostaDto> {
+  async listarPerfis(filtros: ListarPerfisDto,
+): Promise<ListarPerfisRespostaDto> {
     const where: FindOptionsWhere<Perfil> = {};
     if (filtros.codigo) {
       where.codigo = ILike(`%${filtros.codigo}%`);
@@ -361,9 +361,9 @@ export class AcessoService {
     id: string,
     ativo: boolean,
   ): Promise<UsuarioAdminRespostaDto> {
-    return this.dataSource.transaction(async (manager) => {
-      const perfilAdmin = await this.bloquearPerfilAdmin(manager);
-      const usuario = await manager.findOne(Usuario, {
+    return this.dataSource.transaction(async (trx) => {
+      const perfilAdmin = await this.bloquearPerfilAdmin(trx);
+      const usuario = await trx.findOne(Usuario, {
         where: { id },
         lock: { mode: 'pessimistic_write' },
       });
@@ -372,12 +372,12 @@ export class AcessoService {
       }
 
       if (!ativo && usuario.ativo) {
-        const possuiPerfilAdmin = await manager.findOne(UsuarioPerfil, {
+        const possuiPerfilAdmin = await trx.findOne(UsuarioPerfil, {
           where: { usuarioId: id, perfilId: perfilAdmin.id },
         });
         if (
           possuiPerfilAdmin &&
-          !(await this.existeAdministradorRecuperavel(manager, {
+          !(await this.existeAdministradorRecuperavel(trx, {
             usuarioId: id,
           }))
         ) {
@@ -385,8 +385,8 @@ export class AcessoService {
         }
       }
 
-      await manager.update(Usuario, { id }, { ativo });
-      const usuarioAtualizado = await manager.findOne(Usuario, {
+      await trx.update(Usuario, { id }, { ativo });
+      const usuarioAtualizado = await trx.findOne(Usuario, {
         where: { id },
         select: {
           id: true,
@@ -412,10 +412,10 @@ export class AcessoService {
     usuarioId: string,
     perfilId: string,
   ): Promise<AtribuirPerfilRespostaDto> {
-    return this.dataSource.transaction(async (manager) => {
-      await this.bloquearPerfilAdmin(manager);
+    return this.dataSource.transaction(async (trx) => {
+      await this.bloquearPerfilAdmin(trx);
 
-      const usuario = await manager.findOne(Usuario, {
+      const usuario = await trx.findOne(Usuario, {
         where: { id: usuarioId },
         select: { id: true },
       });
@@ -423,14 +423,14 @@ export class AcessoService {
         throw new NotFoundException('Usuário não encontrado.');
       }
 
-      const perfil = await manager.findOne(Perfil, {
+      const perfil = await trx.findOne(Perfil, {
         where: { id: perfilId },
       });
       if (!perfil) {
         throw new NotFoundException('Perfil não encontrado.');
       }
 
-      const vinculoExistente = await manager.findOne(UsuarioPerfil, {
+      const vinculoExistente = await trx.findOne(UsuarioPerfil, {
         where: { usuarioId, perfilId },
       });
       if (vinculoExistente) {
@@ -439,16 +439,16 @@ export class AcessoService {
         );
       }
 
-      await manager.insert(UsuarioPerfil, { usuarioId, perfilId });
+      await trx.insert(UsuarioPerfil, { usuarioId, perfilId });
       return { usuarioId, perfilId, codigo: perfil.codigo };
     });
   }
 
   async revogarPerfil(usuarioId: string, perfilId: string): Promise<void> {
-    await this.dataSource.transaction(async (manager) => {
-      const perfilAdmin = await this.bloquearPerfilAdmin(manager);
+    await this.dataSource.transaction(async (trx) => {
+      const perfilAdmin = await this.bloquearPerfilAdmin(trx);
 
-      const usuario = await manager.findOne(Usuario, {
+      const usuario = await trx.findOne(Usuario, {
         where: { id: usuarioId },
         lock: { mode: 'pessimistic_write' },
       });
@@ -456,12 +456,12 @@ export class AcessoService {
         throw new NotFoundException('Usuário não encontrado.');
       }
 
-      const perfil = await manager.findOne(Perfil, { where: { id: perfilId } });
+      const perfil = await trx.findOne(Perfil, { where: { id: perfilId } });
       if (!perfil) {
         throw new NotFoundException('Perfil não encontrado.');
       }
 
-      const vinculo = await manager.findOne(UsuarioPerfil, {
+      const vinculo = await trx.findOne(UsuarioPerfil, {
         where: { usuarioId, perfilId },
       });
       if (!vinculo) {
@@ -470,22 +470,22 @@ export class AcessoService {
 
       if (
         usuario.ativo &&
-        (await manager.findOne(UsuarioPerfil, {
+        (await trx.findOne(UsuarioPerfil, {
           where: { usuarioId, perfilId: perfilAdmin.id },
         })) &&
-        !(await this.existeAdministradorRecuperavel(manager, {
+        !(await this.existeAdministradorRecuperavel(trx, {
           vinculoUsuarioPerfil: { usuarioId, perfilId },
         }))
       ) {
         throw this.ultimoAdministradorException();
       }
 
-      await manager.delete(UsuarioPerfil, { usuarioId, perfilId });
+      await trx.delete(UsuarioPerfil, { usuarioId, perfilId });
     });
   }
 
-  private async bloquearPerfilAdmin(manager: EntityManager): Promise<Perfil> {
-    const perfilAdmin = await manager.findOne(Perfil, {
+  private async bloquearPerfilAdmin(trx: EntityManager): Promise<Perfil> {
+    const perfilAdmin = await trx.findOne(Perfil, {
       where: { codigo: 'ADMIN' },
       lock: { mode: 'pessimistic_write' },
     });
@@ -498,10 +498,10 @@ export class AcessoService {
   }
 
   private async existeAdministradorRecuperavel(
-    manager: EntityManager,
+    trx: EntityManager,
     exclusoes: ExclusoesAdministradorRecuperavel,
   ): Promise<boolean> {
-    const administradores = await manager.query<UsuarioIdRow[]>(
+    const administradores = await trx.query<UsuarioIdRow[]>(
       `
         SELECT u.id
         FROM usuarios u
@@ -547,23 +547,7 @@ export class AcessoService {
 
   private ultimoAdministradorException(): ConflictException {
     return new ConflictException(
-      'A operação deixaria o sistema sem um administrador ativo capaz de recuperar o acesso.',
-    );
-  }
-
-  private isEmailUniqueViolation(error: unknown): boolean {
-    if (!(error instanceof QueryFailedError)) {
-      return false;
-    }
-
-    const driverError: unknown = error.driverError;
-    return (
-      typeof driverError === 'object' &&
-      driverError !== null &&
-      'code' in driverError &&
-      driverError.code === '23505' &&
-      'constraint' in driverError &&
-      driverError.constraint === 'uq_usuarios_email_ci'
+      'O sistema não pode operar sem um administrador ativo capaz de recuperar o acesso.',
     );
   }
 

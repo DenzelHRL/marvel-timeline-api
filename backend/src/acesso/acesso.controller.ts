@@ -40,10 +40,10 @@ import {
   PermissaoAdminRespostaDto,
   PerfilAdminRespostaDto,
   PerfilPermissaoRespostaDto,
+  ListarUsuariosDto,
+  ListarUsuariosRespostaDto,
+  UsuarioAdminRespostaDto,
 } from './dto';
-import { ListarUsuariosDto } from './dto/listar-usuarios.dto';
-import { ListarUsuariosRespostaDto } from './dto/listar-usuarios-resposta.dto';
-import { UsuarioAdminRespostaDto } from './dto/usuario-admin-resposta.dto';
 
 @ApiTags('Administração de usuários e acesso')
 @ApiBearerAuth()
@@ -95,7 +95,7 @@ export class AcessoController {
     type: UsuarioAdminRespostaDto,
   })
   @ApiBadRequestResponse({
-    description: 'O identificador informado não é um UUID válido.',
+    description: 'UUID inválido.',
   })
   @ApiUnauthorizedResponse({
     description: 'Token JWT ausente, inválido, expirado ou conta inativa.',
@@ -125,7 +125,7 @@ export class AcessoController {
   @ApiOperation({
     summary: 'Editar nome ou e-mail de uma conta',
     description:
-      'Atualiza parcialmente o nome e/ou e-mail da conta. Não altera senha.',
+      'Atualiza parcialmente o nome e/ou e-mail da conta.',
   })
   @ApiOkResponse({
     description: 'Dados da conta atualizados.',
@@ -203,7 +203,7 @@ export class AcessoController {
   @ApiNotFoundResponse({
     description: 'Usuário ou perfil não encontrado.',
   })
-  @ApiConflictResponse({ description: 'Esse perfil já está atribuído.' })
+  @ApiConflictResponse({ description: 'Esse perfil já está atribuído a esse usuário.' })
   atribuirPerfil(
     @Param('id', ParseUUIDPipe) usuarioId: string,
     @Body() dto: AtribuirPerfilDto,
@@ -304,7 +304,7 @@ export class AcessoController {
   @ApiOperation({
     summary: 'Listar permissões concedidas a um perfil',
     description:
-      'Filtra por código e/ou descrição e pagina somente as permissões vinculadas ao perfil.',
+      'Busca por UUID com filtros opcionais.',
   })
   @ApiOkResponse({
     description: 'Permissões do perfil retornadas com paginação.',
@@ -438,8 +438,7 @@ export class AcessoController {
   @ApiForbiddenResponse({ description: 'Perfil ou permissão insuficiente.' })
   @ApiNotFoundResponse({ description: 'Permissão não encontrada.' })
   async buscarPermissaoPorId(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<PermissaoAdminRespostaDto> {
+    @Param('id', ParseUUIDPipe) id: string): Promise<PermissaoAdminRespostaDto> {
     const permissao = await this.acessoService.buscarPermissaoPorId(id);
     if (!permissao) {
       throw new NotFoundException('Permissão não encontrada.');

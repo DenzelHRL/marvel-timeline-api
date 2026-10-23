@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { isUUID } from 'class-validator';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { DataSource } from 'typeorm';
 import { JWT_SECRET_MIN_BYTES } from '../auth.constants';
@@ -22,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     if (!secret || Buffer.byteLength(secret, 'utf8') < JWT_SECRET_MIN_BYTES) {
       throw new Error(
-        `JWT_SECRET deve conter pelo menos ${JWT_SECRET_MIN_BYTES} bytes em UTF-8.`,
+        `JWT_SECRET inválido.`,
       );
     }
 
@@ -35,12 +36,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    if (
-      typeof payload.sub !== 'string' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        payload.sub,
-      )
-    ) {
+    if (!isUUID(payload.sub, 'loose')) {
       throw new UnauthorizedException(
         'O token JWT não contém um usuário válido.',
       );

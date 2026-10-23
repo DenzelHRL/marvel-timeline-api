@@ -10,11 +10,9 @@ export function Authorize(options: {
   roles?: string[];
   permissions?: string[];
 }): MethodDecorator & ClassDecorator {
-  if (
-    (!options.roles || options.roles.length === 0) &&
-    (!options.permissions || options.permissions.length === 0)
-  ) {
-    throw new Error('Authorize exige ao menos um perfil ou uma permissão.');
+  if ((!options.roles || options.roles.length === 0) &&
+    (!options.permissions || options.permissions.length === 0)) {
+    throw new Error('Tenha pelo menos um perfil ou uma permissão.');
   }
 
   const decorators: Array<ClassDecorator | MethodDecorator> = [

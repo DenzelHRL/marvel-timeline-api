@@ -1,8 +1,8 @@
 # Bônus: por onde começar
 
-Este é o índice dos guias de implementação. Cada bônus tem um arquivo próprio, com etapas, arquivos a criar, pontos reais de integração e validações. Não há atribuição de pessoas: qualquer integrante pode assumir um bônus seguindo o respectivo guia.
+Este é o índice dos guias de implementação e validação. Os guias preservam decisões do planejamento inicial; para verificar o comportamento atual, consulte também os módulos implementados e as configurações do ambiente.
 
-**Estado em 17/10/2026:** CQRS, banco de leitura, revisão/outbox e reconstrução manual integrados pela [PR #24](https://github.com/DenzelHRL/marvel-timeline-api/pull/24). Logs/auditoria, cache e filas continuam como guias de implementação. Hooks de obras e validação integrada permanecem pendentes. Exemplos propostos não substituem arquivos existentes.
+**Estado da main em 22/10/2026:** CQRS e banco de leitura pela [PR #24](https://github.com/DenzelHRL/marvel-timeline-api/pull/24); cache Redis pela [PR #26](https://github.com/DenzelHRL/marvel-timeline-api/pull/26); logs e auditoria pela [PR #28](https://github.com/DenzelHRL/marvel-timeline-api/pull/28); relay da outbox e worker BullMQ pela [PR #27](https://github.com/DenzelHRL/marvel-timeline-api/pull/27). Todos esses componentes estão no código; o funcionamento da fila depende de Redis, banco de leitura e `FILAS_ENABLED=true` no ambiente. O CI com PostgreSQL não substitui uma validação integrada com Redis.
 
 ## 1. Escolher uma parte
 
@@ -19,17 +19,16 @@ A afinidade ajuda a aproveitar conhecimento, mas não determina propriedade. Fil
 
 Leia [base, infraestrutura e contratos](bonus/00-base-e-integracao.md). Esse guia define nomes de módulos, versão dos dados, mensagem da fila, configuração e ordem das PRs. Os quatro guias dependem dessas definições, mas não precisam ser implementados por uma única pessoa.
 
-Uma pessoa por vez integra mudanças em `backend/package.json`, `backend/package-lock.json`, `backend/compose.yaml`, `backend/.env.example` e na configuração principal. Os demais desenvolvem seus módulos em branches próprias e incorporam a PR de base depois. Não copiar um `AppModule` antigo por cima do atual.
+Ao alterar `backend/package.json`, `backend/package-lock.json`, `backend/compose.yaml`, `backend/.env.example` ou `AppModule`, incorpore primeiro a versão atual da `main` e preserve as configurações dos demais módulos.
 
-## 3. Ordem prática
+## 3. Validar a integração
 
-1. Corrigir e validar as funcionalidades obrigatórias utilizadas. Não é necessário esperar todos os módulos da API terminarem para desenvolver um bônus isolado.
-2. Atualizar a branch com a main e preparar a base CQRS já existente. Logs pode começar independentemente; cache pelos testes de chave/cliente; filas pelo contrato do job e pelos testes de produtor/worker.
-3. Entregar logs e o primeiro cache em `GET /trilhas`. Reutilizar a projeção e o comando CQRS existentes, sem reescrever os demais endpoints.
-4. Conectar outbox, fila e reconstrução da projeção. Só habilitar leitura pela projeção após existir reconstrução inicial e alternativa para projeção atrasada.
-5. Habilitar cache do mapa por último e validar alterações, falhas e concorrência em conjunto.
+1. Preparar o PostgreSQL principal, o banco de leitura e o Redis. Aplicar as migrations dos dois bancos e executar `npm run db:read:rebuild` para criar a projeção inicial.
+2. Habilitar `FILAS_ENABLED=true` para iniciar o relay e o worker. Habilitar `CQRS_MAPA_ENABLED=true` após preparar o banco de leitura. A fila e a leitura pela projeção têm configurações independentes.
+3. Alterar uma trilha ou obra publicada e verificar outbox, enfileiramento, processamento e atualização do mapa. Repetir a consulta após reordenação, arquivamento e falha temporária do Redis.
+4. Confirmar que o mapa recorre ao banco principal quando a projeção estiver ausente ou atrasada. A leitura pública deve respeitar os filtros, a paginação e a publicação.
 
-O objetivo é preservar as URLs, DTOs de resposta, autenticação, paginação e regras de publicação existentes. Nenhum bônus justifica remover uma validação já implementada.
+Os exemplos de implementação nos guias registram o desenho inicial; os nomes e métodos em produção estão em `backend/src/`. Nenhum bônus altera os contratos HTTP ou as regras de negócio das rotas existentes.
 
 ## 4. Base consultada
 

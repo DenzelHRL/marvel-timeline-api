@@ -1,8 +1,8 @@
-# Implementar filas com BullMQ
+# Filas BullMQ: implementação e operação
 
 [Índice](../plano-bonus.md) · [Contrato compartilhado](00-base-e-integracao.md) · [Serviço de projeção](03-cqrs-mapa.md)
 
-**Primeira ação:** criar um teste do worker com `ProjecaoMapaService` simulado. O worker recebe `trilhaId` e chama `reconstruir(trilhaId)`; o método já existe na main desde a PR #24.
+**Estado atual:** relay da outbox, produtor e worker integrados na `main` pela [PR #27](https://github.com/DenzelHRL/marvel-timeline-api/pull/27). A execução automática requer Redis, banco de leitura e `FILAS_ENABLED=true`; o padrão do `.env.example` é `false`. As seções de desenho abaixo servem como referência para manutenção e testes.
 
 ## 1. O trabalho concreto da fila
 
@@ -12,15 +12,14 @@ Este guia usa `@nestjs/bullmq` + `bullmq`, não exemplos de `@nestjs/bull` mistu
 
 ## 2. Arquivos e configuração
 
-| Arquivo novo em `backend/` | Responsabilidade |
+| Arquivo em `backend/` | Responsabilidade |
 | --- | --- |
 | `src/filas/filas.module.ts` | Conexão e registro da fila |
 | `src/filas/mapa.produtor.ts` | Adicionar tarefa com opções e ID determinístico |
 | `src/filas/mapa.worker.ts` | Processar um tipo de job e chamar projeção |
 | `src/filas/outbox-relay.service.ts` | Encaminhar pendências do PostgreSQL ao Redis |
-| `src/filas/filas.spec.ts` | Testes de payload, repetição e falhas |
 
-A revisão/outbox e a reconstrução já existem na main, pela PR #24. Criar apenas `src/bonus/contratos.ts` com o contrato da [base](00-base-e-integracao.md), além dos componentes de filas. Não recriar tabelas, migration de revisão ou serviço de projeção.
+A revisão/outbox e a reconstrução foram integradas pela PR #24. O contrato `src/bonus/contratos.ts` e os componentes da fila já existem na `main`; o código do worker chama o serviço de projeção.
 
 Mapeamento concreto do relay para o payload:
 
@@ -34,7 +33,7 @@ Usar `@InjectDataSource()` para ler a outbox no banco principal. Importar `Proje
 
 Preparar os dois bancos pelos comandos da base. `FILAS_ENABLED` deve controlar relay/worker separadamente de `CQRS_MAPA_ENABLED`: a fila precisa conseguir reconstruir a projeção mesmo enquanto o GET continua no principal. Não filtrar o lote apenas por trilhas publicadas; os eventos de trilhas arquivadas também precisam produzir projeções não públicas.
 
-Instalar versões compatíveis de `@nestjs/bullmq` e `bullmq` com `--save-exact`. Conferir peers da integração Nest e a API BullMQ efetivamente instalada; as documentações atuais podem descrever outro major. Usar clientes próprios para produtor e worker; não passar o cliente de cache para operações bloqueantes da fila.
+O projeto já versiona `@nestjs/bullmq` e `bullmq` no `backend/package.json`. Ao atualizá-los, conferir peer dependencies e a API da versão instalada. O produtor e o worker usam conexões de fila próprias, separadas do cliente de cache.
 
 Configurar host, porta e credenciais a partir do ambiente, prefixo exclusivo `mt-filas`, fila `mapa-trilhas` e job `reconstruir-mapa`. `BullModule` registra a conexão/fila; registrar produtor e worker em `providers`. O módulo importa `ProjecaoMapaModule`, nunca `TrilhasModule`.
 
@@ -88,7 +87,7 @@ O reconstrutor lê o estado atual do principal e protege o upsert por versão. N
 
 ## 6. API e worker no início
 
-Para a primeira entrega, o worker pode ser provider do mesmo processo Nest: o trabalho já é assíncrono em relação à requisição. Não criar microserviço, novo protocolo e deploy separado apenas para demonstrar a fila.
+O worker está registrado no processo Nest quando `FILAS_ENABLED=true`; seu processamento é assíncrono em relação à requisição HTTP. Um processo separado pode ser avaliado posteriormente sem registrar consumidores duplicados.
 
 Para parar o consumo em um teste, pausar a fila pela API de gestão do BullMQ em um script local, gerar alterações e retomá-la. Não criar endpoint público de administração da fila. Se futuramente houver processo separado, extrair um módulo de contexto de worker sem importar `AppModule` inteiro e iniciar consumidores duplicados inadvertidamente.
 

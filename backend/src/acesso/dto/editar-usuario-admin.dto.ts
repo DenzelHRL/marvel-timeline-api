@@ -23,7 +23,7 @@ export class EditarUsuarioAdminDto {
 
   @ApiPropertyOptional({
     description:
-      'Novo e-mail da conta. Espaços externos são removidos e o valor é armazenado em minúsculas.',
+      'Novo e-mail da conta.',
     example: 'maria@exemplo.test',
     format: 'email',
     maxLength: 254,

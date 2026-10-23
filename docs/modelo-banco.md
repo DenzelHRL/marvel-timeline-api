@@ -1,24 +1,24 @@
 # Guia do banco para implementar a API
 
-**Estado:** modelo e dados iniciais integrados à main; as rotas, os guards e o Swagger ainda serão escritos. Este guia descreve o esquema existente, não funcionalidades já entregues.
+**Estado:** este guia registra o esquema e exemplos da fundação do projeto. A `main` já contém rotas, guards e Swagger; consulte os controllers e DTOs atuais para os contratos HTTP. O diagrama abaixo retrata o esquema inicial e pode não incluir migrations posteriores.
 
 ![Modelo lógico com as 16 tabelas e 17 chaves estrangeiras](modelo-logico.png)
 
-Imagem em [PNG](modelo-logico.png) e [SVG ampliável](modelo-logico.svg), gerada a partir das duas migrations por [`scripts/gerar_modelo_logico.py`](../scripts/gerar_modelo_logico.py). O diagrama mostra campos, tipos, PK e FK; índices, unicidade e verificações mais detalhadas permanecem nas migrations. Atualize a imagem quando o esquema mudar.
+Imagem em [PNG](modelo-logico.png) e [SVG ampliável](modelo-logico.svg), gerada a partir das migrations iniciais por [`scripts/gerar_modelo_logico.py`](../scripts/gerar_modelo_logico.py). O diagrama mostra campos, tipos, PK e FK; índices, unicidade e verificações mais detalhadas permanecem nas migrations. Atualize a imagem quando o esquema mudar.
 
 ## Uma obra não é um endpoint
 
 Um **registro** é uma linha em uma tabela: `obras` contém 34 registros iniciais. Um **endpoint** é uma combinação de método HTTP e rota no Nest, por exemplo `GET /obras`. Esse endpoint consulta várias linhas; o parâmetro `:slug` de `GET /obras/:slug` escolhe uma delas. `GET /obras/vingadores-guerra-infinita` e `GET /obras/wandavision-temporada-1` são chamadas do **mesmo** endpoint.
 
-| Chamada futura | Serviço consulta/grava | Resultado esperado |
+| Exemplo de chamada | Serviço consulta/grava | Finalidade |
 | --- | --- | --- |
-| `GET /obras?tipo=FILME&anoLancamento=2018&pagina=1&limite=10` | `obras`, filtrando `tipo` e `ano_lancamento` | Lista paginada, `itens` e `meta` com total; não cria nada |
+| `GET /obras?tipo=FILME&anoLancamento=2018&pagina=1&limite=10` | `obras`, filtrando `tipo` e `ano_lancamento` | Listar obras com filtros e paginação |
 | `GET /obras/vingadores-guerra-infinita` | Uma linha de `obras`, por `slug` | Resumo público; spoiler só quando solicitado explicitamente |
 | `GET /trilhas/curta/etapas` | `trilhas` → `etapas_trilha` → `obras` | Ordem de exibição, com paginação e filtros de etapa |
 | `GET /explorar/trilhas/curta/obras/vingadores-guerra-infinita` | Mesmas relações + `participacoes`/`acontecimentos` | Experiência de visitar a obra na trilha, sem spoiler por padrão |
-| `POST /obras` | Valida DTO, autorização ADMIN, grava em `obras` | Nova obra; **ainda precisa ser implementado** |
+| `POST /obras` | Valida DTO, autorização ADMIN, grava em `obras` | Criar obra |
 
-Exemplo de resposta futura para `GET /obras?pagina=1&limite=10&tipo=FILME&anoLancamento=2018`:
+Exemplo ilustrativo do planejamento inicial para uma resposta de listagem (o formato real deve ser conferido no Swagger):
 
 ```json
 {
@@ -27,7 +27,7 @@ Exemplo de resposta futura para `GET /obras?pagina=1&limite=10&tipo=FILME&anoLan
 }
 ```
 
-O JSON ilustra o contrato **proposto**: nenhum controller o entrega ainda. Uma lista sempre precisará de paginação e de pelo menos **dois filtros por campos persistidos**, documentados no Swagger. Filtros não criam endpoints adicionais.
+O JSON acima é ilustrativo e não representa necessariamente o DTO entregue pelo controller atual. Uma lista sempre precisará de paginação e de pelo menos **dois filtros por campos persistidos**, documentados no Swagger. Filtros não criam endpoints adicionais.
 
 ## As 16 tabelas
 
@@ -55,7 +55,7 @@ As colunas exatas, tipos e restrições estão em [`backend/src/database/entitie
 ## Como os dados chegam lá
 
 1. `db:migrate` cria tabelas, chaves estrangeiras, índices e verificações de integridade no PostgreSQL.
-2. `db:seed` insere, de forma repetível, dois perfis, 26 permissões, 3 séries, 34 obras (4 temporadas), duas trilhas com 55 etapas, e uma amostra de personagens e acontecimentos para **quatro** obras. As outras obras têm título/resumo para o fluxo inicial, mas ainda não têm a mesma riqueza narrativa.
+2. `db:seed` insere, de forma repetível, dois perfis, 26 permissões, 3 séries, 34 obras (4 temporadas), duas trilhas com 54 etapas, e uma amostra de personagens e acontecimentos para **quatro** obras. As outras obras têm título/resumo para o fluxo inicial, mas ainda não têm a mesma riqueza narrativa.
 3. Opcionalmente, em ambiente de desenvolvimento, `SEED_DEMO_USERS=true` com duas senhas de demonstração cria ADMIN/LEITOR, comentários e progresso de exemplo. Sem essa opção, o banco não contém contas de teste. A opção é bloqueada em produção.
 4. O seed não torna uma rota acessível automaticamente: cada módulo Nest precisa ligar controller → serviço (regras) → repositório TypeORM → banco. Essa integração já existe nos módulos implementados; os módulos restantes ainda precisam ser conectados.
 
@@ -63,7 +63,7 @@ As colunas exatas, tipos e restrições estão em [`backend/src/database/entitie
 
 - **Já modelado:** hash opcional para cadastro local/Google, unicidade de e-mail, vínculo com identidade externa, perfis, permissões e relacionamentos; o seed dá a `ADMIN` as ações de gestão e a `LEITOR` ações próprias de conta, progresso e comentários.
 - **Autenticação:** cadastro/login local, emissão JWT e login OAuth Google opcional estão implementados. OAuth Google exige credenciais locais do cliente no ambiente; sem elas, a API continua iniciando e as rotas Google ficam indisponíveis.
-- **Ainda não implementado:** guards de perfil/permissão, autorização por proprietário, DTOs, exclusão de spoilers, moderação em serviços e testes de acesso. A existência das tabelas **não protege** nenhum endpoint por si só.
+- **Proteção HTTP:** autenticação, guards de perfil/permissão, DTOs e regras de spoiler já estão em módulos da API. Confira cada rota e seus testes para verificar a proteção específica; a existência das tabelas, por si só, não protege endpoints.
 - O seed é dado de desenvolvimento, não mecanismo para criar administradores em produção. Segundo fator exigiria decisões de fluxo e persistência adicionais; não está preparado pelas 16 tabelas.
 - Não exponha `DATABASE_URL` nem senhas no GitHub, no Swagger, em mensagens do grupo ou no frontend. A API é a responsável por acessar o banco.
 

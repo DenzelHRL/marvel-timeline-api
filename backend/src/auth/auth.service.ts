@@ -16,10 +16,9 @@ import {
   UsuarioPerfil,
 } from '../database/entities';
 import { CadastroDto } from './dto/cadastro.dto';
-import { CadastroRespostaDto } from './dto/cadastro-resposta.dto';
 import { JWT_EXPIRATION_SECONDS } from './auth.constants';
 import { LoginDto } from './dto/login.dto';
-import { LoginRespostaDto } from './dto/login-resposta.dto';
+import type { CadastroResposta, LoginResposta } from './auth.types';
 import type { GoogleAuthProfile } from './google/google.strategy';
 
 const HASH_SENHA_INEXISTENTE =
@@ -32,7 +31,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(dados: LoginDto): Promise<LoginRespostaDto> {
+  async login(dados: LoginDto): Promise<LoginResposta> {
     const email = dados.email.trim().toLowerCase();
 
     if (Buffer.byteLength(dados.senha, 'utf8') > 72) {
@@ -55,7 +54,7 @@ export class AuthService {
     return this.emitirToken(usuario.id);
   }
 
-  async loginGoogle(perfil: GoogleAuthProfile): Promise<LoginRespostaDto> {
+  async loginGoogle(perfil: GoogleAuthProfile): Promise<LoginResposta> {
     const email = perfil.email.trim().toLowerCase();
     const nome = perfil.nome.trim().slice(0, 160) || email.split('@')[0];
 
@@ -168,7 +167,7 @@ export class AuthService {
     }
   }
 
-  async cadastrar(dados: CadastroDto): Promise<CadastroRespostaDto> {
+  async cadastrar(dados: CadastroDto): Promise<CadastroResposta> {
     const email = dados.email.trim().toLowerCase();
 
     if (Buffer.byteLength(dados.senha, 'utf8') > 72) {
@@ -236,7 +235,7 @@ export class AuthService {
     return new UnauthorizedException('E-mail ou senha inválidos.');
   }
 
-  private async emitirToken(usuarioId: string): Promise<LoginRespostaDto> {
+  private async emitirToken(usuarioId: string): Promise<LoginResposta> {
     const accessToken = await this.jwtService.signAsync({ sub: usuarioId });
 
     return {

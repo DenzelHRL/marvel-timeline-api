@@ -79,7 +79,7 @@ Essas exceções não transformam a lista em uma ordem de lançamento. A linha p
 
 ## Aplicar a correção no banco local
 
-Depois que o PR desta correção estiver integrado à main, atualize sua branch com a main. Dentro de backend, execute uma linha por vez:
+A correção já está integrada à `main`. Em um banco local ainda não atualizado, incorpore a `main` na sua branch preservando alterações locais. Dentro de `backend`, execute uma linha por vez:
 
 ```bash
 npm run db:migrate

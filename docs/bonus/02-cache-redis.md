@@ -1,8 +1,8 @@
-# Implementar cache Redis nas consultas públicas
+# Cache Redis nas consultas públicas
 
 [Índice](../plano-bonus.md) · [Contrato compartilhado](00-base-e-integracao.md)
 
-**Primeira ação:** escrever testes para a chave de `GET /trilhas` variando nome, slug, página e limite. Não começar pelo cache global de todos os GETs.
+**Estado atual:** o cache Redis foi integrado pela [PR #26](https://github.com/DenzelHRL/marvel-timeline-api/pull/26) em `src/cache/cache.service.ts`, usando `ioredis` nos serviços de trilhas. As seções abaixo preservam a proposta inicial de interceptor/cliente `redis`; esses arquivos e a flag `CACHE_ENABLED` não fazem parte da implementação atual.
 
 ## 1. Escopo incremental
 
@@ -12,11 +12,11 @@
 
 Os endpoints de perfil, administração, comentários e progresso não entram neste cache compartilhado. Não armazenar respostas autenticadas indiscriminadamente. O mapa continua usando `MapaTrilhaRespostaDto` e não inclui `resumoComSpoiler`.
 
-A aula sugere consultar o cache antes do handler e guardar a resposta depois, usando interceptor. Vamos usar um interceptor específico, com revisão dos dados e fallback; a implementação não exige `@CacheKey` fixo ou `CacheInterceptor` global.
+A proposta inicial previa um interceptor específico. A implementação atual consulta o `CacheService` nos serviços de trilhas, com chaves que incluem a revisão do catálogo e fallback quando Redis está indisponível.
 
 ## 2. Arquivos e dependências
 
-| Arquivo novo em `backend/` | Responsabilidade |
+| Arquivo previsto no plano inicial | Responsabilidade planejada |
 | --- | --- |
 | `src/cache-redis/cache-redis.module.ts` | Cliente próprio e providers |
 | `src/cache-redis/cache-redis.service.ts` | Ler/escrever JSON com prazo e tolerância a falhas |
@@ -24,7 +24,7 @@ A aula sugere consultar o cache antes do handler e guardar a resposta depois, us
 | `src/cache-redis/chave-cache.ts` | Normalização e hash dos parâmetros |
 | `src/cache-redis/cache-redis.spec.ts` | Chaves, falhas, invalidação e concorrência |
 
-Instalar uma versão compatível de `redis` (`node-redis`), com `--save-exact`. Este guia escolhe um cliente explícito para controlar o comportamento; não instalar simultaneamente várias bibliotecas de cache sem necessidade. Se a equipe trocar por `@nestjs/cache-manager`, revisar conjuntamente TTL, stores, tipos e tratamento de falha, em vez de misturar exemplos de versões diferentes.
+O planejamento inicial considerava `redis` (`node-redis`); o código integrado usa `ioredis`. Ao atualizar as dependências, preservar o lockfile e conferir TTL, tipos e tratamento de falhas da biblioteca efetivamente usada.
 
 ## 3. Fazer o cliente funcionar isoladamente
 
@@ -79,17 +79,17 @@ No Nest/RxJS, compor a leitura assíncrona e `next.handle()` com operadores como
 
 Reutilizar `CatalogoRevisaoService`, já integrado em `src/catalogo-revisao/` pela PR #24; importar seu módulo onde necessário. Não criar outra revisão, migration ou tabela de eventos. Toda alteração relevante incrementa a revisão na **mesma transação** da escrita. A consulta posterior passa a usar outra chave; as antigas expiram pelo TTL. Não precisa varrer Redis nem apagar fila.
 
-Integrar todos os pontos listados na base, incluindo dados/status de obras e seeds/manutenção. Se faltar um desses hooks, o bônus ainda está incompleto. Na primeira entrega de listagem, integrar ao menos todas as escritas de metadados/status/criação de trilhas antes de habilitar `CACHE_ENABLED`.
+Integrar todos os pontos listados na base, incluindo dados/status de obras e seeds/manutenção. Se faltar um desses hooks, o bônus ainda está incompleto. As escritas relevantes devem avançar a revisão antes de reutilizar respostas de cache.
 
 Antes de habilitar etapas/mapa, integrar também alterações de obras e etapas. A revisão é lida no PostgreSQL justamente para não depender de uma invalidação Redis que pode falhar após um commit.
 
 ## Integração com a entrega CQRS atual
 
 - `CatalogoRevisaoService.atual()` lê a revisão no principal; usar string para preservar bigint.
-- Os hooks de trilhas/etapas já existem. Conferir os hooks de obras antes de habilitar cache de etapas/mapas; até isso estar integrado, limitar a primeira entrega a `GET /trilhas`.
+- Os hooks de trilhas/etapas e das alterações relevantes de obras estão integrados; conferir novas operações que afetem mapas antes de ampliar o cache.
 - O QueryBus retorna o mesmo `MapaTrilhaRespostaDto`; não trocar esse formato nem colocar metadados do cache no body.
 - Cache não reconstrói mapas e não marca `mapa_outbox.enfileirado_em`.
-- `CACHE_ENABLED`, cliente Redis e interceptor ainda precisam ser implementados. A flag `CQRS_MAPA_ENABLED` já existe e é independente.
+- O `CacheService` atual usa `ioredis` diretamente e não depende de `CACHE_ENABLED` ou de um interceptor. `CQRS_MAPA_ENABLED` controla separadamente a leitura da projeção.
 
 ## 7. Testes que comprovam a entrega
 

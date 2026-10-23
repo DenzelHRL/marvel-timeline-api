@@ -24,7 +24,7 @@ export class CadastroDto {
 
   @ApiProperty({
     description:
-      'E-mail da conta. Espaços externos são removidos pelo DTO; o serviço de cadastro deve armazená-lo em minúsculas.',
+      'E-mail da conta. Espaços externos são removidos.',
     example: 'maria@exemplo.test',
     format: 'email',
     maxLength: 254,
@@ -38,7 +38,7 @@ export class CadastroDto {
 
   @ApiProperty({
     description:
-      'Senha com pelo menos 8 caracteres e no máximo 72 bytes em UTF-8, limite verificado pelo serviço de cadastro para o bcrypt.',
+      'Senha com pelo menos 8 caracteres.',
     minLength: 8,
     format: 'password',
     writeOnly: true,

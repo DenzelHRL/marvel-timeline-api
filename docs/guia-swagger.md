@@ -20,43 +20,9 @@ Se a porta foi alterada no ambiente, use a porta correspondente.
 
 O Swagger só funciona enquanto a API estiver rodando. Se o navegador não conectar, confira o terminal: o Nest precisa iniciar sem erros.
 
-### Se sua branch ainda não tem Swagger
+### Configuração compartilhada
 
-A implementação inicial está na branch `feat/trilhas-exploracao`; ela precisa ser integrada à `main` para ficar disponível nas demais branches. Antes de repetir a configuração, confira `backend/package.json` e `backend/src/main.ts`.
-
-Depois da integração, atualize sua branch com as mudanças da `main`, preservando o trabalho local, e rode `npm ci` dentro de `backend`. Não copie o módulo de trilhas para criar o Swagger em cada área.
-
-Se a configuração precisar ser feita antes da integração, alinhe a alteração dos arquivos compartilhados. As dependências usadas na implementação inicial são:
-
-```sh
-npm install @nestjs/swagger@12.0.2 class-validator@0.15.1 class-transformer@0.5.1
-```
-
-Em `main.ts`, a configuração é feita uma vez, antes de `app.listen(...)`:
-
-```ts
-import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
-// Dentro de bootstrap(), depois de criar app:
-app.useGlobalPipes(
-  new ValidationPipe({
-    transform: true,
-    whitelist: true,
-  }),
-);
-
-const config = new DocumentBuilder()
-  .setTitle('Marvel Timeline API')
-  .setDescription('API para explorar obras e trilhas da Marvel.')
-  .setVersion('1.0')
-  .build();
-
-const document = SwaggerModule.createDocument(app, config);
-SwaggerModule.setup('api', app, document);
-```
-
-Não crie outro `bootstrap()`: acrescente a configuração ao existente. `transform` permite transformar entradas usando os DTOs; `whitelist` remove campos que não possuem decorators de validação. Os DTOs de entrada precisam ter validadores nos campos aceitos.
+O Swagger já está configurado em `backend/src/main.ts` na `main`, com `ValidationPipe`, `DocumentBuilder.addBearerAuth()` e `SwaggerModule.setup('api', ...)`. Uma branch desatualizada pode não mostrar rotas recentes; incorpore a versão atual da `main` preservando alterações locais e execute `npm ci` dentro de `backend` quando o lockfile mudar. Não duplique o bootstrap nem instale novamente dependências já registradas no projeto.
 
 ## 2. Entender o que aparece na tela
 
@@ -273,7 +239,7 @@ Use o banco de desenvolvimento. Os testes abaixo consideram os seeds com as duas
 | Slug exato | `slug=curta` | Apenas a trilha curta. |
 | Nome parcial | `nome=CURTA`, slug vazio | Apenas a trilha curta, ignorando maiúsculas. |
 | Nenhum resultado | `slug=nao-existe` | 200; `dados: []`, total 0. |
-| Paginação | filtros vazios, página 2, limite 1 | Segundo item; total permanece 2 com esses seeds. |
+| Paginação | filtros vazios, página 2, limite 1 | Segundo item; o total reflete as trilhas publicadas existentes no banco de teste. |
 | Filtros combinados | `nome=CURTA&slug=longa` | Nenhum item, porque os dois filtros precisam ser atendidos. |
 | Limite inválido | `limite=0` ou `limite=51` | 400. |
 | Página inválida | `pagina=0` | 400. |
@@ -287,7 +253,7 @@ Nas rotas de escrita, confira também a mudança no banco ou consulte o recurso 
 
 ## 7. Testar rotas autenticadas
 
-Quando JWT e guards estiverem implementados, a configuração compartilhada do Swagger deverá incluir `.addBearerAuth()` no `DocumentBuilder`.
+O `DocumentBuilder` já inclui `.addBearerAuth()`, e as rotas protegidas documentam o esquema bearer.
 
 As rotas protegidas usam `@ApiBearerAuth()` e documentam os erros 401 e 403. No Swagger, clique em **Authorize** e informe o token JWT no campo do esquema bearer.
 

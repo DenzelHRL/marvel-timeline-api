@@ -26,11 +26,12 @@
     "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
     "db:read:migrate": "node -r ts-node/register src/database/run-leitura-migrations.ts",
     "db:read:rebuild": "node -r ts-node/register src/database/reconstruir-mapas.ts",
-    "db:read:verify": "node -r ts-node/register src/database/verificar-conexao-leitura.ts"
+    "db:read:verify": "node -r ts-node/register src/database/verificar-conexao-leitura.ts",
+    "filas:reencaminhar": "node -r ts-node/register src/filas/reencaminhar-outbox.ts"
   },
   "dependencies": {
+    "@nestjs/bullmq": "12.0.0",
     "@nestjs/common": "^12.0.1",
-    "@nestjs/config": "^12.0.1",
     "@nestjs/core": "^12.0.1",
     "@nestjs/cqrs": "12.1.0",
     "@nestjs/jwt": "^12.0.3",
@@ -39,6 +40,7 @@
     "@nestjs/swagger": "^12.0.2",
     "@nestjs/typeorm": "^12.0.2",
     "bcrypt": "^6.0.0",
+    "bullmq": "6.3.16",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cookie-session": "^2.1.1",
@@ -49,13 +51,14 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.20.0",
+    "redis": "5.12.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.31",
     "winston": "3.19.0"
   },
   "devDependencies": {
-    "@nestjs/cli": "^12.0.8",
+    "@nestjs/cli": "^12.0.0",
     "@nestjs/mau": "^0.2.6",
     "@nestjs/schematics": "^12.0.0",
     "@nestjs/testing": "^12.0.1",
@@ -79,6 +82,6 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.2"
   }
 }

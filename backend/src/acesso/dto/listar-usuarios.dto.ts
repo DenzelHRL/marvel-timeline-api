@@ -1,18 +1,10 @@
 import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import {IsInt,IsNotEmpty, IsOptional, IsString, Max,MaxLength, Min} from 'class-validator';
 
 export class ListarUsuariosDto {
   @ApiPropertyOptional({
-    description: 'Busca por parte do nome, sem diferenciar maiúsculas.',
+    description: 'Busca geral com filtros opcionais.',
     maxLength: 160,
   })
   @IsOptional()
@@ -23,7 +15,7 @@ export class ListarUsuariosDto {
   nome?: string;
 
   @ApiPropertyOptional({
-    description: 'Busca por parte do e-mail, sem diferenciar maiúsculas.',
+    description: 'Busca geral com filtros opcionais.',
     maxLength: 254,
   })
   @IsOptional()
