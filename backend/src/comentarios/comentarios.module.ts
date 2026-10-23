@@ -5,6 +5,7 @@ import {AcessoModule} from '../acesso/acesso.module';
 import {Comentario, Obra, Usuario} from '../database/entities';
 import {ComentariosController} from './comentarios.controller';
 import {ComentariosService} from './comentarios.service';
+import {ComentariosRepository} from './comentarios.repository';
 
 @Module({
     imports: [
@@ -13,7 +14,7 @@ import {ComentariosService} from './comentarios.service';
         TypeOrmModule.forFeature([Comentario, Obra, Usuario])
     ],
     controllers: [ComentariosController],
-    providers: [ComentariosService],
-    exports:[ComentariosService]
+    providers: [ComentariosService, ComentariosRepository],
+    exports:[ComentariosService, ComentariosRepository]
 })
 export class ComentariosModule{}

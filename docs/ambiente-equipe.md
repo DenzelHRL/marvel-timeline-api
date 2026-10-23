@@ -14,7 +14,7 @@ Cada pessoa terá **um banco local independente**. Compartilhamos pelo GitHub o 
 | Conexão | Cada pessoa configura seu próprio `backend/.env`. Usuário, senha e porta podem variar. |
 | Hospedagem | Fica para a etapa final de publicação da API. |
 
-**Docker executa somente o PostgreSQL. O Nest roda no terminal do computador.** O PostgreSQL instalado diretamente no Windows também funciona com o mesmo código.
+**O Compose inclui PostgreSQL e Redis; o Nest roda no terminal do computador.** O PostgreSQL instalado diretamente no Windows também funciona com o mesmo código.
 
 ## 1. Preparar o código
 
@@ -97,7 +97,7 @@ docker compose up -d --wait
 docker compose ps
 ```
 
-O serviço `postgres` deve ficar em execução e `healthy`. O Compose já cria o usuário e o banco `marvel_timeline`; as tabelas serão criadas pelas migrations.
+Os serviços `postgres` e `redis` devem ficar em execução e `healthy` quando usar `docker compose up -d --wait`. O Compose já cria o usuário e o banco `marvel_timeline`; as tabelas serão criadas pelas migrations.
 
 O volume preserva os dados entre reinícios. Alterar usuário, senha ou nome do banco no `.env` **depois** da primeira criação não altera automaticamente o banco já existente. Nesse caso, ajuste o usuário no PostgreSQL e mantenha o `.env` correspondente. Não use `docker compose down -v` na rotina: essa opção apaga o volume do banco.
 
@@ -123,7 +123,7 @@ DB_NAME=marvel_timeline
 
 Substitua o texto ilustrativo pela sua senha. Se a senha contiver `#`, mantenha o valor entre aspas para que esse caractere não inicie um comentário.
 
-**Use a porta real da sua instalação.** A instalação do Denzel usa **5433**, porque há outra versão em 5432; isso não obriga os colegas a usar 5433. No pgAdmin, a porta pode ser consultada em **Properties → Connection** do servidor.
+**Use a porta real da sua instalação.** Uma instalação local pode usar **5433** se 5432 estiver ocupada; isso não obriga outras máquinas a usar a mesma porta. No pgAdmin, a porta pode ser consultada em **Properties → Connection** do servidor.
 
 Nesta opção, o serviço PostgreSQL do Windows precisa estar em execução; não é necessário manter o pgAdmin aberto. Não execute os comandos Docker.
 
@@ -141,7 +141,7 @@ npm run db:verify
 | Comando | O que faz | Resultado inicial esperado |
 | --- | --- | --- |
 | `npm ci` | Instala as versões do lockfile. | Instalação termina sem erro. |
-| `db:migrate` | Aplica migrations ainda pendentes. | 2 na instalação inicial atual; 0 se já aplicadas. |
+| `db:migrate` | Aplica migrations ainda pendentes. | A quantidade depende da versão do repositório e do histórico do banco. |
 | `db:seed` | Insere os dados iniciais. | 2 perfis, 26 permissões, 34 obras, 2 trilhas e 54 etapas. |
 | `db:verify` | Confere tabelas, migrations e dados mínimos. | `Tabelas do domínio: 16/16` e `Banco pronto para desenvolver rotas`. |
 
@@ -157,7 +157,7 @@ npm run start:dev
 
 Espere `Found 0 errors` e `Nest application successfully started`. Mantenha esse terminal aberto e visite [http://localhost:3000](http://localhost:3000).
 
-Na fundação atual, a resposta é **Hello World!**. Isso confirma a rota inicial. As rotas do domínio, JWT, login Google, guards e Swagger ainda precisam ser implementados; as tabelas de perfis e permissões não fazem essa proteção sozinhas.
+Acesse também **http://localhost:3000/api** para conferir o Swagger. A `main` já inclui rotas de domínio, autenticação JWT, guards e documentação. O login Google depende das credenciais configuradas no ambiente; as tabelas de perfis e permissões, isoladamente, não protegem rotas.
 
 Se `PORT` estiver configurada com outro valor, use essa porta na URL. Para encerrar o Nest, pressione **Ctrl+C**.
 
@@ -199,13 +199,13 @@ git switch -c feat/seu-modulo
 
 Troque `seu-modulo` pelo nome acordado, por exemplo `obras`. Se a branch já existe, use `git switch nome-da-branch`.
 
-Use as entidades existentes em `backend/src/database/entities/`, mantendo módulo, controller, DTO, service e repository conforme o padrão da disciplina. Registre seu módulo no `AppModule` e use `TypeOrmModule.forFeature([...])` para disponibilizar os repositórios das entidades necessárias. O código ainda não traz um módulo completo de domínio pronto.
+Use as entidades existentes em `backend/src/database/entities/`, mantendo módulo, controller, DTO, service e repository conforme o padrão da disciplina. Registre seu módulo no `AppModule` e use `TypeOrmModule.forFeature([...])` para disponibilizar os repositórios das entidades necessárias. Os módulos de domínio já integrados servem como referência; confira os contratos e imports atuais antes de adicionar outro.
 
-Em cada entrega, inclua a validação de entrada, regras de negócio, paginação e ao menos dois filtros por campos da tabela nas listagens, além da documentação Swagger quando integrada. Combine os contratos de autenticação e permissões com o responsável por essa parte.
+Em cada entrega, inclua a validação de entrada, regras de negócio, paginação e ao menos dois filtros por campos da tabela nas listagens, além da documentação Swagger já configurada. Use os guards e contratos de autenticação/permissão integrados ao projeto.
 
 Mudanças de estrutura entram em **novas migrations** e nas entidades correspondentes. O projeto usa uma lista explícita de migrations em `backend/src/database/data-source.ts`: importe e acrescente a nova classe nessa lista. Não edite uma migration já aplicada por alguém nem ative `synchronize`. Ao adicionar entidades, atualize também o índice `entities/index.ts`. Ajuste seeds, verificação e modelo do banco quando o esquema ou os dados mínimos mudarem.
 
-Faça commits na sua conta, envie a branch e abra um PR para `main`. Informe as rotas entregues e como testá-las. Confirme os checks do PR antes da integração. A divisão de tarefas e os contratos de resposta ainda precisam ser acordados pelo grupo.
+Faça commits na sua conta, envie a branch e abra um PR para `main`. Informe as rotas entregues e como testá-las. Confirme os checks do PR antes da integração. Mantenha a documentação da rota coerente com o contrato implementado.
 
 ## Contas de demonstração (opcional)
 
@@ -217,7 +217,7 @@ DEMO_ADMIN_PASSWORD="ESCOLHA_UMA_SENHA_LOCAL"
 DEMO_READER_PASSWORD="ESCOLHA_OUTRA_SENHA_LOCAL"
 ```
 
-Use senhas de pelo menos 8 caracteres e execute `npm run db:seed` novamente. O seed cria `admin@marvel-timeline.test` e `leitor@marvel-timeline.test`, além de progresso e comentários de exemplo. Essas contas ainda dependem da implementação dos endpoints de login para autenticar. Elas são diferentes do usuário PostgreSQL configurado em `DB_USER`. O seed não troca a senha de contas já existentes; essa opção é bloqueada em produção.
+Use senhas de pelo menos 8 caracteres e execute `npm run db:seed` novamente. O seed cria `admin@marvel-timeline.test` e `leitor@marvel-timeline.test`, além de progresso e comentários de exemplo. Essas contas podem usar o login local já implementado. Elas são diferentes do usuário PostgreSQL configurado em `DB_USER`. O seed não troca a senha de contas já existentes; essa opção é bloqueada em produção.
 
 ## Se der erro
 

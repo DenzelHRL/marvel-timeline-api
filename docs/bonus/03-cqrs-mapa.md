@@ -80,15 +80,15 @@ A tabela contém `trilha_id`, `versao`, `publicada`, `itens` e `atualizado_em`, 
 
 A consulta verifica publicação e revisão no principal, aceita somente projeção pública com versão igual, filtra antes de contar/paginar e mantém o DTO sem versão interna ou spoilers. A verificação é por snapshot; não promete linearização absoluta com escritas simultâneas.
 
-## 5. O que ainda precisa ser integrado
+## 5. Integração e operação
 
-- **Obras:** alterações de campos usados no mapa e de publicação precisam usar `CatalogoRevisaoService` na mesma transação. Primeiro `bloquear(manager)`, depois consultas/locks/gravações pelo manager e, por fim, `registrarAlteracao(manager)` antes do commit. Não salvar domínio em uma transação e revisão em outra.
-- **Séries:** alterações que modifiquem obras ou sua visibilidade precisam manter as mesmas garantias e regras de dependência.
-- **Filas:** relay encaminha `mapa_outbox`; worker chama `reconstruir(trilhaId)`. Este serviço não depende de Redis/BullMQ.
-- **Cache:** usa a revisão do principal na chave; não espera a fila para invalidar dados antigos.
-- **Seeds/SQL manual:** devem participar da revisão em um procedimento de manutenção. Um rebuild da mesma versão corrige o registro de leitura, mas mudar dados oficiais por fora sem avançar revisão deixa cache e outbox inconsistentes.
+- **Trilhas, etapas e obras:** as alterações relevantes registram revisão e eventos na outbox durante a transação do PostgreSQL principal. Acompanhar novas operações que afetem dados exibidos no mapa.
+- **Séries:** caso uma alteração mude obras ou sua visibilidade, ela também precisa preservar a revisão e a outbox na transação correspondente.
+- **Filas:** o relay e o worker da [PR #27](https://github.com/DenzelHRL/marvel-timeline-api/pull/27) encaminham eventos da `mapa_outbox` e chamam `reconstruir(trilhaId)`. Eles são registrados quando `FILAS_ENABLED=true`, com Redis e banco de leitura disponíveis; `CQRS_MAPA_ENABLED` controla separadamente a consulta pela projeção.
+- **Cache:** as chaves das consultas de trilhas incorporam a revisão do principal, de modo que uma alteração avance para uma chave nova sem esperar o worker.
+- **Seeds e SQL manual:** mudanças feitas fora dos serviços devem tratar revisão/outbox em um procedimento de manutenção. Um rebuild da mesma versão pode corrigir a projeção, mas não substitui o avanço da revisão para invalidar cache e gerar eventos.
 
-Até integrar as filas, a atualização das projeções é manual por `npm run db:read:rebuild`. Esse comando não marca eventos como enfileirados. Uma reconstrução não significa entrega ao Redis; pendências na outbox são esperadas.
+Com a fila desabilitada, `npm run db:read:rebuild` atualiza manualmente a projeção. O comando não marca eventos como enfileirados; reconstruir o mapa e entregar um job ao Redis são operações diferentes.
 
 Para uma remoção física futura de trilha, o evento deve preservar também o ID removido: percorrer apenas trilhas existentes não gera esse tombstone.
 
@@ -98,7 +98,7 @@ Na entrega da PR #24: build aprovado; lint com zero erros e três avisos no mód
 
 Validações manuais relatadas: consulta original e projeção; filtros e paginação; reordenação pelo CommandBus; fallback com projeção antiga; reconstrução após alteração; trilha arquivada retornando 404; rejeição de reordenação inválida sem avançar revisão/outbox; resposta preservada com banco de leitura indisponível e configuração restaurada.
 
-Para integração final, acrescentar testes automatizados dos handlers, dos hooks de obras e do fallback; validar worker/retry com Redis real e snapshots concorrentes fora de ordem. Esses cenários não estão comprovados apenas pelos 89 testes existentes.
+Como validação complementar, testar handlers, hooks de obras, fallback e worker/retry com Redis real, incluindo snapshots concorrentes fora de ordem. Os 89 testes citados acima pertencem à entrega da PR #24 e não comprovam por si só a integração posterior da fila.
 
 ## Fontes oficiais
 

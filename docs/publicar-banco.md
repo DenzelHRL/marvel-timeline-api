@@ -12,7 +12,7 @@ A hospedagem será preparada na etapa final, quando a API estiver pronta para de
 | API Nest hospedada | Recebe requisições HTTP e acessa o PostgreSQL remoto. |
 | Bancos locais | Continuam servindo ao desenvolvimento e aos testes de cada integrante. |
 
-Publicar um banco não cria endpoints. Na fundação atual, apenas `GET /` está implementado; autenticação, rotas de domínio e Swagger ainda precisam ser entregues.
+Publicar um banco não cria endpoints. A `main` já contém autenticação, rotas de domínio e Swagger; confirme a configuração do serviço e do banco remoto antes de demonstrá-los fora do ambiente local.
 
 ## Configurar o banco remoto quando chegar a hora
 

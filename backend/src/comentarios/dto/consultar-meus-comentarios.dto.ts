@@ -1,18 +1,19 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type, Transform } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import {ApiPropertyOptional} from "@nestjs/swagger";
+import {Type, Transform} from "class-transformer";
+import {IsBoolean, IsIn, IsInt, IsOptional, Max, Min} from "class-validator";
+import type {StatusComentario} from "../../database/entities/comment.entity";
 
 export class ConsultarMeusComentariosDTO{
     @ApiPropertyOptional({
         description:"Filtrar por status do comentário",
-        enum:['PUBLICADO', 'OCULTO', 'REMOVIDO'],
+        enum:["PUBLICADO", "OCULTO", "REMOVIDO"],
         example: "PUBLICADO"
     })
     @IsOptional()
-    @IsIn(['PUBLICADO', 'OCULTO', 'REMOVIDO'], {
+    @IsIn(["PUBLICADO", "OCULTO", "REMOVIDO"], {
         message: "status deve ser PUBLICADO, OCULTO ou REMOVIDO"
     })
-    status?: 'PUBLICADO' | 'OCULTO' | 'REMOVIDO';
+    status?: StatusComentario;
 
     @ApiPropertyOptional({
         description: "Filtrar comentários que contenham ou não spoiler",

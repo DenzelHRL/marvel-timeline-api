@@ -6,7 +6,7 @@
 
 Cache, logs, CQRS e filas devem trabalhar sobre a mesma API. Logs é independente. Cache pode começar só na listagem de trilhas. CQRS e filas compartilham a reconstrução do mapa; precisam concordar com o contrato abaixo antes de integrar.
 
-**Base atualizada em 17/10/2026:** o CQRS e a revisão/outbox já entraram na main pela PR #24, commit `7f4363c`. Redis, cache, relay, worker e contratos de jobs ainda são propostas. Reutilizar os componentes existentes; não criar outra migration de revisão nem outro reconstrutor.
+**Estado da integração:** CQRS e revisão/outbox entraram pela PR #24; cache e Redis pela PR #26; logs pela PR #28; contrato de job, relay e worker pela PR #27. Este guia conserva também decisões de planejamento. Consulte os arquivos atuais em `backend/src/` antes de aplicar exemplos antigos.
 
 ## 1. Preparar uma branch sem perder trabalho
 
@@ -70,38 +70,11 @@ npm run db:read:rebuild
 
 O principal precisa da migration de revisão/outbox mesmo com CQRS desligado: as escritas de trilhas e etapas já usam essas tabelas. Atualizar `.env.example` não altera automaticamente o `.env` individual. Não há necessidade de rodar seed para ativar esta entrega.
 
-### Redis: infraestrutura ainda a implementar
+### Redis: disponível no Compose
 
-Manter o serviço `postgres` e seu volume. Acrescentar somente este serviço ao `backend/compose.yaml`, dentro de `services:`:
+O `backend/compose.yaml` já define o serviço Redis com persistência AOF e política `noeviction`. Para iniciá-lo, execute `docker compose up -d redis` dentro de `backend`. O `.env.example` inclui `FILAS_ENABLED=false`, `REDIS_HOST` e `REDIS_PORT`; defina `FILAS_ENABLED=true` no `.env` local após preparar o banco de leitura. O cliente de cache usa `REDIS_TTL` com padrão de 300 segundos e não possui `CACHE_ENABLED`. A fila e o cache usam conexões separadas.
 
-```yaml
-  redis:
-    image: redis:7.4
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
-    ports:
-      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
-    volumes:
-      - marvel_redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      retries: 10
-```
-
-Acrescentar `marvel_redis_data:` na seção `volumes:`. Configuração proposta para os módulos de cache/filas, ainda sem comportamento automático na main:
-
-```dotenv
-CACHE_ENABLED=false
-CACHE_TTL_SECONDS=60
-REDIS_HOST=localhost
-REDIS_PORT=6379
-FILAS_ENABLED=false
-LOG_LEVEL=info
-```
-
-Cada módulo deve implementar suas flags e acrescentar as variáveis ao `.env.example`. Comparar `process.env.FLAG === 'true'`; `Boolean('false')` é verdadeiro. Credenciais reais ficam somente no `.env`. Em container, usar o host do serviço e a porta interna conforme a configuração efetivamente implementada.
-
-Depois de alterar o Compose:
+Para verificar o serviço:
 
 ```text
 docker compose config --quiet
@@ -114,7 +87,7 @@ Esperado: configuração válida, Redis saudável e `PONG`. Cache e fila precisa
 
 ## 3. Contratos que todos devem usar
 
-Criar `backend/src/bonus/contratos.ts` na PR de filas; este arquivo ainda não existe:
+O contrato compartilhado já está em `backend/src/bonus/contratos.ts`:
 
 ```ts
 export const FILA_MAPA = 'mapa-trilhas';
@@ -129,14 +102,14 @@ export interface ReconstruirMapaJob {
 
 `versao` é um `bigint` PostgreSQL serializado como string decimal. Não converter para `number`, nem serializar `bigint` JavaScript diretamente em JSON. Comparar numericamente, não por ordem alfabética.
 
-Contratos existentes e componentes ainda a implementar:
+Componentes e contratos em uso:
 
 | Serviço | Contrato | Uso |
 | --- | --- | --- |
 | `CatalogoRevisaoService` | `bloquear(manager): Promise<void>`; `atual(manager): Promise<string>`; `registrarAlteracao(manager): Promise<string>` | Ler/incrementar revisão persistente e produzir eventos na transação de escrita |
 | `ProjecaoMapaService` | `reconstruir(trilhaId: string): Promise<void>` | Worker chama esta função; o serviço lê o estado atual, não confia no conteúdo antigo do job |
 | `MapaLeituraService` | `consultarSeAtual(slug, filtros): Promise<MapaTrilhaRespostaDto \| undefined>` | Retorna projeção válida; o `ConsultarMapaHandler` faz fallback por `TrilhasService.consultarMapa` |
-| `CacheRedisService` | `getJson<T>(chave): Promise<T \| undefined>`; `setJson(chave, valor, ttlSegundos): Promise<void>` | Ausência/falha de cache nunca vira erro da API |
+| `CacheService` | `obter<T>(chave)`; `salvar(chave, valor, ttlSegundos?)` | Cliente Redis em `src/cache/cache.service.ts`; ausência/falha do Redis mantém a consulta ao PostgreSQL |
 
 Os métodos com `manager` recebem o `EntityManager` da transação em andamento. Dentro da transação, não usar um repositório global para salvar revisão/evento fora dela.
 
@@ -160,19 +133,19 @@ Usar uma ordem única de locks: em toda escrita de catálogo envolvida, adquirir
 | Criar/editar trilha | Já integrado em `src/trilhas/trilhas.service.ts`: `criar`, `atualizar` |
 | Alterar status/incluir etapa | Já integrado no mesmo arquivo: `alterarStatus`, `criarEtapa` |
 | Editar/remover/reordenar etapa | Já integrado em `src/trilhas/etapas-trilha.service.ts`: `atualizar`, `remover`, `reordenar` |
-| Editar/publicar/arquivar/remover obra | Service de obras quando integrado; verificar o nome real na branch atual antes de alterar |
+| Criar/editar/alterar status de obra | Integrado em `src/obras/obras.service.ts` com revisão/outbox nas transações relevantes |
 | Operação de série que modifique obras/visibilidade | Integrar a alteração resultante no mesmo mecanismo; não depender só dos controllers de trilhas |
 
 Migrations/seeds e SQL manual que mudem o catálogo também precisam incrementar a revisão e agendar reconstrução ao final. Preferir um script de manutenção que use o mesmo serviço; documentar esse passo. Não executar seeds durante um teste de invalidação sem atualizar a versão.
 
-Revisão/outbox já existem em `src/catalogo-revisao/`. As sete operações de trilhas/etapas da tabela acima já possuem os hooks. A integração de obras/séries e manutenção continua pendente; cache e filas devem reutilizar a mesma base.
+Revisão/outbox já existem em `src/catalogo-revisao/`. As operações de trilhas/etapas e as alterações relevantes de obras usam essa base. Mudanças futuras em séries, seeds ou SQL manual que afetem o mapa devem preservar a revisão.
 
 ## 6. Dependências entre módulos
 
 - `CatalogoRevisaoModule`: usa conexão principal; exporta revisão/outbox; não importa trilhas, cache ou filas.
 - `ProjecaoMapaModule`: usa conexão principal e `BancoLeituraService`, que inicializa o datasource `leitura` sob demanda; exporta `ProjecaoMapaService`; não importa `TrilhasModule` nem fila.
 - `FilasModule`: importa projeção e revisão; contém relay/produtor/worker; não importa `TrilhasModule`.
-- `CacheRedisModule`: cliente próprio; não importa fila; interceptor usa revisão.
+- `CacheModule`: cliente Redis em `src/cache/`; os serviços de trilhas usam a revisão ao compor as chaves.
 - `LogsModule`: infraestrutura global sem dependência dos módulos de domínio.
 - `TrilhasModule`: importa os serviços necessários, registra handlers CQRS e preserva Auth/Acesso.
 
@@ -180,7 +153,7 @@ Importar entidades de catálogo não significa importar `TrilhasModule`. Evitar 
 
 ## 7. PRs e validação conjunta
 
-Sequência restante: integrar os hooks de obras → logs/cache inicial e fila/worker → cache do mapa. CQRS, revisão/outbox e reconstrução manual já foram implementados. Algumas podem avançar em paralelo com contratos estáveis. Não habilitar funcionalidade incompleta em `main`.
+Os componentes de logs, cache, CQRS e filas estão integrados. A validação operacional conjunta requer PostgreSQL principal, banco de leitura, Redis e as flags locais corretas; confirmar também o fallback quando a projeção estiver atrasada ou indisponível.
 
 Para cada PR, rodar os scripts existentes de build, lint e testes. Se houver migration, verificar aplicação duas vezes sem duplicação; testar banco novo e banco existente. `db:verify` valida o domínio atual e não prova que Redis, fila ou projeção funcionam: acrescentar verificações próprias. Preservar `synchronize: false` e registrar migrations novas explicitamente na configuração atual.
 
