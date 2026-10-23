@@ -1,25 +1,17 @@
-import {
-    BadRequestException,
-    ForbiddenException,
-    Injectable,
-    NotFoundException} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import{Comentario, Obra, Usuario} from '../database/entities';
-import{
-   ConsultarComentariosDTO,
-   CriarComentarioDTO,
-   AtualizarComentarioDTO, 
-   ConsultarMeusComentariosDTO,
-   ModerarComentarioDTO
-}
-from './dto';
+import {BadRequestException, ForbiddenException, Injectable, NotFoundException} from "@nestjs/common";
+import {InjectRepository} from "@nestjs/typeorm";
+import {Repository} from "typeorm";
+import {Obra, StatusConteudo} from "../database/entities/catalog.entities";
+import {Comentario, StatusComentario} from "../database/entities/comment.entity";
+import {ComentariosRepository} from "./comentarios.repository";
+import {Usuario} from "../database/entities";
+import {ConsultarComentariosDTO, CriarComentarioDTO, AtualizarComentarioDTO, ConsultarMeusComentariosDTO, ModerarComentarioDTO}from "./dto";
 
 @Injectable()
 export class ComentariosService{
+    private readonly texto_spoiler = "[Conteúdo oculto por conter spoilers. Para revelar coloque: ?revelarSpoilers=true]";
     constructor(
-        @InjectRepository(Comentario)
-        private readonly comentarioRepo: Repository<Comentario>,
+        private readonly comentarioRepo: ComentariosRepository,
 
         @InjectRepository(Obra)
         private readonly obraRepo: Repository<Obra>,
@@ -33,7 +25,7 @@ export class ComentariosService{
         
         //Regra de negócio R01: obra precisa existir e estar PUBLICADA
         const obra = await this.obraRepo.findOne({
-            where: {slug: slugObra, status: 'PUBLICADA'},
+            where: {slug: slugObra, status: "PUBLICADA" as StatusConteudo},
         });
 
         if(!obra){
@@ -50,81 +42,27 @@ export class ComentariosService{
             limite = 20,
         } = filtros;
 
-        //Regra de negócio R09: Só exibir comentários com status PUBLICADO
-        const query = this.comentarioRepo
-            .createQueryBuilder('c')
-            .where('c.obra_id = :obraId', {obraId: obra.id})
-            .andWhere('c.status = :status', {status: 'PUBLICADO'});
-
-        //Propriedade Filtro: contemSpoiler
-        if(typeof contemSpoiler === 'boolean'){
-            query.andWhere('c.contem_spoiler = :contemSpoiler', {contemSpoiler});
-        }
-
-        //Propriedade Filtro: usuarioId
-        if(usuarioId){
-            query.andWhere('c.usuarioId = :usuarioId', {usuarioId});
-        }
-
-        //Ordenação
-        query.orderBy('c.criado_em', 'DESC');
-
-        //Total de registros antes da paginação
-        const total = await query.getCount();
-
-        //Paginação com offset
-        const registros = await query
-        .skip((pagina - 1) * limite)
-        .take(limite)
-        .getMany();
-
-        //Regra de negócio R03: Não mostrar texto de spoilers se não for selecionado
-        const dados = registros.map((c) => ({
-            id: c.id,
-            obraId: c.obraId,
-            usuarioId: c.usuarioId,
-            texto:
-                c.contemSpoiler && !revelarSpoilers
-                    ? '[Conteúdo oculto por conter spoilers. Envie ?revelarSpoilers=true para visualizar.]'
-                    : c.texto,
-            contemSpoiler: c.contemSpoiler,
-            criadoEm: c.criadoEm
-        }));
-
+        const [registros, total] = await this.comentarioRepo.buscarPorObra(obra.id, filtros);
+        
         return{
-            dados,
-            meta:{
-                pagina,
-                limite,
-                total,
-                totalPaginas: Math.ceil(total/limite),
-            },
+            dados: registros.map((c) => this.formatarComentario(c, revelarSpoilers)),
+            meta: this.criarPaginacao(total, pagina, limite)
         };
     }
 
     // Endpoint: 61 -> GET /comentarios/:id
     async buscarPorId (id: string, revelarSpoilers: boolean){
         const comentario = await this.comentarioRepo.findOne({
-            where:{id, status: 'PUBLICADO'},
+            where:{id, status: "PUBLICADO" as StatusComentario},
         });
 
         if(!comentario){
             throw new NotFoundException(
-                'Comentário não encontrado ou não visível.'
+                "Comentário não encontrado ou não visível."
             );
         }
 
-        return {
-            id: comentario.id,
-            obraId: comentario.obraId,
-            usuarioId: comentario.usuarioId,
-            texto:
-                comentario.contemSpoiler && !revelarSpoilers
-                ? '[Conteúdo oculto por conter spoilers. Envie ?revelarSpoilers=true para visualizar.]'
-                : comentario.texto,
-            contemSpoiler: comentario.contemSpoiler,
-            criadoEm: comentario.criadoEm,
-        };
+        return this.formatarComentario(comentario, revelarSpoilers);
     }
 
     // Endpoint: 62 -> GET /obras/:obraId/comentarios
@@ -132,7 +70,7 @@ export class ComentariosService{
         
         //Regra de negócio R09: Comenta obra PUBLICADA
         const obra = await this.obraRepo.findOne({
-            where:{id: obraId, status:'PUBLICADA'}
+            where:{id: obraId, status:"PUBLICADA" as StatusConteudo}
         });
 
         if(!obra){
@@ -156,36 +94,18 @@ export class ComentariosService{
             usuarioId: usuario.id,
             texto: dto.texto.trim(),
             contemSpoiler: dto.contemSpoiler ?? false,
-            status: 'PUBLICADO'
+            status: "PUBLICADO" as StatusComentario
         })
 
         const salvo = await this.comentarioRepo.save(novoComentario);
 
-        return{
-            id: salvo.id,
-            obraId: salvo.obraId,
-            usuarioId: salvo.usuarioId,
-            texto: salvo.texto,
-            contemSpoiler: salvo.contemSpoiler,
-            status: salvo.status,
-            criadoEm: salvo.criadoEm
-        };
+        return this.enviarResponse(salvo);
     }
 
     // Endpoint: 63 -> PATCH /comentarios/:id
     async atualizar(id: string, usuarioId: string, dto:AtualizarComentarioDTO){
-        const comentario = await this.comentarioRepo.findOne({where: {id}});
-
-        if(!comentario || comentario.status === 'REMOVIDO'){
-            throw new NotFoundException("Comentário não encontrado.");
-        }
-
-        //Regra de negócio R09: Só o autor pode editar o comentário
-        if(comentario.usuarioId !== usuarioId){
-            throw new ForbiddenException(
-                "Você não tem permissão para editar comentários de outros usuários."
-            );
-        }
+        const comentario = await this.buscarComentarioValido(id);
+        this.validarPermissao(comentario, usuarioId, "editar");
 
         //Caso os adms ocultem o comentário, o autor não consegue alterar:
         if(dto.texto !== undefined){
@@ -197,104 +117,39 @@ export class ComentariosService{
 
         const atualizado = await this.comentarioRepo.save(comentario);
 
-        return{
-            id: atualizado.id,
-            obraId: atualizado.obraId,
-            usuarioId: atualizado.usuarioId,
-            texto: atualizado.texto,
-            contemSpoiler: atualizado.contemSpoiler,
-            status: atualizado.status,
-            atualizadoEm: atualizado.atualizadoEm
-        };
+        return this.enviarResponse(atualizado);
     }
 
     // Endpoint: 64 -> DELETE /comentarios/:id (Remoção Lógica)
     async remover(id: string, usuarioId: string){
-        const comentario = await this.comentarioRepo.findOne({where: {id}});
+        const comentario = await this.buscarComentarioValido(id);
+        this.validarPermissao(comentario, usuarioId, "remover");
         
-        if(!comentario || comentario.status === "REMOVIDO"){
-            throw new NotFoundException("Comentário não encontrado.");
-        }
-
-        //Regra de negócio R09: Só o autor pode editar o comentário
-        if(comentario.usuarioId !== usuarioId){
-            throw new ForbiddenException(
-                "Você não tem permissão para remover comentários de outros usuários."
-            )
-        };
-
-        //Remoção lógica: marca como REMOVIDO em vez de apagar do banco.
-        comentario.status = "REMOVIDO";
+        comentario.status = "REMOVIDO" as StatusComentario;
         await this.comentarioRepo.save(comentario);
-
+    
         return{mensagem: "Comentário removido com sucesso."};
     }
 
     // Endpoint: 65 -> GET /usuarios/me/comentarios (Hitórico do autor)
     async listarMeusComentarios(usuarioId: string, filtros: ConsultarMeusComentariosDTO){
-        const {status, contemSpoiler, pagina = 1, limite = 20} = filtros;
-
-        //Propriedade Filtro: status
-        const query = this.comentarioRepo
-            .createQueryBuilder("c")
-            .where("c.usuario_id = :usuarioId", {usuarioId});
-
-        //Propriedade Filtro: contemSpoiler
-        if(status){
-            query.andWhere("c.status = :status", {status});
-        }
-
-        query.orderBy("c.criado_em", 'DESC');
-
-        const total = await query.getCount();
-        const dados = await query
-            .skip((pagina - 1) * limite)
-            .take(limite)
-            .getMany();
+        const {pagina = 1, limite = 20} = filtros;
+        const [registros, total] = await this.comentarioRepo.buscarPorUsuario(usuarioId, filtros);
 
         return{
-            dados, 
-            meta: {
-                pagina,
-                limite,
-                total,
-                totalPaginas: Math.ceil(total/limite)
-            }
+            dados: registros.map((c) => this.enviarResponse(c)),
+            meta: this.criarPaginacao(total, pagina, limite)
         };
     }
 
     // Endpoint: 66 -> GET /admin/comentarios (Fila de moderação)
     async listarFilaModeracao(filtros: ConsultarMeusComentariosDTO){
-        const {status, contemSpoiler, pagina = 1, limite = 20} = filtros;
-        
-        const query = this.comentarioRepo.createQueryBuilder("c");
+        const {pagina = 1, limite = 20} = filtros;
+        const [registros, total] = await this.comentarioRepo.listarFilaModeracao(filtros);
 
-        //Propriedade Filtro: status
-        if(status){
-            query.andWhere("c.status = :status", {status});
-        }
-
-        //Propriedade Filtro: contemSpoiler
-        if(typeof contemSpoiler === 'boolean'){
-            query.andWhere("c.contem_spoiler = :contemSpoiler", {contemSpoiler});
-        }
-
-        query.orderBy("c.criado_em", "DESC");
-
-        const total = await query.getCount();
-        const dados = await query
-            .skip((pagina - 1) * limite)
-            .take(limite)
-            .getMany();
-        
-        return {
-            dados,
-            meta:{
-                pagina,
-                limite,
-                total,
-                totalPaginas: Math.ceil(total/limite)
-            }
+        return{
+            dados: registros.map((c) => this.enviarResponse(c)),
+            meta: this.criarPaginacao(total, pagina, limite)
         };
     }   
     
@@ -309,17 +164,64 @@ export class ComentariosService{
         comentario.status = dto.status;
         const atualizado = await this.comentarioRepo.save(comentario);
 
+        return this.enviarResponse(atualizado);
+    }
+
+    //MÉTODOS PRIVADOS HELPERS
+
+    //Valida o comentário
+    private async buscarComentarioValido(id: string): Promise<Comentario> {
+        const comentario = await this.comentarioRepo.findOne({ where: { id } });
+
+        if (!comentario || comentario.status === ('REMOVIDO' as StatusComentario)) {
+            throw new NotFoundException('Comentário não encontrado.');
+        }
+
+        return comentario;
+    }
+
+    //Restringe usuario de editar ou remover outros comentarios (Só adm pode)
+    private validarPermissao(comentario: Comentario, usuarioId: string, acao: 'editar' | 'remover'): void {
+        if (comentario.usuarioId !== usuarioId) {
+            throw new ForbiddenException(
+                `Você não tem permissão para ${acao} comentários de outros usuários.`,
+            );
+        }
+    }
+
+    //Exibe mensagem de spoiler
+    private formatarComentario(comentario: Comentario, revelarSpoilers: boolean) {
+        const dto = this.enviarResponse(comentario);
         return {
-            id: atualizado.id,
-            obraId: atualizado.obraId,
-            usuarioId: atualizado.usuarioId,
-            texto: atualizado.texto,
-            contemSpoiler: atualizado.contemSpoiler,
-            status: atualizado.status,
-            atualizadoEm: atualizado.atualizadoEm
+            ...dto,
+            texto:
+            comentario.contemSpoiler && !revelarSpoilers
+                ? this.texto_spoiler
+                : comentario.texto,
         };
     }
 
+    //Envia todos os dados para Response
+    private enviarResponse(comentario: Comentario) {
+        return {
+            id: comentario.id,
+            obraId: comentario.obraId,
+            usuarioId: comentario.usuarioId,
+            texto: comentario.texto,
+            contemSpoiler: comentario.contemSpoiler,
+            status: comentario.status,
+            criadoEm: comentario.criadoEm,
+            atualizadoEm: comentario.atualizadoEm,
+        };
+    }
 
-
+    //Cria offset paginação
+    private criarPaginacao(total: number, pagina: number, limite: number) {
+        return {
+            pagina,
+            limite,
+            total,
+            totalPaginas: Math.ceil(total / limite) || 1,
+        };
+    }
 }
